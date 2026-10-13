@@ -1,0 +1,145 @@
+// Shared inline panel stack -- layered panels inside a host overlay
+// (action-menu, popover, hybrid-popover). Only one layer is visible at a time.
+// The ACTIVE layer is in-flow (drives the stack container's height from its
+// natural content); inactive and exiting layers are absolutely positioned
+// (out of flow, stacked on top of the active layer) so they can crossfade
+// without affecting the container's size.
+//
+// SIZING CONTRACT
+// ---------------
+// The container's `position: absolute; inset: 0` default makes it fill its
+// containing block (the host overlay panel). Hosts whose panel has fixed /
+// computed dimensions (HybridPopover) consume the default. Hosts whose
+// panel size adapts to the inline content (ActionMenu) override the
+// container to `position: relative; flex: 0 0 auto` so the in-flow active
+// layer's natural height drives the container -- and through it, the host
+// overlay panel's height.
+//
+// CRITICAL: the active layer is `position: relative` (in-flow). Earlier
+// revisions kept layers absolutely positioned for stacking, which caused
+// ActionMenu inline popovers to collapse to 0 height (the container had
+// no in-flow children and no explicit height). With this design the
+// active layer's natural content height propagates through the inline
+// panel chain (active layer -> hostEl -> popover) so content-sized hosts
+// render the popover at its real intrinsic size.
+//
+// USAGE -- the mixin MUST be included at the host BLOCK root (e.g. directly
+// inside `.arvo-action-menu { ... }` or `.arvo-hpop { ... }`), NOT nested
+// inside a `&__inline-panel` block. Nesting inside `&__inline-panel` would
+// produce a broken double-prefixed descendant selector
+// (`.foo__inline-panel .foo__inline-panel`) that never matches the single
+// container element created by `createInlinePanelStack`. When that happens
+// the container silently falls back to `position: static`, and the inline
+// popover / hybrid popover renders BELOW the host's content instead of
+// replacing it -- which violates the "inline panel REPLACES the host
+// overlay" contract.
+
+@use '../../../tokens/src/scss/all' as *;
+
+@mixin inline-panel-stack($block: 'arvo-inline-panel-stack') {
+  .#{$block} {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    background-color: var(--arvo-color-s-layer-03);
+    z-index: 1;
+    min-height: 0;
+    overflow: hidden;
+
+    &.open {
+      display: flex;
+    }
+  }
+
+  // Layer sizing model:
+  //
+  // - DEFAULT (no class): inactive layers sit out-of-flow at
+  //   `position: absolute; inset: 0` so they overlap on top of the active
+  //   layer (a previously-pushed layer that fell back to inactive after a
+  //   forward push waits in this state until either re-activated by pop()
+  //   or removed entirely). Opacity / visibility / pointer-events keep
+  //   them invisible until promoted.
+  // - .active: the visible top layer. Position flips to `relative` so the
+  //   layer is in-flow and its natural content drives the container's
+  //   height. This is what makes ActionMenu inline popovers size to the
+  //   popover's natural content (instead of collapsing to 0).
+  // - .is-exiting-forward: the previously-active layer during a forward
+  //   push. Stays absolutely positioned (out-of-flow, stacked on top of
+  //   the new active layer) and fades out + slides left while the new
+  //   layer fades in + slides down. Container height is driven by the
+  //   new active layer throughout, so the host panel resizes smoothly
+  //   from "previous layer height" to "new layer height".
+  //
+  // Layers ALWAYS render (`display: flex`) so the resting -> active
+  // transition can run on first paint. Position changes are NOT animated
+  // (they apply instantly when classes flip); only opacity + transform
+  // are animated via `$arvo-transition-popup`.
+  .#{$block}__layer {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+      $arvo-transition-popup,
+      visibility 0s linear $arvo-duration-slow;
+
+    &.active {
+      position: relative;
+      inset: auto;
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+      visibility: visible;
+      transition:
+        $arvo-transition-popup,
+        visibility 0s linear 0s;
+    }
+
+    // Forward-exit -- the previous layer leaves to the left as the new
+    // layer slides in from above. Stays absolutely positioned so it does
+    // NOT contribute to the container's height (the new active layer
+    // owns sizing). The engine adds `.is-exiting-forward` when push() is
+    // called WITH a previous top, then removes the class after
+    // `transitionend` (or a safety timeout) so the layer returns to its
+    // hidden resting state.
+    &.is-exiting-forward {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: translateX(-12px);
+      pointer-events: none;
+      visibility: visible;
+      transition:
+        $arvo-transition-popup,
+        visibility 0s linear $arvo-duration-slow;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+
+    // Wrapper host element (the `pushOptions.element` passed into
+    // `stack.push`) fills the layer in BOTH sizing modes:
+    //   - hpop / sized-host case: layer is `inset: 0` (absolute), host
+    //     stretches to fill the layer rectangle, popover inside uses
+    //     `width: 100%; height: 100%` to fill the host.
+    //   - action-menu / content-sized case: active layer is in-flow,
+    //     host is `flex: 1 1 auto`. Without an explicit height on layer,
+    //     host's height comes from its child (popover) -- the popover's
+    //     own width/height resolution then drives the chain.
+    > * {
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+}

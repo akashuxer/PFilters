@@ -1,0 +1,93 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// =============================================================================
+// Popup directional animation
+// =============================================================================
+//
+// Shared enter / exit motion for trigger-anchored overlays (menus, popovers,
+// option lists, dropdowns, tooltips, context menus). The animation is
+// direction-aware: a popup opening below its trigger appears to slide DOWN
+// from above, opening above slides UP from below, and similarly for left /
+// right placements. Direction comes from the `data-arvo-side` attribute the
+// engine writes to the surface root based on the resolved placement.
+//
+// IMPORTANT contract:
+//   - Positioning uses the standalone `translate` CSS property (not
+//     `transform: translate(...)`), so `transform` is free for the enter /
+//     exit animation. See `applyPositionToSurface` in `@arvo/core`.
+//   - The OverlaySurface engine (`@arvo/core`) toggles the
+//     `arvo-enter-from` / `arvo-enter-active` / `arvo-enter-to` (and
+//     matching `arvo-exit-*`) classes around mount / unmount. Both
+//     directions of the animation are driven by these classes; the
+//     direction-aware transforms below apply only during the from/to
+//     phases (NOT to the resting state) so the surface sits at the
+//     identity transform when no animation is running -- the engine's
+//     position writes via `translate` then dictate where the panel sits.
+//
+// Usage from a component SCSS file:
+//
+//   .arvo-popover {
+//     @include popup-animation;
+//   }
+
+@mixin popup-animation {
+  // Enter / exit transition declaration. Both classes get the same
+  // transition so the surface fades + slides smoothly regardless of which
+  // half of the lifecycle is running. Aligned with the canonical
+  // `$arvo-transition-popup` token spec.
+  &.arvo-enter-active,
+  &.arvo-exit-active {
+    transition: $arvo-transition-popup;
+  }
+
+  // Enter-from / exit-to (the "closed" frame). The popup sits 4px AWAY
+  // from the trigger so the slide reads as "the popup comes from the
+  // trigger". Default direction is `bottom` (popup below trigger -> starts
+  // above and slides down). Side-specific overrides below win the cascade.
+  &.arvo-enter-from,
+  &.arvo-exit-to {
+    opacity: 0;
+    transform: $arvo-transform-popup-exit;
+  }
+
+  // Direction-aware closed transforms. Each `data-arvo-side` value swaps
+  // the translate axis + direction so the popup always slides from the
+  // trigger toward its resting position. The `:where()` wrapper keeps
+  // specificity flat so consumer overrides still win.
+  &.arvo-enter-from[data-arvo-side='top'],
+  &.arvo-exit-to[data-arvo-side='top'] {
+    transform: translateY(4px) scale(0.98);
+  }
+
+  &.arvo-enter-from[data-arvo-side='bottom'],
+  &.arvo-exit-to[data-arvo-side='bottom'] {
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  &.arvo-enter-from[data-arvo-side='left'],
+  &.arvo-exit-to[data-arvo-side='left'] {
+    transform: translateX(4px) scale(0.98);
+  }
+
+  &.arvo-enter-from[data-arvo-side='right'],
+  &.arvo-exit-to[data-arvo-side='right'] {
+    transform: translateX(-4px) scale(0.98);
+  }
+
+  // Enter-to / exit-from (the "open" frame). Snaps to identity transform
+  // + full opacity. Single declaration -- no direction-aware variants
+  // needed because the resting state is the same regardless of which
+  // side the popup came from.
+  &.arvo-enter-to,
+  &.arvo-exit-from {
+    opacity: 1;
+    transform: $arvo-transform-popup-enter;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &.arvo-enter-active,
+    &.arvo-exit-active {
+      transition: none;
+    }
+  }
+}

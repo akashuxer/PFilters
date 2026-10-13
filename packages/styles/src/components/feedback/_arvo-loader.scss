@@ -1,0 +1,274 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/typography' as *;
+
+// ArvoLoader component styles.
+// BEM Block: .arvo-loader
+// Abbreviation: loader
+// Category: Feedback
+//
+// Three animated shape variants (dot / circular / square), three sizes
+// (sm / md / lg), two orientations (horizontal / vertical), and three
+// tones (theme / inverse / subtle). All animation durations / easings /
+// iterations come from `@arvo/tokens` motion tokens.
+//
+// The component is non-interactive. It is a standalone presentational
+// primitive consumers render explicitly to signal "work in progress"
+// (paginated load more, page / section loaders, async fetches). It is
+// NOT a replacement for the Pattern A / B / C loading treatments on
+// existing components.
+
+.arvo-loader {
+  // -- Size tokens (defaults = md) ----------------------------------------
+  --arvo-loader-dot-size: 8px;
+  --arvo-loader-dot-gap: #{$arvo-space-6};
+  --arvo-loader-circle-size: 24px;
+  --arvo-loader-circle-thickness: 3px;
+  --arvo-loader-square-size: 52px;
+  --arvo-loader-text-size: #{$arvo-font-size-14};
+  --arvo-loader-gap: #{$arvo-space-8};
+
+  // -- Tone tokens (defaults = theme) -------------------------------------
+  --arvo-loader-color: var(--arvo-color-i-theme);
+  --arvo-loader-text-color: var(--arvo-color-t-theme);
+
+  // -- Base layout --------------------------------------------------------
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arvo-loader-gap);
+  color: var(--arvo-loader-text-color);
+  pointer-events: none;
+  user-select: none;
+
+  // -- Shape container ----------------------------------------------------
+
+  .arvo-loader__shape {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // -- Visible label ------------------------------------------------------
+
+  .arvo-loader__msg {
+    @include arvo-font-p14-r;
+    font-size: var(--arvo-loader-text-size);
+    color: var(--arvo-loader-text-color);
+    line-height: 1;
+  }
+
+  // -- Size modifiers -----------------------------------------------------
+
+  &--sm {
+    --arvo-loader-dot-size: 6px;
+    --arvo-loader-dot-gap: #{$arvo-space-4};
+    --arvo-loader-circle-size: 16px;
+    --arvo-loader-circle-thickness: 2px;
+    --arvo-loader-square-size: 32px;
+    --arvo-loader-text-size: #{$arvo-font-size-12};
+    --arvo-loader-gap: #{$arvo-space-6};
+  }
+
+  &--md {
+    --arvo-loader-dot-size: 8px;
+    --arvo-loader-dot-gap: #{$arvo-space-6};
+    --arvo-loader-circle-size: 24px;
+    --arvo-loader-circle-thickness: 3px;
+    --arvo-loader-square-size: 52px;
+    --arvo-loader-text-size: #{$arvo-font-size-14};
+    --arvo-loader-gap: #{$arvo-space-8};
+  }
+
+  &--lg {
+    --arvo-loader-dot-size: 10px;
+    --arvo-loader-dot-gap: #{$arvo-space-8};
+    --arvo-loader-circle-size: 32px;
+    --arvo-loader-circle-thickness: 4px;
+    --arvo-loader-square-size: 72px;
+    --arvo-loader-text-size: #{$arvo-font-size-16};
+    --arvo-loader-gap: #{$arvo-space-10};
+  }
+
+  // -- Tone modifiers -----------------------------------------------------
+
+  &--theme {
+    --arvo-loader-color: var(--arvo-color-i-theme);
+    --arvo-loader-text-color: var(--arvo-color-t-theme);
+  }
+
+  &--inverse {
+    --arvo-loader-color: var(--arvo-color-i-inverse);
+    --arvo-loader-text-color: var(--arvo-color-t-inverse);
+  }
+
+  &--subtle {
+    --arvo-loader-color: var(--arvo-color-i-secondary);
+    --arvo-loader-text-color: var(--arvo-color-t-secondary);
+  }
+
+  // -- Orientation modifiers ---------------------------------------------
+
+  &--horizontal {
+    flex-direction: row;
+  }
+
+  &--vertical {
+    flex-direction: column;
+  }
+
+  // -- Variant: dot -------------------------------------------------------
+  // Three pulsing dots laid out horizontally with staggered delays.
+
+  &--dot .arvo-loader__shape {
+    gap: var(--arvo-loader-dot-gap);
+    height: calc(var(--arvo-loader-dot-size) * 1.8);
+  }
+
+  .arvo-loader__dot {
+    width: var(--arvo-loader-dot-size);
+    height: var(--arvo-loader-dot-size);
+    background-color: var(--arvo-loader-color);
+    border-radius: $arvo-radius-circle;
+    animation: arvo-loader-dot-pulse $arvo-motion-loader-dot;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
+
+  .arvo-loader__dot:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .arvo-loader__dot:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  // -- Variant: circular --------------------------------------------------
+  // Spinning arc -- top + right border colored.
+
+  .arvo-loader__circle {
+    width: var(--arvo-loader-circle-size);
+    height: var(--arvo-loader-circle-size);
+    border: var(--arvo-loader-circle-thickness) solid transparent;
+    border-top-color: var(--arvo-loader-color);
+    border-right-color: var(--arvo-loader-color);
+    border-radius: $arvo-radius-circle;
+    box-sizing: border-box;
+    animation: arvo-loader-circle-spin $arvo-motion-loader-circle;
+    will-change: transform;
+  }
+
+  // -- Variant: square ----------------------------------------------------
+  // Container of size --arvo-loader-square-size; the inner __square is
+  // sized to half the container, and its ::after traces a corner-to-corner
+  // path via box-shadow keyframes.
+
+  &--square .arvo-loader__shape {
+    width: var(--arvo-loader-square-size);
+    height: var(--arvo-loader-square-size);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arvo-loader__square {
+    position: absolute;
+    inset: 0;
+    display: block;
+  }
+
+  .arvo-loader__square::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--arvo-loader-square-size) / 2);
+    height: calc(var(--arvo-loader-square-size) / 2);
+    background-color: var(--arvo-loader-color);
+    animation: arvo-loader-square-path $arvo-motion-loader-square;
+    will-change: box-shadow;
+  }
+}
+
+// -- Keyframes ------------------------------------------------------------
+// Durations / easings / iterations come from @arvo/tokens (motion-loader-*).
+// The keyframe definitions live with the component because they are part
+// of the visual identity, not a token concern.
+
+@keyframes arvo-loader-dot-pulse {
+  0%, 80%, 100% {
+    transform: scale(0.7);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
+}
+
+@keyframes arvo-loader-circle-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes arvo-loader-square-path {
+  0% {
+    box-shadow:
+      0 0 0 0 var(--arvo-loader-color),
+      0 0 0 0 var(--arvo-loader-color),
+      0 0 0 0 var(--arvo-loader-color);
+  }
+
+  33% {
+    box-shadow:
+      calc(var(--arvo-loader-square-size) / 2) 0 0 0 var(--arvo-loader-color),
+      calc(var(--arvo-loader-square-size) / 2) 0 0 0 var(--arvo-loader-color),
+      calc(var(--arvo-loader-square-size) / 2) 0 0 0 var(--arvo-loader-color);
+  }
+
+  66% {
+    box-shadow:
+      calc(var(--arvo-loader-square-size) / 2) calc(var(--arvo-loader-square-size) / 2) 0 0 var(--arvo-loader-color),
+      calc(var(--arvo-loader-square-size) / 2) calc(var(--arvo-loader-square-size) / 2) 0 0 var(--arvo-loader-color),
+      calc(var(--arvo-loader-square-size) / 2) 0 0 0 var(--arvo-loader-color);
+  }
+
+  100% {
+    box-shadow:
+      0 calc(var(--arvo-loader-square-size) / 2) 0 0 var(--arvo-loader-color),
+      calc(var(--arvo-loader-square-size) / 2) calc(var(--arvo-loader-square-size) / 2) 0 0 var(--arvo-loader-color),
+      calc(var(--arvo-loader-square-size) / 2) 0 0 0 var(--arvo-loader-color);
+  }
+}
+
+// -- Reduced-motion fallback ---------------------------------------------
+// Replaces looping animation with a static visual that preserves the
+// loader's identity. The polite live region still announces, so AT users
+// receive the loading status regardless of the visual.
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-loader__dot,
+  .arvo-loader__circle,
+  .arvo-loader__square::after {
+    animation: none !important;
+  }
+
+  // Steady-state opacity row for the dot variant.
+  .arvo-loader__dot {
+    opacity: 0.7;
+    transform: none;
+  }
+
+  // Static box-shadow at the resting corner for the square variant.
+  .arvo-loader__square::after {
+    box-shadow:
+      0 0 0 0 var(--arvo-loader-color),
+      0 0 0 0 var(--arvo-loader-color),
+      0 0 0 0 var(--arvo-loader-color);
+  }
+}

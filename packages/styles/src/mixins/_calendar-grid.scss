@@ -1,0 +1,89 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Shared calendar-grid mixins -- CSS Grid used by ArvoCalendar (arvo-cal) for
+// all view modes (day, month, quarter, year, members).
+// Implements ADR-8 fixed-cell sizing: the popover width never fluctuates when
+// the user switches between view modes or toggles showWeeks.
+//
+// ADR-8 sizing table:
+//   Day, showWeeks=false  : 7 cols x 40px = 280px
+//   Day, showWeeks=true   : 8 cols x 40px = 320px  (calendar-grid-week-col)
+//   Non-day, showWeeks=false: 4 cols x 70px = 280px (parent sets cell size)
+//   Non-day, showWeeks=true : 4 cols x 80px = 320px (parent sets cell size)
+// The fixed 240px body height (6 rows x 40px) is enforced via grid-auto-rows.
+// Whitespace months still render all 6 rows (no shrinking).
+//
+// Used by: calendar
+
+// CSS custom properties (parent picker overrides as needed):
+//   --arvo-cal-cell-size       Cell width AND height. Day: 40px.
+//                              Non-day: 70px (no weeks) / 80px (with weeks).
+//   --arvo-cal-week-col-size   Week-number column width. Default: 40px.
+//   --arvo-cal-grid-cols       Column count for non-day views. Default: 7 (day).
+//   --arvo-cal-grid-gap        Gap between cells. Default: 0px (flush).
+//   --arvo-cal-outside-opacity Opacity for out-of-month day cells.
+
+// calendar-grid-base
+// Base grid container with CSS custom property defaults. Apply to the grid
+// container element (e.g. .arvo-cal__grid). The parent picker overrides
+// --arvo-cal-cell-size and --arvo-cal-grid-cols for the active view/mode.
+@mixin calendar-grid-base {
+  --arvo-cal-cell-size: 40px;
+  --arvo-cal-week-col-size: 40px;
+  --arvo-cal-grid-cols: 7;
+  --arvo-cal-grid-gap: 0px;
+  --arvo-cal-outside-opacity: #{$arvo-opacity-40};
+
+  display: grid;
+  grid-template-columns: repeat(var(--arvo-cal-grid-cols), var(--arvo-cal-cell-size));
+  grid-auto-rows: var(--arvo-cal-cell-size);
+  gap: var(--arvo-cal-grid-gap);
+  box-sizing: border-box;
+
+  // ARIA row wrappers (role="row") are transparent to CSS Grid so cells
+  // flow into the explicit column template. Keyboard / AT consumers still
+  // see the row grouping via the DOM.
+  > [role="row"] {
+    display: contents;
+  }
+}
+
+// calendar-grid-day
+// Day-view configuration: 7 columns of 40px cells, 6 implicit rows = 240px
+// total body height. No override needed when calendar-grid-base defaults are
+// in effect; included as an explicit modifier for clarity when toggling modes.
+@mixin calendar-grid-day {
+  --arvo-cal-cell-size: 40px;
+  --arvo-cal-grid-cols: 7;
+}
+
+// calendar-grid-month-quarter-year
+// Non-day-view configuration: collapses to 4 columns. The parent picker
+// sets --arvo-cal-cell-size to match the day-view width (ADR-8):
+//   showWeeks=false: 70px  (4 x 70 = 280px)
+//   showWeeks=true:  80px  (4 x 80 = 320px)
+// Row count adapts automatically: 12 months -> 3 rows; 4 quarters -> 1 row;
+// 12 years -> 3 rows.
+@mixin calendar-grid-month-quarter-year {
+  --arvo-cal-grid-cols: 4;
+}
+
+// calendar-grid-week-col
+// Day-view with week-number column: replaces the uniform 7-column template
+// with an explicit 8-column template where the leftmost column carries the
+// week number. Total width: 40px + 7 x 40px = 320px (matches non-day width).
+// Apply alongside calendar-grid-day (the specific grid-template-columns
+// declaration here takes precedence over the repeat() in calendar-grid-base).
+@mixin calendar-grid-week-col {
+  grid-template-columns:
+    var(--arvo-cal-week-col-size)
+    repeat(7, var(--arvo-cal-cell-size));
+}
+
+// calendar-grid-outside
+// Dims out-of-month day cells. Apply to cells carrying the --outside modifier
+// (e.g. .arvo-cal__cell--outside). The opacity value is CSS-overridable via
+// --arvo-cal-outside-opacity on any ancestor.
+@mixin calendar-grid-outside {
+  opacity: var(--arvo-cal-outside-opacity, #{$arvo-opacity-40});
+}

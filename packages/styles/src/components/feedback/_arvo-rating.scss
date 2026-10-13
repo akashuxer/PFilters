@@ -1,0 +1,21 @@
+@use '../../../../tokens/src/scss/all' as *;
+.arvo-rating { --arvo-rating-active:var(--arvo-color-i-theme); --arvo-rating-inactive:var(--arvo-color-i-disabled); display:inline-flex; align-items:center; gap:$arvo-space-2; color:var(--arvo-rating-active); font-family:var(--arvo-font-family-body); user-select:none;
+  &__control { display:inline-flex; align-items:center; gap:2px; min-height:32px; cursor:pointer; border-radius:$arvo-radius-16; }
+  &__control:focus-visible { outline:2px solid var(--arvo-color-i-focus); outline-offset:3px; }
+  &__star { position:relative; display:inline-block; line-height:1; color:var(--arvo-rating-inactive); transform-origin:center; }
+  &__star-base, &__star-fill { display:block; font-family:Arial,sans-serif; }
+  &__star-fill { position:absolute; inset:0 auto auto 0; overflow:hidden; color:var(--arvo-rating-active); white-space:nowrap; transform-origin:left center; }
+  &__value { color:var(--arvo-color-t-secondary); font-size:$arvo-font-size-12; font-variant-numeric:tabular-nums; }
+  &--sm { .arvo-rating__star { font-size:16px; } .arvo-rating__control { min-height:24px; } }
+  &--md { .arvo-rating__star { font-size:24px; } }
+  &--lg { .arvo-rating__star { font-size:32px; } .arvo-rating__control { min-height:40px; } }
+  &--accent { --arvo-rating-active:var(--arvo-color-i-positive); } &--inverse { --arvo-rating-active:var(--arvo-color-i-info-light); --arvo-rating-inactive:var(--arvo-color-i-disabled); }
+  &.is-disabled { opacity:.55; .arvo-rating__control { cursor:not-allowed; } } &.is-readonly { .arvo-rating__control { cursor:default; } } &.is-loading { opacity:.65; .arvo-rating__control { cursor:wait; } }
+  &__loading { width:12px; height:12px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:arvo-rating-spin .7s linear infinite; }
+  @media (hover:hover) and (pointer:fine) { &:not(.is-disabled):not(.is-readonly):not(.is-loading) .arvo-rating__star:hover { transform:scale(1.08); } }
+  @media (prefers-reduced-motion:no-preference) { &__star { transition:transform $arvo-duration-fast $arvo-ease-standard; } &__star-fill { transition:width $arvo-duration-fast $arvo-ease-standard; } &__star.is-active .arvo-rating__star-fill { animation:arvo-rating-fill $arvo-duration-fast $arvo-ease-standard both; } }
+  @media (prefers-reduced-motion:reduce) { &__loading, &__star-fill { animation:none; transition:none; } }
+  @media (forced-colors:active) { &__star-fill { color:Highlight; } &__star-base { color:GrayText; } }
+}
+@keyframes arvo-rating-spin { to { transform:rotate(360deg); } }
+@keyframes arvo-rating-fill { from { transform:scaleX(.7); } to { transform:scaleX(1); } }

@@ -1,0 +1,304 @@
+// Checkbox component styles
+// BEM Block: .arvo-cb
+// Abbreviation: cb
+// Loading Pattern: A (overlay shimmer)
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// --- .arvo-cb ----------------------------------------------------------
+
+.arvo-cb {
+  // -- CSS custom properties (only dynamic values that change per size) -----
+  --arvo-cb-box-size: #{$arvo-checkbox-large};
+  --arvo-cb-icon-size: #{$arvo-checkbox-large};
+
+  // -- Root layout ----------------------------------------------------------
+  display: inline-flex;
+  flex-direction: column;
+  position: relative;
+  user-select: none;
+
+  // -- Size: lg (default) -------------------------------------------------
+  // Label typography comes from the shared .arvo-form-lbl primitive; the
+  // React/JS layers pass size={componentSize} to ArvoFormLabel so the
+  // caption scales with the control (sm=12px, lg=14px).
+  &--lg {
+    --arvo-cb-box-size: #{$arvo-checkbox-large};
+    --arvo-cb-icon-size: #{$arvo-checkbox-large}; // glyph fills the 18px box
+  }
+
+  // -- Size: sm -----------------------------------------------------------
+  &--sm {
+    --arvo-cb-box-size: #{$arvo-checkbox-small};
+    --arvo-cb-icon-size: #{$arvo-icon-16};
+  }
+
+  // -- __field (click/hover area wrapping input + label) ------------------
+  // Top-aligned so the box stays anchored at the first line of text when
+  // the label or description wraps to multiple lines.
+  &__field {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: $arvo-space-8;
+    cursor: pointer;
+  }
+
+  // -- __input-wrapper (control container, vertically aligned with text) --
+  // The 1px top padding optically centers the box with the first text line
+  // (cap-height vs box-edge offset). Per-size padding lives on the modifier
+  // selectors below for the box dimensions; this padding is constant.
+  &__input-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    width: var(--arvo-cb-box-size);
+    height: calc(var(--arvo-cb-box-size) + #{$arvo-space-1});
+    padding-top: $arvo-space-1;
+    box-sizing: content-box;
+  }
+
+  // -- __input (native checkbox styled as custom box) ---------------------
+  &__input {
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    width: var(--arvo-cb-box-size);
+    height: var(--arvo-cb-box-size);
+    border: 1px solid var(--arvo-color-b-form);
+    background-color: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+
+    // -- Checked state --------------------------------------------------
+    &:checked {
+      background-color: var(--arvo-color-s-theme-active-1);
+      border-color: transparent;
+    }
+
+    // -- Indeterminate state --------------------------------------------
+    &[data-indeterminate] {
+      background-color: var(--arvo-color-s-theme-active-1);
+      border-color: transparent;
+    }
+
+    // -- Focus ----------------------------------------------------------
+    &:focus-visible {
+      outline: 2px solid var(--arvo-color-b-theme-focus);
+      outline-offset: 1px;
+    }
+
+    // -- Disabled -------------------------------------------------------
+    &:disabled {
+      cursor: not-allowed;
+      background-color: transparent;
+      border-color: var(--arvo-color-b-disabled);
+    }
+
+    &:disabled:checked,
+    &:disabled[data-indeterminate] {
+      background-color: var(--arvo-color-s-disabled);
+      border-color: transparent;
+    }
+  }
+
+  // -- __icon (check + dash SVGs overlaid on the input) -------------------
+  // Two SVG siblings of __input that the sibling combinators below show /
+  // hide based on the input's checked / indeterminate attribute state. The
+  // SVG path is `currentColor` so per-state color rules below cascade.
+  &__icon {
+    position: absolute;
+    top: $arvo-space-1;
+    left: 0;
+    width: var(--arvo-cb-icon-size);
+    height: var(--arvo-cb-icon-size);
+    color: var(--arvo-color-i-inverse);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
+  // Checked + not indeterminate -> show check, hide dash.
+  &__input:checked:not([data-indeterminate]) ~ &__icon--check {
+    opacity: 1;
+  }
+
+  // Indeterminate -> show dash, hide check (regardless of checked state).
+  &__input[data-indeterminate] ~ &__icon--dash {
+    opacity: 1;
+  }
+
+  // -- __text-container (label + description, top-aligned with control) ---
+  &__text-container {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-4;
+    min-width: 0;
+  }
+
+  // The text container needs a small top offset so the cap-height of the
+  // first text line aligns with the optical center of the box. The offset
+  // differs per size because the cap-height differs between 12px and 14px
+  // labels.
+  &--sm &__text-container {
+    padding-top: $arvo-space-2;
+  }
+
+  &--lg &__text-container {
+    padding-top: $arvo-space-1;
+  }
+
+  // -- __lbl (visible label text) ------------------------------------------
+  // Font size + sizing modifier + color come from .arvo-form-lbl (set via
+  // the React/JS size prop on ArvoFormLabel(Text)). No color override --
+  // the shared primitive's --arvo-color-t-form-label is the spec value.
+
+  // -- __desc (optional description below label) --------------------------
+  &__desc {
+    font-family: var(--arvo-font-family);
+    font-size: $arvo-font-size-12;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--arvo-color-t-placeholder);
+    word-break: break-word;
+  }
+
+  // -- State: disabled ----------------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+
+    .arvo-cb__field {
+      cursor: not-allowed;
+    }
+
+    .arvo-cb__lbl {
+      color: var(--arvo-color-t-disabled);
+    }
+
+    .arvo-cb__desc {
+      color: var(--arvo-color-t-disabled);
+    }
+
+    .arvo-cb__icon {
+      color: var(--arvo-color-i-disabled);
+    }
+  }
+
+  // -- State: readonly ----------------------------------------------------
+  &.is-readonly {
+    .arvo-cb__field {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .arvo-cb__input {
+      border-style: dashed;
+      border-width: 1.5px;
+      border-color: var(--arvo-color-b-readonly);
+      background-color: transparent;
+    }
+
+    .arvo-cb__input:checked,
+    .arvo-cb__input[data-indeterminate] {
+      background-color: var(--arvo-color-s-readonly);
+      border-color: var(--arvo-color-b-readonly);
+    }
+
+    .arvo-cb__icon {
+      color: var(--arvo-color-i-readonly);
+    }
+  }
+
+  // -- State: error -------------------------------------------------------
+  &.has-error:not([data-excluded]) {
+    .arvo-cb__input {
+      border-color: var(--arvo-color-b-negative);
+    }
+
+    .arvo-cb__input:checked,
+    .arvo-cb__input[data-indeterminate] {
+      background-color: var(--arvo-color-s-negative);
+      border-color: transparent;
+    }
+
+    .arvo-cb__input:focus-visible {
+      outline-color: var(--arvo-color-b-negative);
+    }
+  }
+
+  // -- State: excluded ----------------------------------------------------
+  &[data-excluded] {
+    .arvo-cb__input {
+      border-color: var(--arvo-color-b-negative);
+      background-color: var(--arvo-color-s-negative);
+    }
+
+    .arvo-cb__input:checked,
+    .arvo-cb__input[data-indeterminate] {
+      background-color: var(--arvo-color-s-negative);
+      border-color: transparent;
+    }
+
+    .arvo-cb__input:focus-visible {
+      outline-color: var(--arvo-color-b-negative);
+    }
+
+    .arvo-cb__icon {
+      color: var(--arvo-color-i-white-static);
+    }
+  }
+
+  // -- Below-field error message --------------------------------------------
+  // Rendered by the consumer as a child <ArvoMessageAlert />; the alert's own
+  // SCSS provides icon/text styles. We only attach the spacing offset here.
+  .arvo-msg-alert {
+    margin-top: $arvo-space-4;
+  }
+
+  // -- Loading state (per-element shimmer on __input + __lbl + __desc) -----
+  &.loading,
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    pointer-events: none;
+
+    .arvo-cb__input {
+      @include loading-element-shimmer;
+    }
+
+    .arvo-cb__lbl {
+      @include loading-element-shimmer;
+    }
+
+    .arvo-cb__desc {
+      @include loading-element-shimmer;
+    }
+  }
+}
+
+// Hover state (hover-capable devices only, not disabled, not readonly)
+@include hover {
+  .arvo-cb:not(.is-disabled):not(.is-readonly):hover {
+    .arvo-cb__input:not(:disabled) {
+      border-color: var(--arvo-color-b-theme-hover);
+    }
+
+    // Hovered + checked / indeterminate -> use the matching hover surface
+    // token so the box reads as "active but hovered".
+    .arvo-cb__input:not(:disabled):checked,
+    .arvo-cb__input:not(:disabled)[data-indeterminate] {
+      background-color: var(--arvo-color-s-theme-hover-1);
+      border-color: transparent;
+    }
+  }
+
+  // Hover: excluded variant
+  .arvo-cb[data-excluded]:not(.is-disabled):not(.is-readonly):hover {
+    .arvo-cb__input:not(:disabled) {
+      background-color: var(--arvo-color-s-negative-hover, var(--arvo-color-s-negative));
+    }
+  }
+}

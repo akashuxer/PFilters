@@ -1,0 +1,103 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Shared overlay-footer mixin -- flex rules for action rows in the footer
+// region of overlay-style components (Popover, HybridPopover, SidePanel,
+// Drawer, Window, AlertDialog, and future cousins).
+//
+// CONTRACT
+// --------
+// Apply `@include overlay-footer-actions-layout;` inside the selector that
+// directly contains the action buttons. The mixin owns only:
+//
+//   - display + alignment baseline (flex row, center-aligned, end-justified)
+//   - uniform flex sizing on labeled controls so they shrink in lockstep
+//     and stay equal-width: each labeled button takes
+//     `flex: 0 1 var(--arvo-overlay-footer-btn-min, 112px)` with
+//     `min-width: 0`, giving the design-system contract:
+//       * default 112px per labeled action, right-aligned via the
+//         container's `justify-content: flex-end`
+//       * shrink uniformly (below 112px if needed) when the footer is too
+//         narrow to fit them all at the default basis
+//       * NEVER grow past the basis on their own -- buttons stay at 112px
+//         when the footer has leftover room. To grow uniformly when labels
+//         would otherwise truncate, the consumer raises
+//         `--arvo-overlay-footer-btn-min` from JS via `attachOverlayFooterFit`
+//         in `@arvo/utils`, which measures the widest label and bumps the
+//         basis (capped by the available footer width).
+//   - icon-only controls stay at their natural width (`flex: 0 0 auto`,
+//     `min-width: 0`) and never participate in the equal-shrink layout.
+//   - primary/danger order: render rightmost regardless of source order.
+//
+// CSS VARIABLES
+// -------------
+// `--arvo-overlay-footer-btn-min`  -- per-button flex basis. Defaults to
+//                                     `$arvo-window-btn-wmin` (112px). The
+//                                     `min-width: 0` floor on each button
+//                                     allows shrinking below this value
+//                                     when the footer is narrower than
+//                                     `N * basis + (N-1) * gap`.
+// `--arvo-overlay-footer-gap`      -- horizontal gap between actions.
+//                                     Defaults to `$arvo-space-6`.
+//
+// Consumers retain ownership of `padding` (and may override `gap` via the
+// CSS variable above) because vertical spacing differs across surfaces.
+//
+// ICON-ONLY DETECTION
+// -------------------
+// Three signals are honored (and exempted from the equal-shrink rule):
+//   1. Components whose entire purpose is an icon-only control:
+//        .arvo-icon-btn, .arvo-fab-btn, .arvo-dd-icon-btn, .arvo-split-icon-btn
+//   2. ArvoButton rendered in icon-only layout (`.arvo-btn--icon-only`).
+//   3. `[data-icon-only="true"]` attribute, written by PanelShell when an
+//      action declares `isIconOnly: true`.
+//
+// EXAMPLE
+// -------
+//   .arvo-popover__footer-actions {
+//     @include overlay-footer-actions-layout;
+//   }
+
+@mixin overlay-footer-actions-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--arvo-overlay-footer-gap, #{$arvo-space-6});
+  min-width: 0;
+
+  // Labeled buttons stay at the 112px default basis and shrink uniformly
+  // when the footer is too narrow to fit them all. `flex-grow: 0` is
+  // critical: with grow=1 the buttons would stretch to fill all leftover
+  // footer space, defeating the right-alignment contract and producing
+  // absurdly wide buttons in roomy footers (AlertDialog, Window, Panel).
+  // `min-width: 0` lets them shrink below 112px when the footer is too
+  // narrow to fit them all -- once at the floor, labels truncate via the
+  // existing `arvo-btn__lbl` ellipsis. To opt OUT of label truncation
+  // (i.e. grow the basis until labels fit), the consumer raises
+  // `--arvo-overlay-footer-btn-min` from JS via `attachOverlayFooterFit`
+  // in `@arvo/utils`, which measures the widest label and bumps the basis
+  // (capped by the available footer width so labels still ellipsize when
+  // there is genuinely no room).
+  > *:not(.arvo-icon-btn):not(.arvo-fab-btn):not(.arvo-dd-icon-btn):not(.arvo-split-icon-btn):not(.arvo-btn--icon-only):not([data-icon-only='true']) {
+    flex: 0 1 var(--arvo-overlay-footer-btn-min, #{$arvo-window-btn-wmin});
+    min-width: 0;
+  }
+
+  // Icon-only controls keep their natural width and do not grow/shrink.
+  > .arvo-icon-btn,
+  > .arvo-fab-btn,
+  > .arvo-dd-icon-btn,
+  > .arvo-split-icon-btn,
+  > .arvo-btn--icon-only,
+  > [data-icon-only='true'] {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  // Primary and danger render rightmost regardless of source order so the
+  // consumer can author `[Cancel, Apply]` OR `[Apply, Cancel]` and get the
+  // same visual: secondary on the LEFT, primary on the RIGHT.
+  > .arvo-btn { order: 0; }
+  > .arvo-btn--primary,
+  > .arvo-btn--danger { order: 1; }
+}

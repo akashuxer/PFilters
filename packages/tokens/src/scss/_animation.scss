@@ -1,0 +1,392 @@
+// Arvo motion & animation tokens
+
+// --------------------------------
+// Core Durations
+// --------------------------------
+
+$arvo-duration-instant: 120ms;
+$arvo-duration-fast: 150ms;
+$arvo-duration-base: 180ms;
+$arvo-duration-medium: 220ms;
+$arvo-duration-moderate: 280ms;
+$arvo-duration-slow: 300ms;
+
+// --------------------------------
+// Core Easing
+// --------------------------------
+
+$arvo-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+$arvo-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+$arvo-ease-simple: ease;
+$arvo-ease-in-out: ease-in-out;
+
+// --------------------------------
+// Layout expand / collapse
+// --------------------------------
+
+// Accordion, Tree, Show More/Less, Disclosure
+$arvo-motion-transition-expand: height $arvo-duration-slow $arvo-ease-standard, transform $arvo-duration-slow $arvo-ease-standard;
+
+// --------------------------------
+// Popup / floating surface
+// --------------------------------
+
+// Menu, Popover, Tooltip, Context Menu, Select Menu
+$arvo-transition-popup: opacity $arvo-duration-slow $arvo-ease-simple, transform $arvo-duration-slow $arvo-ease-simple;
+$arvo-transform-popup-enter: translateY(0) scale(1);
+$arvo-transform-popup-exit: translateY(-4px) scale(0.98);
+
+// --------------------------------
+// Dialog / overlay surface
+// --------------------------------
+
+// Window, Dialog, Modal, Alert Dialog, Confirm Dialog
+$arvo-transition-dialog: opacity $arvo-duration-moderate $arvo-ease-standard, transform $arvo-duration-moderate $arvo-ease-standard;
+$arvo-transition-dialog-backdrop: background-color $arvo-duration-moderate $arvo-ease-simple;
+$arvo-transform-dialog-enter: translateY(0) scale(1);
+$arvo-transform-dialog-exit: translateY(-8px) scale(0.98);
+
+// --------------------------------
+// Feedback
+// --------------------------------
+
+// Toast, Banner Alert, Inline Message
+$arvo-motion-feedback: opacity $arvo-duration-medium $arvo-ease-simple, transform $arvo-duration-medium $arvo-ease-simple;
+$arvo-transform-feedback-enter: translateY(0) translateX(0);
+$arvo-transform-feedback-exit: translateY(-12px) translateX(8px);
+$arvo-transform-banner-dismiss-exit: translateY(-8px);
+
+// --------------------------------
+// Layout shift (FLIP)
+// --------------------------------
+
+// Toast stack reflow, chip list reflow -- WAAPI compensation after DOM change
+$arvo-motion-layout-shift: transform $arvo-duration-medium $arvo-ease-emphasized;
+
+// --------------------------------
+// Toast visibility duration
+// --------------------------------
+
+// Controls how long toast remains visible before auto-dismiss.
+$arvo-toast-duration-positive: 4000ms;
+$arvo-toast-duration-neutral: 4000ms;
+$arvo-toast-duration-info: 5000ms;
+$arvo-toast-duration-warning: 6000ms;
+$arvo-toast-duration-negative: 8000ms;
+$arvo-toast-duration-block: persistent;
+
+// --------------------------------
+// Link
+// --------------------------------
+
+// Link underline enter / exit motion
+$arvo-motion-link:
+  transform $arvo-duration-fast $arvo-ease-standard,
+  opacity $arvo-duration-fast $arvo-ease-simple;
+
+// --------------------------------
+// Nested content transition
+// --------------------------------
+
+// Popover, Window, Drawer, Settings, Nested View
+$arvo-motion-nested-content:
+  opacity $arvo-duration-medium $arvo-ease-standard,
+  transform $arvo-duration-medium $arvo-ease-standard;
+$arvo-transform-nested-enter-forward: translateX(12px);
+$arvo-transform-nested-exit-forward: translateX(-12px);
+$arvo-transform-nested-enter-back: translateX(-12px);
+$arvo-transform-nested-exit-back: translateX(12px);
+$arvo-transform-nested-rest: translateX(0);
+
+// --------------------------------
+// Nested footer transition
+// --------------------------------
+
+// Footer action changes inside nested views
+$arvo-motion-nested-footer:
+  opacity $arvo-duration-base $arvo-ease-simple,
+  transform $arvo-duration-medium $arvo-ease-standard,
+  max-height $arvo-duration-medium $arvo-ease-standard,
+  padding $arvo-duration-medium $arvo-ease-standard;
+
+// --------------------------------
+// Invalid drop / constraint feedback
+// --------------------------------
+
+// Duplicate block, invalid drop, rejected placement
+$arvo-motion-invalid-drop: $arvo-duration-medium $arvo-ease-standard;
+
+// --------------------------------
+// Form input
+// --------------------------------
+
+// Textbox, Textarea, Select, Combobox -- animated bottom border width
+$arvo-motion-form-input: width $arvo-duration-fast $arvo-ease-simple;
+$arvo-motion-form-input-field:
+  background-color $arvo-duration-fast $arvo-ease-simple,
+  border-color $arvo-duration-fast $arvo-ease-simple;
+
+// --------------------------------
+// Focus ring
+// --------------------------------
+
+// Inset focus frame on button group segments and theme-filled controls
+$arvo-motion-focus-ring:
+  opacity $arvo-duration-fast $arvo-ease-simple,
+  border-color $arvo-duration-fast $arvo-ease-simple;
+
+// --------------------------------
+// Checkmark draw
+// --------------------------------
+
+// Checkbox, confirmation stroke reveal
+$arvo-motion-checkmark-draw: stroke-dashoffset $arvo-duration-base $arvo-ease-standard;
+
+// --------------------------------
+// Tabs / segmented control
+// --------------------------------
+
+// Tabs, Scrollspy, Segmented Control, Button Group
+$arvo-motion-tab: transform $arvo-duration-medium $arvo-ease-standard, width $arvo-duration-medium $arvo-ease-standard;
+$arvo-motion-segmented-control: transform $arvo-duration-medium $arvo-ease-standard, width $arvo-duration-medium $arvo-ease-emphasized;
+$arvo-motion-tab-panel:
+  opacity $arvo-duration-medium $arvo-ease-standard,
+  transform $arvo-duration-medium $arvo-ease-standard;
+
+// --------------------------------
+// Widget expand
+// --------------------------------
+
+// Expand to the visible viewport (100dvw x 100dvh) without a backdrop -- playground shows a scaled preview
+$arvo-motion-fullscreen-expand:
+  inset $arvo-duration-slow $arvo-ease-emphasized,
+  box-shadow $arvo-duration-medium $arvo-ease-standard;
+
+// --------------------------------
+// Selection toolbar
+// --------------------------------
+
+// Bulk-action toolbar slides in when list rows are selected
+$arvo-motion-selection-toolbar:
+  opacity $arvo-duration-base $arvo-ease-simple,
+  transform $arvo-duration-medium $arvo-ease-standard,
+  max-height $arvo-duration-medium $arvo-ease-standard,
+  padding $arvo-duration-medium $arvo-ease-standard;
+
+// --------------------------------
+// Search expand
+// --------------------------------
+
+// Compact search icon -> search input
+$arvo-motion-search-expand: width $arvo-duration-medium $arvo-ease-standard, opacity $arvo-duration-base $arvo-ease-simple;
+$arvo-transform-search-enter: translateX(0);
+
+// --------------------------------
+// Toggle / icon state change
+// --------------------------------
+
+// Pin, Star, Favorite, Bookmark
+$arvo-motion-toggle: opacity $arvo-duration-medium $arvo-ease-emphasized, transform $arvo-duration-medium $arvo-ease-emphasized;
+$arvo-transform-toggle-active: scale(1.12);
+$arvo-transform-toggle-rest: scale(1);
+
+// --------------------------------
+// Status indicator
+// --------------------------------
+
+// Unsaved dot, dirty state, pending marker, and pulsating active status.
+$arvo-motion-status-indicator: opacity $arvo-duration-base $arvo-ease-simple, transform $arvo-duration-base $arvo-ease-simple;
+$arvo-transform-status-hidden: scale(0.6);
+$arvo-transform-status-visible: scale(1);
+$arvo-motion-status-pulse: 2s ease-out infinite;
+
+// --------------------------------
+// Counter
+// --------------------------------
+
+// Dynamic counter badge -- lightweight numeric feedback for count changes (add/remove/select/etc.)
+$arvo-motion-counter: $arvo-duration-base $arvo-ease-standard;
+
+// --------------------------------
+// Chip remove
+// --------------------------------
+
+// Filter chip clear, tag remove
+$arvo-motion-chip-remove: opacity $arvo-duration-medium $arvo-ease-simple, transform $arvo-duration-medium $arvo-ease-emphasized, max-width $arvo-duration-medium $arvo-ease-emphasized, padding $arvo-duration-medium $arvo-ease-emphasized, border-width $arvo-duration-medium $arvo-ease-emphasized;
+$arvo-transform-chip-remove: scale(0.96);
+
+// --------------------------------
+// Chip toggle / filter select
+// --------------------------------
+
+// Selectable filter chips -- selected state and filtered content below.
+$arvo-motion-chip-toggle:
+  background-color $arvo-duration-base $arvo-ease-standard,
+  color $arvo-duration-base $arvo-ease-standard,
+  border-color $arvo-duration-base $arvo-ease-standard;
+$arvo-motion-chip-filter-content:
+  opacity $arvo-duration-base $arvo-ease-standard,
+  transform $arvo-duration-base $arvo-ease-standard,
+  grid-template-rows $arvo-duration-medium $arvo-ease-standard,
+  flex $arvo-duration-medium $arvo-ease-emphasized,
+  max-width $arvo-duration-medium $arvo-ease-emphasized,
+  margin $arvo-duration-medium $arvo-ease-emphasized;
+
+// --------------------------------
+// Search result highlight
+// --------------------------------
+
+$arvo-motion-search-highlight: background-color $arvo-duration-base $arvo-ease-simple;
+
+// --------------------------------
+// Scrollspy
+// --------------------------------
+
+// Scroll-linked section indicator
+$arvo-motion-scrollspy: transform $arvo-duration-slow $arvo-ease-standard;
+
+// --------------------------------
+// Navigation active indicator
+// --------------------------------
+
+// Vertical nav -- shared left border and highlight slide between items.
+$arvo-motion-nav-indicator:
+  transform $arvo-duration-base $arvo-ease-standard,
+  height $arvo-duration-base $arvo-ease-standard;
+$arvo-motion-nav-item: color $arvo-duration-base $arvo-ease-standard;
+
+// --------------------------------
+// Empty state illustration
+// --------------------------------
+
+$arvo-motion-empty-state: 2.8s ease-in-out infinite;
+$arvo-transform-empty-state-float: translateY(-3px);
+
+// --------------------------------
+// Avatar group uplift
+// --------------------------------
+
+// Hover/focus elevation on stacked Avatar Group items -- scale + shadow, no positional shift.
+$arvo-motion-avatar-uplift: transform $arvo-duration-fast $arvo-ease-standard, box-shadow $arvo-duration-fast $arvo-ease-standard;
+$arvo-transform-avatar-uplift-hover: scale(1.1);
+$arvo-transform-avatar-uplift-rest: scale(1);
+$arvo-shadow-avatar-uplift-hover: 0 0 0 2px #fff, 0 0 10px 2px rgb(0 0 0 / 16%);
+$arvo-shadow-avatar-uplift-rest: none;
+
+// --------------------------------
+// Card uplift
+// --------------------------------
+
+// Hover/focus elevation on selectable cards -- scale, center shadow, and theme border without layout shift.
+$arvo-motion-card-uplift: transform $arvo-duration-fast $arvo-ease-standard, box-shadow $arvo-duration-fast $arvo-ease-standard, border-color $arvo-duration-fast $arvo-ease-standard;
+$arvo-transform-card-uplift-hover: scale(1.03);
+$arvo-transform-card-uplift-rest: scale(1);
+
+// --------------------------------
+// Nova AI
+// --------------------------------
+
+// Living nova fill -- oversized brand gradient drifts angle and position
+// inside the clipped surface; soft angle drift on outline icon; border orbit.
+// Values are TIMING only -- consumers compose them inside an `animation`
+// shorthand alongside the keyframe name, e.g.
+//   animation:
+//     nova-fill-alive  $arvo-motion-nova-fill,
+//     nova-fill-breathe $arvo-motion-nova-breathe,
+//     nova-fill-shift  $arvo-motion-nova-gradient;
+$arvo-motion-nova-fill: 1.6s ease-out;
+$arvo-motion-nova-breathe: 4.2s ease-in-out infinite alternate;
+$arvo-motion-nova-gradient: 5.5s ease-in-out infinite alternate;
+$arvo-motion-nova-border: 3.5s linear infinite;
+$arvo-motion-nova-toggle: opacity $arvo-duration-medium $arvo-ease-simple;
+
+// --------------------------------
+// Slider
+// --------------------------------
+
+// Slider thumb travel, filled track width, and thumb scale on hover/focus.
+$arvo-motion-slider: left $arvo-duration-fast $arvo-ease-standard, width $arvo-duration-fast $arvo-ease-standard;
+$arvo-motion-slider-thumb: left $arvo-duration-fast $arvo-ease-standard, width $arvo-duration-fast $arvo-ease-standard, height $arvo-duration-fast $arvo-ease-standard, margin-top $arvo-duration-fast $arvo-ease-standard;
+
+// --------------------------------
+// Progress indicator
+// --------------------------------
+
+// Linear fill width and circular arc stroke -- determinate value changes and indeterminate loops.
+$arvo-motion-progress-linear: width $arvo-duration-base $arvo-ease-standard;
+$arvo-motion-progress-circular: stroke-dashoffset $arvo-duration-base $arvo-ease-standard;
+$arvo-motion-progress-gauge: stroke-dashoffset $arvo-duration-base $arvo-ease-standard;
+$arvo-motion-progress-linear-indeterminate: 1.4s ease-in-out infinite;
+$arvo-motion-progress-circular-indeterminate: 1.4s ease-in-out infinite;
+
+// --------------------------------
+// Carousel pagination
+// --------------------------------
+
+// Slide track translation and square dot width for carousel view pagination.
+$arvo-motion-carousel-slide: transform $arvo-duration-medium $arvo-ease-standard;
+$arvo-motion-carousel-dot: width $arvo-duration-base $arvo-ease-standard, background-color $arvo-duration-base $arvo-ease-standard;
+
+// --------------------------------
+// Stepper
+// --------------------------------
+
+// Horizontal stepper connector fill and step marker / label state transitions.
+$arvo-motion-stepper-connector: width $arvo-duration-base $arvo-ease-standard;
+$arvo-motion-stepper-marker: background-color $arvo-duration-base $arvo-ease-standard, color $arvo-duration-base $arvo-ease-standard, border-color $arvo-duration-base $arvo-ease-standard;
+$arvo-motion-stepper-label: color $arvo-duration-base $arvo-ease-standard, opacity $arvo-duration-base $arvo-ease-standard;
+
+// --------------------------------
+// Loader
+// --------------------------------
+
+// Dot, circular, and square loading indicators.
+$arvo-motion-loader-dot: 1s ease-in-out infinite;
+$arvo-motion-loader-circle: 0.8s linear infinite;
+$arvo-motion-loader-square: 2s linear infinite alternate;
+$arvo-motion-loader-skeleton: 1.5s ease-in-out infinite;
+
+// --------------------------------
+// Pane / drawer
+// --------------------------------
+
+// Side Panel, Drawer, Member Info Panel
+$arvo-motion-pane: transform $arvo-duration-slow $arvo-ease-standard;
+$arvo-transform-pane-open: translate(0, 0);
+$arvo-transform-pane-closed-right: translateX(100%);
+$arvo-transform-pane-closed-left: translateX(-100%);
+$arvo-transform-pane-closed-top: translateY(-100%);
+$arvo-transform-pane-closed-bottom: translateY(100%);
+
+// --------------------------------
+// Launchbar drawer
+// --------------------------------
+
+// Hover-triggered launchbar secondary panel -- open, close, and content switch timing.
+$arvo-motion-launchbar-drawer-open: transform $arvo-duration-medium $arvo-ease-emphasized, opacity $arvo-duration-medium $arvo-ease-emphasized;
+$arvo-motion-launchbar-drawer-close: transform $arvo-duration-base $arvo-ease-standard, opacity $arvo-duration-base $arvo-ease-standard;
+$arvo-delay-launchbar-open: 300ms;
+$arvo-delay-launchbar-switch: 150ms;
+$arvo-delay-launchbar-close: 250ms;
+
+// --------------------------------
+// List split view
+// --------------------------------
+
+// List container resizing into an inline split-view -- list shifts left, detail panel slides in, content crossfades on item switch.
+$arvo-motion-split-layout: flex-basis $arvo-duration-medium $arvo-ease-emphasized;
+$arvo-motion-split-detail-panel:
+  flex-basis $arvo-duration-medium $arvo-ease-emphasized,
+  opacity $arvo-duration-medium $arvo-ease-emphasized,
+  transform $arvo-duration-medium $arvo-ease-emphasized,
+  border-color $arvo-duration-base $arvo-ease-standard;
+$arvo-motion-split-content: opacity $arvo-duration-fast $arvo-ease-simple;
+$arvo-transform-split-detail-enter: translateX(10px);
+$arvo-transform-split-detail-rest: translateX(0);
+
+// --------------------------------
+// Toggle switch
+// --------------------------------
+
+$arvo-transition-switch-slide: transform $arvo-duration-medium $arvo-ease-emphasized, background-color $arvo-duration-base $arvo-ease-simple, opacity $arvo-duration-base $arvo-ease-simple;
+$arvo-transition-toggle-slide: $arvo-transition-switch-slide;

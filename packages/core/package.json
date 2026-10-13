@@ -1,0 +1,42 @@
+{
+  "name": "@arvo/core",
+  "version": "2.2.5",
+  "description": "Arvo Design System framework-agnostic core utilities (overlay hub, positioning, focus, keyboard nav)",
+  "license": "UNLICENSED",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://o9git.pkgs.visualstudio.com/_packaging/o9UI/npm/registry/"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@arvo/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "3.2.4",
+    "typescript": "^5.5.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}

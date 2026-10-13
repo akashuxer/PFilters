@@ -1,0 +1,90 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// ---------------------------------------------------------------------------
+// Inline rich-text content -- shared styling for elements emitted by the
+// `@arvo/core/inline-content` adapters. The adapters publish stable BEM-like
+// helper classes (`.arvo-inline__*`) on every node they create. These classes
+// are identical for every consumer (Toast, Banner Alert, Alert Dialog,
+// Message Alert), so the mixin is emitted ONCE at the global level rather than
+// duplicated under each host block. Sizes use relative `em` units, so the
+// rules adapt to whatever font-size the consuming message text sets.
+//
+// Usage (emitted globally, see `base/_global.scss`):
+//
+//   @include inline-content;
+// ---------------------------------------------------------------------------
+
+@mixin inline-content {
+  .arvo-inline__strong {
+    font-weight: $arvo-medium;
+  }
+
+  // Italic emphasis.
+  .arvo-inline__em {
+    font-style: italic;
+  }
+
+  .arvo-inline__link {
+    color: var(--arvo-color-t-info-dark);
+    cursor: pointer;
+    outline: none;
+
+    &:hover,
+    &:focus-visible {
+      --arvo-lnk-text-color: var(--arvo-color-t-info-light);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--arvo-color-b-theme-focus);
+      outline-offset: 2px;
+    }
+  }
+
+  // Inline code. Monospace, slightly tinted background to read as code.
+  .arvo-inline__code {
+    font-family: $o9-mono;
+    font-size: 0.95em;
+    padding: 0 #{$arvo-space-4};
+    border-radius: 2px;
+    background: var(--arvo-color-s-layer-02);
+    color: var(--arvo-color-t-primary);
+  }
+
+  // Keyboard input (shortcut hint). Reuses the code styling but with a
+  // subtle shadow ring to look like a key cap.
+  .arvo-inline__kbd {
+    display: inline-block;
+    font-family: $o9-mono;
+    font-size: 0.85em;
+    line-height: 1;
+    padding: #{$arvo-space-2} #{$arvo-space-6};
+    border-radius: 2px;
+    background: var(--arvo-color-s-layer-02);
+    color: var(--arvo-color-t-primary);
+    box-shadow: inset 0 -1px 0 0 var(--arvo-color-b-default);
+  }
+
+  // Extended profile elements.
+  .arvo-inline__abbr {
+    text-decoration: underline dotted;
+    cursor: help;
+  }
+
+  .arvo-inline__time {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .arvo-inline__sup,
+  .arvo-inline__sub {
+    font-size: 0.75em;
+    line-height: 0;
+  }
+
+  .arvo-inline__sup {
+    vertical-align: super;
+  }
+
+  .arvo-inline__sub {
+    vertical-align: sub;
+  }
+}

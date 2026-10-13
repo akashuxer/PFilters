@@ -1,0 +1,71 @@
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// CalendarRangeDropdown component styles
+// BEM Block: .arvo-cal-rng-drop
+// Abbreviation: cal-rng-drop
+// Category: DateTime
+// Descriptor: descriptors/calendar-range-dropdown.json
+//
+// Public Layer 4 floating range dropdown. Bring-your-own-trigger wrapper
+// that hosts dual calendars (absolute mode) and is extensible to member /
+// rolling modes via mode modifiers.
+//
+// Header model (matches the descriptor and the ArvoDateRangePicker dropdown):
+//   ONE shared CalendarNav with variant="range" spans both calendars. The
+//   header renders the dual month/year labels joined by an em-dash on the
+//   left and the single Prev / Next / Today cluster on the right. Per-column
+//   navs are explicitly NOT rendered: per-calendar navs would prevent
+//   view-mode zoom-in and break the Prev/Next contract (only LEFT steps
+//   back, only RIGHT steps forward).
+
+.arvo-cal-rng-drop {
+  --arvo-cal-rng-drop-w-absolute: 600px;
+  --arvo-cal-rng-drop-h-absolute: 296px;
+
+  // Display is gated on the engine-managed `.open` class so the panel is
+  // `display: none` (invisible AND inert) after the OverlaySurface engine
+  // removes `.open` once the exit transition completes. Required for the JS
+  // twin, where the popover element is created once and reused across opens
+  // rather than removed from the DOM.
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  flex-direction: column;
+  width: var(--arvo-cal-rng-drop-w-absolute, 600px);
+  box-sizing: border-box;
+  background-color: var(--arvo-color-s-layer-03);
+  box-shadow: $arvo-shadow-down;
+  z-index: var(--arvo-z-popover, 1000);
+  font-family: var(--o9-font-family);
+  padding: $arvo-space-12;
+
+  &.open { display: flex; }
+
+  // Direction-aware popup enter / exit animation. See `popup-animation`.
+  @include popup-animation;
+
+  // --show-weeks expands both calendar columns.
+  &--show-weeks { --arvo-cal-rng-drop-w-absolute: 680px; }
+
+  // The header element IS the CalendarNav root (the cal-nav-header-base
+  // mixin on `.arvo-cal-nav` provides the flex/gap/height layout). We only
+  // add the cal-rng-drop chrome: padding + a divider below.
+  &__header {
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: row;
+    gap: $arvo-space-12;
+    box-sizing: border-box;
+  }
+
+  &__cal {
+    flex: 1 1 50%;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+}

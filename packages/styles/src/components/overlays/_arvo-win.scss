@@ -1,0 +1,463 @@
+@use '../../mixins/typography' as *;
+@use '../../mixins/overlay-footer' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-win ---------------------------------------------------------------
+//
+// ArvoWindow: a centered, draggable floating workspace overlay. Composes its
+// own header/body/footer chrome (does NOT use panel-shell -- footer dimensions
+// and the left footer slot differ from panel-shell's 64px right-aligned row).
+//
+// Surfacing: the OverlaySurface engine renders the mask (via @arvo/core/mask
+// when hasBackdrop=true) and drives `open` + `arvo-enter-*` / `arvo-exit-*` on
+// __panel for the scale transition. Drag is wired by `createDragHandle` from
+// `@arvo/core`, which writes `--arvo-win-x` / `--arvo-win-y` on the panel.
+
+.arvo-win {
+  // Root container is permanently mounted while open (React unmounts on
+  // close; JS appends/removes the root). Drives stacking + sizing of the
+  // centered panel inside the viewport.
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  // The overlay hub is the source of truth for stacking. The Window
+  // component registers its __panel as the surface AND attaches this root
+  // as a wrapper element via `hub.attachWrapperElement`, so the hub keeps
+  // the root's inline `z-index` pinned to the panel's hub-assigned value
+  // on every stack change. That hoists the entire window stacking context
+  // to the consumer-configured layer (`overlayHub.configure({ zIndexBase })`)
+  // instead of trapping the panel inside a 1000-fallback stacking context.
+  // This fallback only covers the brief pre-registration frame and keeps
+  // the window within the shared overlay layer (>= page content) until
+  // the hub paints the authoritative value.
+  z-index: var(--arvo-z-popover, 1000);
+
+  // Default size variables (the .--{size} modifiers override these). Per the
+  // CSS Variable Discipline rule, --arvo-win-width and --arvo-win-max-height
+  // are component-level CSS variables (dynamic per size + overridable).
+  --arvo-win-width: #{$arvo-window-md-wmax};
+  --arvo-win-max-height: #{$arvo-window-md-hmax};
+  // Drag offsets seeded to 0; createDragHandle updates them.
+  --arvo-win-x: 0px;
+  --arvo-win-y: 0px;
+
+  // -- __panel --------------------------------------------------------------
+  // Width is fixed per size token; height grows with content up to
+  // --arvo-win-max-height. The body scrolls beyond that. Centered via fixed
+  // positioning + a translate that incorporates the drag offset variables.
+  //
+  // Visibility model (eliminates the close-flicker):
+  // The base panel is hidden (`opacity: 0`, `pointer-events: none`). It only
+  // becomes visible when the root carries `.open` (set by React/JS only while
+  // `surface.isOpen` is true) OR while an `arvo-{enter|exit}-*` transition
+  // class is on the panel. After the engine strips its transition classes
+  // post-exit, the panel reverts to this hidden base state -- so the brief
+  // window between transition cleanup and consumer unmount stays invisible.
+  &__panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(
+      calc(-50% + var(--arvo-win-x)),
+      calc(-50% + var(--arvo-win-y))
+    );
+    display: flex;
+    flex-direction: column;
+    width: var(--arvo-win-width);
+    max-width: calc(100% - #{$arvo-space-16});
+    max-height: var(--arvo-win-max-height);
+    height: auto;
+    background-color: var(--arvo-color-s-layer-03, #fff);
+    box-shadow: $arvo-shadow-center;
+    border-radius: $arvo-radius-none;
+    box-sizing: border-box;
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &.open > &__panel {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  // Panel scale transitions. The transform must preserve the drag offset
+  // (the engine toggles the enter-* classes on __panel, so we re-author the
+  // full transform value here). The selectors are deliberately written as
+  // `& > &__panel.arvo-*` (specificity 0,3,0) so they tie with
+  // `&.open > &__panel` and win via later source order during the brief
+  // windows when both selectors match (e.g. arvo-enter-from while `.open`
+  // has just been added on the root).
+  & > &__panel.arvo-enter-from {
+    opacity: 0;
+    transform: translate(
+        calc(-50% + var(--arvo-win-x)),
+        calc(-50% + var(--arvo-win-y))
+      )
+      scale(0.96);
+  }
+
+  & > &__panel.arvo-enter-active {
+    transition: $arvo-transition-dialog;
+  }
+
+  & > &__panel.arvo-enter-to {
+    opacity: 1;
+    transform: translate(
+        calc(-50% + var(--arvo-win-x)),
+        calc(-50% + var(--arvo-win-y))
+      )
+      scale(1);
+  }
+
+  & > &__panel.arvo-exit-from {
+    opacity: 1;
+    transform: translate(
+        calc(-50% + var(--arvo-win-x)),
+        calc(-50% + var(--arvo-win-y))
+      )
+      scale(1);
+    // Block pointer interaction the moment a close is in flight so users
+    // can't re-trigger actions on the panel that's fading out.
+    pointer-events: none;
+  }
+
+  & > &__panel.arvo-exit-active {
+    transition: $arvo-transition-dialog;
+  }
+
+  & > &__panel.arvo-exit-to {
+    opacity: 0;
+    transform: translate(
+        calc(-50% + var(--arvo-win-x)),
+        calc(-50% + var(--arvo-win-y))
+      )
+      scale(0.96);
+    pointer-events: none;
+  }
+
+  // Suppress transitions while a drag gesture is in progress so the panel
+  // tracks the cursor exactly.
+  &.dragging &__panel {
+    transition: none !important;
+  }
+
+  // -- __header -------------------------------------------------------------
+  // 40px tall. Doubles as the drag handle when --draggable is set; the
+  // .arvo-win__header-actions group and interactive children are excluded
+  // at runtime by createDragHandle's excludeSelector.
+  &__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-8;
+    height: 40px;
+    padding: $arvo-space-8 $arvo-space-12 $arvo-space-8 $arvo-space-16;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    overflow: clip;
+    touch-action: none;
+    user-select: none;
+  }
+
+  &--draggable:not(&--maximized) &__header {
+    cursor: move;
+  }
+
+  &--draggable:not(&--maximized).dragging &__header {
+    cursor: grabbing;
+  }
+
+  // -- __header-left --------------------------------------------------------
+  &__header-left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  // -- __back-btn -----------------------------------------------------------
+  &__back-btn {
+    flex-shrink: 0;
+  }
+
+  // -- __ico ----------------------------------------------------------------
+  &__ico {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: $o9con;
+    font-size: $arvo-icon-20;
+    width: $arvo-icon-20;
+    height: $arvo-icon-20;
+    color: var(--arvo-color-i-primary);
+    line-height: 1;
+  }
+
+  // -- __title --------------------------------------------------------------
+  &__title {
+    @include arvo-font-h16-m;
+    color: var(--arvo-color-t-primary);
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  // -- __status -------------------------------------------------------------
+  &__status {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  // -- __badge --------------------------------------------------------------
+  &__badge {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  // -- __header-actions -----------------------------------------------------
+  &__header-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex-shrink: 0;
+  }
+
+  // -- __max-btn, __close-btn ----------------------------------------------
+  // System-controlled icon buttons composed via ArvoIconButton (size sm,
+  // variant tertiary). Layout glue only -- size/colors come from ArvoIconButton.
+  &__max-btn,
+  &__close-btn {
+    flex-shrink: 0;
+  }
+
+  // -- __sticky-header ------------------------------------------------------
+  // Content-owned pinned region between header chrome and the scrollable
+  // body. Use for search, tabs, filters, summaries, or contextual controls
+  // that should remain visible while the body scrolls.
+  &__sticky-header {
+    flex: 0 0 auto;
+    padding: $arvo-space-8 $arvo-space-16;
+    box-sizing: border-box;
+    background-color: inherit;
+    border-block-end: 1px solid var(--arvo-color-b-neutral-muted, #e5e5e5);
+  }
+
+  // -- __body ---------------------------------------------------------------
+  // Body fills the remaining height between header / optional sticky-header
+  // and footer. Scrolls vertically when content overflows.
+  &__body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: $arvo-space-8 $arvo-space-16 $arvo-space-12;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    box-sizing: border-box;
+
+    // Body scrollbar (WebKit). Width matches $arvo-scroll-width (8px) per
+    // the UX spec; handle is 30px tall and uses --arvo-color-s-layer-07.
+    &::-webkit-scrollbar {
+      width: $arvo-scroll-width;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--arvo-color-s-layer-07, #ccc);
+      border-radius: $arvo-radius-16;
+      min-height: 30px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  }
+
+  // -- __footer -------------------------------------------------------------
+  // 56px tall, left footer slot grows, action cluster pins to the right.
+  &__footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: $arvo-space-6;
+    height: 56px;
+    padding: $arvo-space-4 $arvo-space-16 $arvo-space-12;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+
+  // -- __footer-left --------------------------------------------------------
+  &__footer-left {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-8;
+  }
+
+  // -- __actions ------------------------------------------------------------
+  // Right-aligned cluster. The shared overlay-footer-actions-layout mixin
+  // owns flex sizing rules (text buttons share an equal 112px-default
+  // basis, icon-only stay natural, primary renders last via `order`).
+  &__actions {
+    @include overlay-footer-actions-layout;
+    flex: 0 0 auto;
+  }
+
+  // -- Sizes ----------------------------------------------------------------
+  &--sm {
+    --arvo-win-width: #{$arvo-window-sm-wmax};
+    --arvo-win-max-height: #{$arvo-window-sm-hmax};
+  }
+
+  &--md {
+    --arvo-win-width: #{$arvo-window-md-wmax};
+    --arvo-win-max-height: #{$arvo-window-md-hmax};
+  }
+
+  &--lg {
+    --arvo-win-width: #{$arvo-window-lg-wmax};
+    --arvo-win-max-height: #{$arvo-window-lg-hmax};
+  }
+
+  &--xl {
+    --arvo-win-width: #{$arvo-window-xl-wmax};
+    --arvo-win-max-height: #{$arvo-window-xl-hmax};
+  }
+
+  // -- Maximized state ------------------------------------------------------
+  // Stretch the panel to the full viewport. Drag is implicitly disabled
+  // (createDragHandle is detached at the JS/React layer when isMaximized
+  // flips true); we also short-circuit the cursor here.
+  &--maximized {
+    --arvo-win-x: 0px;
+    --arvo-win-y: 0px;
+  }
+
+  &--maximized &__panel {
+    top: 0;
+    left: 0;
+    transform: none;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  // Maximize transitions: override the scale + translate to keep the panel
+  // pinned at (0,0) so the engine's enter/exit classes don't yank it back
+  // to the center.
+  &--maximized &__panel.arvo-enter-from,
+  &--maximized &__panel.arvo-enter-to,
+  &--maximized &__panel.arvo-exit-from,
+  &--maximized &__panel.arvo-exit-to {
+    transform: none;
+  }
+
+  &--maximized &__header {
+    cursor: default;
+  }
+
+  // -- Loading skeleton (Pattern B) -----------------------------------------
+  // Header title and body content render shimmer placeholders; action
+  // buttons are pointer-events: none and visually dimmed. Inner action
+  // button instances also receive isLoading via the React/JS layer.
+  @mixin _win-loading-skeleton {
+    pointer-events: none;
+
+    .arvo-win__title {
+      position: relative;
+      color: transparent;
+      overflow: hidden;
+      border-radius: 3px;
+      width: 40%;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: var(--arvo-color-s-disabled, #f0f0f0);
+        border-radius: 3px;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--arvo-loading-shimmer-color, rgba(255, 255, 255, 0.4)) 50%,
+          transparent 100%
+        );
+        animation: arvo-shimmer var(--arvo-loading-shimmer-speed, 1.5s) infinite linear;
+        border-radius: 3px;
+      }
+    }
+
+    .arvo-win__body {
+      display: flex;
+      flex-direction: column;
+      gap: $arvo-space-12;
+      overflow: hidden;
+
+      > * {
+        display: none;
+      }
+
+      &::before,
+      &::after {
+        content: '';
+        display: block;
+        height: 16px;
+        border-radius: 3px;
+        background-color: var(--arvo-color-s-disabled, #f0f0f0);
+      }
+
+      &::before {
+        width: 80%;
+      }
+
+      &::after {
+        width: 60%;
+      }
+    }
+
+    .arvo-win__actions,
+    .arvo-win__footer-left {
+      pointer-events: none;
+      opacity: $arvo-opacity-40;
+    }
+  }
+
+  &.loading {
+    @include _win-loading-skeleton;
+  }
+
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _win-loading-skeleton;
+  }
+}
+
+// -- Reduced motion ----------------------------------------------------------
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-win__panel {
+    &.arvo-enter-active,
+    &.arvo-exit-active {
+      transition: none;
+    }
+  }
+}

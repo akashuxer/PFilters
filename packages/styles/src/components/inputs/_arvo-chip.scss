@@ -1,0 +1,501 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/status-host' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// ArvoChip component styles.
+// BEM Block: .arvo-chip
+// Abbreviation: chip
+// Category: Inputs
+//
+// Compact inline entity / filter / value chip. Three variants (general /
+// filter / input), three sizes (sm 18 / md 24 / lg 32), three appearances
+// (primary / outline / utility) and three color modes (default / semantic /
+// custom). Sharp corners. Composes ArvoIconButton (drag handle + dismiss),
+// ArvoBadge (counter), ArvoMessageAlert (inline invalid/warning indicator)
+// and ArvoStatus (corner overlay).
+//
+// Color cascade strategy (mirrors ArvoBadge): each color modifier class sets
+// the hue vars (--arvo-chip-bg, --arvo-chip-text-color, --arvo-chip-icon-color,
+// --arvo-chip-accent-border). Appearance modifiers are placed AFTER the color
+// modifiers in source order so they win the cascade: --outline overrides bg to
+// layer-01 + a divider border; --utility overrides bg to layer-01 + the accent
+// (util-color) border. Custom color mode is always rendered with the utility
+// appearance (the component coerces it) so a custom-colored chip always carries
+// its util-color outline. The selected (.active) surface and the is-invalid /
+// is-readonly / is-disabled states layer on top.
+
+.arvo-chip {
+  // -- Size tokens (defaults = md) -----------------------------------------
+  --arvo-chip-height: 24px;
+  --arvo-chip-padding: #{$arvo-space-4};
+  --arvo-chip-gap: #{$arvo-space-4};
+  --arvo-chip-font-size: #{$arvo-font-size-14};
+  --arvo-chip-icon-size: #{$arvo-icon-16};
+  --arvo-chip-avatar-size: 16px;
+  --arvo-chip-max-width: none;
+
+  // -- Color tokens (defaults = primary appearance, default color mode) ----
+  --arvo-chip-bg: var(--arvo-color-s-layer-04);
+  --arvo-chip-text-color: var(--arvo-color-t-tertiary);
+  --arvo-chip-icon-color: var(--arvo-color-i-secondary);
+  --arvo-chip-accent-border: var(--arvo-color-b-divider);
+  --arvo-chip-border-color: transparent;
+  --arvo-chip-border-width: 1px;
+  --arvo-chip-border-style: solid;
+
+  // -- Dismiss overlay -----------------------------------------------------
+  --arvo-chip-dismiss-bg: var(--arvo-color-s-layer-05);
+
+  // -- Base layout ---------------------------------------------------------
+  @include status-host; // position: relative so the status overlay + dismiss overlay anchor
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  gap: var(--arvo-chip-gap);
+  height: var(--arvo-chip-height);
+  max-width: var(--arvo-chip-max-width);
+  padding-inline: var(--arvo-chip-padding);
+  box-sizing: border-box;
+  border-radius: 0;
+  white-space: nowrap;
+  user-select: none;
+  font-family: inherit;
+  font-size: var(--arvo-chip-font-size);
+  line-height: normal;
+  margin: 0;
+  text-align: start;
+  color: var(--arvo-chip-text-color);
+  background: var(--arvo-chip-bg);
+  border: var(--arvo-chip-border-width) var(--arvo-chip-border-style) var(--arvo-chip-border-color);
+  // Remove animation hook -- the `is-removing` modifier shrinks the chip's
+  // max-width / padding / border to 0 and fades it out so chip lists
+  // visually collapse when an item is dismissed. The transition is
+  // permanent on the chip root (not gated to .is-removing) so we never
+  // miss the leading-edge frame. `overflow: hidden` clips the label
+  // (which has its own ellipsis) as max-width shrinks. The transition
+  // also covers ordinary max-width changes from the consumer's `maxWidth`
+  // prop, which is fine because those are rare and the timing is short.
+  overflow: hidden;
+  transition: $arvo-motion-chip-remove;
+
+  // Interactive roots (filter button, actionable general button) get a pointer.
+  &[type='button'] {
+    cursor: pointer;
+    appearance: none;
+  }
+
+  // -- Elements ------------------------------------------------------------
+
+  // Drag handle -- an inner ArvoIconButton (icon o9con-drag-handle, xs,
+  // tertiary) injected ONLY by a reorderable ArvoChipList. Transparent, sits
+  // flush with the chip content, grab cursor.
+  &__grip.arvo-icon-btn {
+    --arvo-btn-bg-color: transparent;
+    --arvo-btn-icon-color: var(--arvo-color-i-secondary);
+    flex: 0 0 auto;
+    cursor: grab;
+
+    &:active { cursor: grabbing; }
+  }
+
+  &__ico {
+    font-family: $o9con;
+    font-size: var(--arvo-chip-icon-size);
+    color: var(--arvo-chip-icon-color);
+    flex: 0 0 auto;
+  }
+
+  &__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: var(--arvo-chip-avatar-size);
+    height: var(--arvo-chip-avatar-size);
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
+  &__title {
+    flex: 0 0 auto;
+    // Title renders one weight heavier than the label so it reads as a fixed
+    // context prefix (label/l14-m at md/lg, label/l12-m at sm). The label
+    // itself stays at the chip root's regular weight.
+    font-weight: $arvo-medium;
+    color: var(--arvo-chip-text-color);
+    line-height: normal;
+
+    &::after { content: ':'; }
+  }
+
+  &__lbl {
+    color: var(--arvo-chip-text-color);
+    line-height: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  &__counter {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  // Inline ArvoMessageAlert (icon-only) -- communicates the invalid / warning
+  // validation state. Color + glyph come from the message-alert type modifier.
+  &__alert.arvo-msg-alert {
+    flex: 0 0 auto;
+    --arvo-msg-alert-icon-size: var(--arvo-chip-icon-size);
+  }
+
+  // Trailing excluded indicator glyph (o9con-exclude) -- negated entity.
+  &__exclude {
+    font-family: $o9con;
+    font-size: var(--arvo-chip-icon-size);
+    color: var(--arvo-color-i-negative);
+    flex: 0 0 auto;
+    line-height: normal;
+  }
+
+  // Dismiss overlay: full-height right-edge scrim that slides in. It overlays
+  // the content (does not consume inline space) so the chip width never shifts.
+  // The dismiss element itself is a non-interactive <span> (the chip is the
+  // focusable single-focus surface; Delete/Backspace remove it from the
+  // keyboard, mouse/touch click on this span removes it visually).
+  &__dismiss {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--arvo-chip-height);
+    height: var(--arvo-chip-height);
+    background: var(--arvo-chip-dismiss-bg);
+    opacity: 0;
+    transform: translateX(8px);
+    pointer-events: none;
+    cursor: pointer;
+    transition: $arvo-motion-chip-remove;
+  }
+
+  &__dismiss-icon {
+    font-family: $o9con;
+    font-size: var(--arvo-chip-icon-size);
+    color: var(--arvo-color-i-primary);
+    line-height: 1;
+  }
+
+  // -- Size modifiers ------------------------------------------------------
+
+  &--sm {
+    --arvo-chip-height: 18px;
+    --arvo-chip-font-size: #{$arvo-font-size-12};
+    --arvo-chip-icon-size: 14px;
+    --arvo-chip-avatar-size: 16px;
+  }
+
+  &--md {
+    --arvo-chip-height: 24px;
+    --arvo-chip-font-size: #{$arvo-font-size-14};
+    --arvo-chip-icon-size: #{$arvo-icon-16};
+    --arvo-chip-avatar-size: 16px;
+  }
+
+  &--lg {
+    --arvo-chip-height: 32px;
+    --arvo-chip-padding: #{$arvo-space-6};
+    --arvo-chip-font-size: #{$arvo-font-size-14};
+    --arvo-chip-icon-size: #{$arvo-icon-16};
+    --arvo-chip-avatar-size: 24px;
+  }
+
+  // -- Removing (leave animation) ------------------------------------------
+  // When a dismissible chip is removed, the component first toggles the
+  // `is-removing` class, waits for the transition to complete, and then
+  // unmounts the element (or calls the consumer's onDismiss). The chip
+  // shrinks its max-width / padding / border to 0 and fades out so the
+  // surrounding chip-list visually collapses around the removed chip.
+  &.is-removing {
+    opacity: 0;
+    max-width: 0;
+    padding-inline: 0;
+    --arvo-chip-border-width: 1px;
+    transform: $arvo-transform-chip-remove;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &.is-removing {
+      transform: none;
+    }
+  }
+
+  // -- Color modifiers (semantic + custom) ---------------------------------
+  // IMPORTANT: all color modifiers appear BEFORE the appearance modifiers so
+  // the appearance overrides win the CSS cascade when both classes are set.
+  //
+  // Semantic color classes set a subtle filled background (honored by the
+  // primary appearance). Custom (util) color classes only set the accent
+  // text/icon/border -- a custom chip is always rendered with the utility
+  // appearance, which supplies the s-layer-01 surface + colored outline.
+
+  &--negative,
+  &--block {
+    --arvo-chip-bg: var(--arvo-color-s-negative-subtle);
+    --arvo-chip-text-color: var(--arvo-color-t-negative);
+    --arvo-chip-icon-color: var(--arvo-color-i-negative);
+    --arvo-chip-accent-border: var(--arvo-color-b-negative);
+  }
+
+  &--positive {
+    --arvo-chip-bg: var(--arvo-color-s-positive-subtle);
+    --arvo-chip-text-color: var(--arvo-color-t-positive);
+    --arvo-chip-icon-color: var(--arvo-color-i-positive);
+    --arvo-chip-accent-border: var(--arvo-color-i-positive);
+  }
+
+  &--info {
+    --arvo-chip-bg: var(--arvo-color-s-info-subtle);
+    --arvo-chip-text-color: var(--arvo-color-t-info-dark);
+    --arvo-chip-icon-color: var(--arvo-color-i-info-dark);
+    --arvo-chip-accent-border: var(--arvo-color-i-info-dark);
+  }
+
+  // Semantic warning color family (colorMode=semantic). Distinct from the
+  // isWarning validation state (which never recolors the chip).
+  &--warning {
+    --arvo-chip-bg: var(--arvo-color-s-warning-subtle);
+    --arvo-chip-text-color: var(--arvo-color-t-warning);
+    --arvo-chip-icon-color: var(--arvo-color-i-warning);
+    --arvo-chip-accent-border: var(--arvo-color-b-warning);
+  }
+
+  &--purple {
+    --arvo-chip-text-color: var(--arvo-color-t-util-purple);
+    --arvo-chip-icon-color: var(--arvo-color-i-util-purple);
+    --arvo-chip-accent-border: var(--arvo-color-b-util-purple);
+  }
+
+  &--pink {
+    --arvo-chip-text-color: var(--arvo-color-t-util-pink);
+    --arvo-chip-icon-color: var(--arvo-color-i-util-pink);
+    --arvo-chip-accent-border: var(--arvo-color-b-util-pink);
+  }
+
+  &--glacier {
+    --arvo-chip-text-color: var(--arvo-color-t-util-glacier);
+    --arvo-chip-icon-color: var(--arvo-color-i-util-glacier);
+    --arvo-chip-accent-border: var(--arvo-color-b-util-glacier);
+  }
+
+  &--amber {
+    --arvo-chip-text-color: var(--arvo-color-t-util-amber);
+    --arvo-chip-icon-color: var(--arvo-color-i-util-amber);
+    --arvo-chip-accent-border: var(--arvo-color-b-util-amber);
+  }
+
+  &--greenish {
+    --arvo-chip-text-color: var(--arvo-color-t-util-greenish);
+    --arvo-chip-icon-color: var(--arvo-color-i-util-greenish);
+    --arvo-chip-accent-border: var(--arvo-color-b-util-greenish);
+  }
+
+  &--bluish {
+    --arvo-chip-text-color: var(--arvo-color-t-util-bluish);
+    --arvo-chip-icon-color: var(--arvo-color-i-util-bluish);
+    --arvo-chip-accent-border: var(--arvo-color-b-util-bluish);
+  }
+
+  // -- Appearance modifiers (AFTER color modifiers to win the cascade) -----
+
+  &--primary {
+    --arvo-chip-border-width: 1px;
+    --arvo-chip-border-color: transparent;
+  }
+
+  &--outline {
+    --arvo-chip-bg: var(--arvo-color-s-layer-01);
+    --arvo-chip-border-width: 1px;
+    --arvo-chip-border-color: var(--arvo-color-b-divider);
+  }
+
+  // Utility (colored outline) -- carries the customColor family. The accent
+  // border resolves to the active util color (default purple).
+  &--utility {
+    --arvo-chip-bg: var(--arvo-color-s-layer-01);
+    --arvo-chip-border-width: 1px;
+    --arvo-chip-border-color: var(--arvo-chip-accent-border);
+  }
+
+  // -- Interactive states --------------------------------------------------
+
+  @include hover {
+    &[type='button']:not(.is-disabled):not(.is-readonly):not(.loading):not(.active):hover {
+      --arvo-chip-bg: var(--arvo-color-s-theme-hover-3);
+      --arvo-chip-text-color: var(--arvo-color-t-theme-hover);
+    }
+
+    // Reveal the dismiss overlay on hover / focus-within / virtual focus
+    // (no reflow). `.highlighted` is used by composite fields such as
+    // MultiSelectV2 where DOM focus stays on the text input and the chip is
+    // exposed through aria-activedescendant.
+    &:hover .arvo-chip__dismiss,
+    &:focus-within .arvo-chip__dismiss,
+    &.highlighted .arvo-chip__dismiss {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+  }
+
+  // Touch / non-hover devices: the dismiss overlay is always visible.
+  @include no-hover {
+    .arvo-chip__dismiss {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+  }
+
+  &:focus-visible,
+  &.highlighted {
+    outline: none;
+    --arvo-chip-border-color: var(--arvo-color-b-theme-focus);
+    --arvo-chip-border-width: 1.5px;
+  }
+
+  // -- Selected (filter) ---------------------------------------------------
+
+  &--filter.active {
+    --arvo-chip-bg: var(--arvo-color-s-theme-active-1);
+    --arvo-chip-text-color: var(--arvo-color-t-active-inverse);
+    --arvo-chip-icon-color: var(--arvo-color-t-active-inverse);
+    --arvo-chip-border-color: transparent;
+    --arvo-chip-border-width: 1px;
+
+    // Inverted counter on the dark selected surface (parent override of
+    // ArvoBadge's CSS variables). The Badge's --filled appearance resolves
+    // its surface from --arvo-bdg-bg-strong, so the chip overrides BOTH
+    // -bg-strong (the source) AND -bg (the rendered value) plus
+    // -text-color, regardless of whichever color-mode the chip propagated
+    // to the Badge for the non-selected state.
+    .arvo-chip__counter .arvo-bdg {
+      --arvo-bdg-bg: var(--arvo-color-s-layer-04);
+      --arvo-bdg-bg-strong: var(--arvo-color-s-layer-04);
+      --arvo-bdg-text-color: var(--arvo-color-t-neutral);
+    }
+  }
+
+  // -- Configurable states -------------------------------------------------
+
+  // Disabled: the whole chip dims to opacity-40 over a neutral layer-01
+  // surface with a divider outline (matches Figma across every appearance).
+  &.is-disabled {
+    --arvo-chip-bg: var(--arvo-color-s-layer-01);
+    --arvo-chip-border-color: var(--arvo-color-b-divider);
+    --arvo-chip-border-width: 1px;
+    opacity: $arvo-opacity-40;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  &.is-readonly {
+    --arvo-chip-bg: var(--arvo-color-s-readonly);
+    --arvo-chip-text-color: var(--arvo-color-t-readonly);
+    --arvo-chip-icon-color: var(--arvo-color-i-readonly);
+    --arvo-chip-border-color: var(--arvo-color-b-readonly);
+    --arvo-chip-border-width: 1px;
+    --arvo-chip-border-style: dashed;
+  }
+
+  // Invalid: 1px b-negative outline (overrides the appearance border). The
+  // inline ArvoMessageAlert supplies the error glyph. Warning never recolors
+  // the border -- only its inline message-alert icon communicates the state.
+  &.is-invalid {
+    --arvo-chip-border-color: var(--arvo-color-b-negative);
+    --arvo-chip-border-width: 1px;
+  }
+
+  &.is-excluded {
+    --arvo-chip-border-color: var(--arvo-color-b-negative);
+    --arvo-chip-border-width: 1px;
+  }
+
+  // Validation focus keeps the negative border color (placed after :focus-visible).
+  &.is-invalid:focus-visible,
+  &.is-invalid.highlighted {
+    --arvo-chip-border-color: var(--arvo-color-b-negative);
+    --arvo-chip-border-width: 1.5px;
+  }
+
+  // -- Inline dismiss for validation states (invalid / warning) ------------
+  // When the inline ArvoMessageAlert is present the dismiss button must NOT
+  // overlay the content (it would cover the alert + block its tooltip).
+  // Instead it renders inline at the far right and stays permanently visible
+  // -- on hover AND touch devices alike. Sized to the chip height (18/24/32
+  // at sm/md/lg) for a comfortable hit area. The bare-span single-focus
+  // accessibility model is preserved -- the dismiss is still aria-hidden and
+  // non-interactive; only the chip root takes focus.
+  &.is-invalid .arvo-chip__dismiss,
+  &.is-warning .arvo-chip__dismiss {
+    position: static;
+    inset: auto;
+    width: var(--arvo-chip-height);
+    height: var(--arvo-chip-height);
+    background: transparent;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  // -- Drag surface (applied by ArvoChipList while dragging) ---------------
+
+  &--dragging {
+    --arvo-chip-bg: var(--arvo-color-s-theme-hover-3);
+    --arvo-chip-border-color: var(--arvo-color-b-divider);
+    --arvo-chip-border-width: 1px;
+    box-shadow: $arvo-shadow-low;
+
+    // The grip's background highlights during active drag (Figma's drag
+    // preview shows the inner ArvoIconButton on a s-theme-hover-2 fill).
+    .arvo-chip__grip.arvo-icon-btn {
+      --arvo-btn-bg-color: var(--arvo-color-s-theme-hover-2);
+    }
+  }
+
+  &--drop-target {
+    --arvo-chip-bg: var(--arvo-color-s-theme-hover-3);
+    --arvo-chip-border-color: var(--arvo-color-b-divider);
+    --arvo-chip-border-width: 1px;
+  }
+
+  // -- Loading (Pattern A: individual + parent-controlled + opt-out) -------
+  // The .loading class drives the individual state; a [data-arvo-loading]
+  // ancestor propagates the shimmer to descendant chips unless the chip opts
+  // out via [data-arvo-loading-ignore].
+  &.loading,
+  [data-arvo-loading="true"] &:not([data-arvo-loading-ignore="true"]) {
+    pointer-events: none;
+    @include loading-element-shimmer;
+  }
+}
+
+// Reduced-motion: keep the dismiss fade but drop the slide transform.
+@media (prefers-reduced-motion: reduce) {
+  .arvo-chip__dismiss {
+    transition-property: opacity;
+    transform: none !important;
+  }
+}

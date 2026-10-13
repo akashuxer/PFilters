@@ -1,0 +1,481 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+
+// Breadcrumb component styles
+// BEM Block: .arvo-bc
+// Abbreviation: bc
+// Sizes: sm (24px row, 14px label, 16px icon, 14px chev) +
+//        lg (32px row, 16px label, 20px icon, 16px chev)
+// Loading: Pattern A skeleton (icon square + label bar) replaces the trail
+// in place so the row height stays stable.
+// Per-item dropdowns: __lnk--dd / __lbl--dd render as <button> with a
+// trailing __chev; their focus ring lives on the nested __lnk-inner so the
+// chevron sits outside the outline (figma section 3.3.3 note 4).
+
+.arvo-bc {
+
+  // -- CSS custom properties (size-driven values only) -----------------------
+  // Only values that change across size / state are exposed as variables
+  // per the CSS-variable-discipline rule. Locked values (separator 7px,
+  // overflow 16x16, link weight 400, current weight 500) use literals.
+  --arvo-bc-pad-block: #{$arvo-space-4};
+  --arvo-bc-height: 24px;
+  --arvo-bc-font-size: #{$arvo-font-size-14};
+  --arvo-bc-icon-size: #{$arvo-icon-16};
+  --arvo-bc-chev-size: #{$arvo-icon-14};
+  --arvo-bc-skl-bar-height: 17px;
+
+  // -- Layout ----------------------------------------------------------------
+  display: flex;
+  align-items: center;
+  height: var(--arvo-bc-height);
+  padding-block: var(--arvo-bc-pad-block);
+  position: relative;
+  box-sizing: border-box;
+
+  // -- Typography ------------------------------------------------------------
+  font-family: var(--o9-font-family);
+  font-size: var(--arvo-bc-font-size);
+
+  // -- Size: Small (default) -------------------------------------------------
+  &--sm {
+    --arvo-bc-pad-block: #{$arvo-space-4};
+    --arvo-bc-height: 24px;
+    --arvo-bc-font-size: #{$arvo-font-size-14};
+    --arvo-bc-icon-size: #{$arvo-icon-16};
+    --arvo-bc-chev-size: #{$arvo-icon-14};
+    --arvo-bc-skl-bar-height: 17px;
+  }
+
+  // -- Size: Large -----------------------------------------------------------
+  &--lg {
+    --arvo-bc-pad-block: #{$arvo-space-6};
+    --arvo-bc-height: 32px;
+    --arvo-bc-font-size: #{$arvo-font-size-16};
+    --arvo-bc-icon-size: #{$arvo-icon-20};
+    --arvo-bc-chev-size: #{$arvo-icon-16};
+    --arvo-bc-skl-bar-height: 20px;
+  }
+
+  // Loading drops back to the sm vertical rhythm (24px tall) regardless of
+  // the configured size -- matches the figma loading variants.
+  &.loading {
+    --arvo-bc-pad-block: #{$arvo-space-4};
+    --arvo-bc-height: 24px;
+  }
+
+  // -- List container --------------------------------------------------------
+  &__list {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: $arvo-space-4;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  // -- Item ------------------------------------------------------------------
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    min-width: 0;
+
+    // Separator locked at 14px / 7px slot regardless of breadcrumb size --
+    // figma `paragraph/p14-r` token, both sm and lg variants. Literal width
+    // because the value never varies (CSS-variable-discipline rule).
+    &:not(:first-child)::before {
+      content: '/';
+      color: var(--arvo-color-t-placeholder);
+      font-weight: $arvo-regular;
+      font-size: $arvo-font-size-14;
+      width: 7px;
+      text-align: center;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+  }
+
+  // -- Shared button reset + interactive baseline ----------------------------
+  // Anchors AND every <button>-rendered trigger (__lnk--dd, __lbl--dd,
+  // __overflow) inherit the same baseline.
+  &__lnk,
+  &__lbl--dd,
+  &__overflow {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--o9-font-family);
+    font-size: var(--arvo-bc-font-size);
+    line-height: normal;
+    text-decoration: none;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+    max-width: 100%;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  // -- Link (text + optional leading icon) -----------------------------------
+  &__lnk {
+    gap: $arvo-space-4;
+    color: var(--arvo-color-t-tertiary);
+    font-weight: $arvo-regular;
+
+    // Truncate long labels; full label stays in `title` / `aria-label` for
+    // assistive tech and surfaces via the native tooltip when truncated.
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    .arvo-bc__ico {
+      color: var(--arvo-color-i-tertiary);
+    }
+  }
+
+  // -- Dropdown trigger -- inner wrapper -------------------------------------
+  // Bounds the focus ring on __lnk--dd / __lbl--dd so the trailing chevron
+  // sits outside the outline (figma section 3.3.3 note 4).
+  &__lnk-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // -- Chevron (dropdown triggers only) --------------------------------------
+  // Color tracks `currentColor` so it sweeps with the label palette through
+  // default / hover / focus / open / disabled states.
+  // Glyph stays `o9con-angle-down`; SCSS rotates 180deg on
+  // `aria-expanded='true'` so open/close reads as a smooth rotation
+  // (figma section 11). Reduced-motion overrides drop the transition for
+  // users who request it.
+  &__chev {
+    font-size: var(--arvo-bc-chev-size);
+    color: currentColor;
+    flex-shrink: 0;
+    line-height: normal;
+    text-decoration: none;
+    display: inline-flex;
+    transition: transform $arvo-duration-base $arvo-ease-standard;
+  }
+
+  &__lnk--dd[aria-expanded='true'] &__chev,
+  &__lbl--dd[aria-expanded='true'] &__chev {
+    transform: rotate(180deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__chev {
+      transition: none;
+    }
+  }
+
+  // -- Icon (leading icon: home / link / current / dropdown) -----------------
+  // `__ico--filled` is a stacked sibling used only by home items for the
+  // hover/focus filled-glyph swap; it inherits the same sizing/color as
+  // `__ico` so the visual treatment is identical when shown.
+  &__ico,
+  &__ico--filled {
+    font-size: var(--arvo-bc-icon-size);
+    color: var(--arvo-color-i-tertiary);
+    flex-shrink: 0;
+    line-height: normal;
+    text-decoration: none;
+  }
+
+  // -- Current page label (plain, non-interactive span) ----------------------
+  &__lbl {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    color: var(--arvo-color-t-primary);
+    font-family: var(--o9-font-family);
+    font-size: var(--arvo-bc-font-size);
+    font-weight: $arvo-medium;
+    line-height: normal;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: default;
+
+    .arvo-bc__ico {
+      color: var(--arvo-color-i-primary);
+    }
+  }
+
+  // -- Dropdown trigger styling (current form) -------------------------------
+  // Inherits .arvo-bc__lbl palette + weight (same element, additive class).
+  // Re-establishes only the open-state palette below.
+  &__lbl--dd {
+    &[aria-expanded='true'] {
+      color: var(--arvo-color-t-info-dark);
+
+      .arvo-bc__ico {
+        color: var(--arvo-color-i-info-dark);
+      }
+    }
+  }
+
+  // -- Dropdown trigger styling (link form) ----------------------------------
+  // Inherits .arvo-bc__lnk palette (same element, additive class). Only the
+  // open-state palette is re-established here.
+  &__lnk--dd {
+    &[aria-expanded='true'] {
+      color: var(--arvo-color-t-info-dark);
+
+      .arvo-bc__ico {
+        color: var(--arvo-color-i-info-dark);
+      }
+    }
+  }
+
+  // -- Overflow trigger (`...` icon-only button) -----------------------------
+  // Always 16x16 even under --lg (figma section 3.4 -- overflow icon never
+  // scales). Open-state recolors to i-theme-active with the s-theme-active-4
+  // background tint (figma section 3.3.4).
+  &__overflow {
+    width: $arvo-icon-16;
+    height: $arvo-icon-16;
+    flex-shrink: 0;
+    justify-content: center;
+    color: var(--arvo-color-i-secondary);
+
+    &[aria-expanded='true'] {
+      background-color: var(--arvo-color-s-theme-active-4);
+      color: var(--arvo-color-i-theme-active);
+    }
+  }
+
+  // -- Hover (hover-capable devices only) ------------------------------------
+  // Plain link underlines on hover; dropdown triggers do NOT underline
+  // (figma sections 3.3.3 + 3.3.6); overflow recolors only.
+  // Home is icon-only -- it never underlines (no label to mark) and its
+  // glyph swaps to `o9con-home-filled` to communicate the affordance.
+  @include hover {
+    &__lnk:not(.is-disabled):not(.arvo-bc__lnk--dd):not(.arvo-bc__lnk--home):hover {
+      color: var(--arvo-color-t-info-light);
+      text-decoration: underline;
+
+      .arvo-bc__ico {
+        color: var(--arvo-color-i-info-light);
+      }
+    }
+
+    // Home link: recolor only, no underline; icon glyph swaps to filled
+    // via the dedicated dual-icon rule below.
+    &__lnk--home:not(.is-disabled):hover {
+      color: var(--arvo-color-t-info-light);
+
+      .arvo-bc__ico {
+        color: var(--arvo-color-i-info-light);
+      }
+    }
+
+    &__lnk--dd:not(:disabled):not([aria-expanded='true']):hover {
+      color: var(--arvo-color-t-info-light);
+
+      .arvo-bc__ico {
+        color: var(--arvo-color-i-info-light);
+      }
+    }
+
+    &__lbl--dd:not(:disabled):not([aria-expanded='true']):hover {
+      color: var(--arvo-color-t-info-light);
+
+      .arvo-bc__ico {
+        color: var(--arvo-color-i-info-light);
+      }
+    }
+
+    &__overflow:not(:disabled):not([aria-expanded='true']):hover {
+      color: var(--arvo-color-i-info-light);
+    }
+  }
+
+  // -- Home icon glyph swap (default outline -> filled) ----------------------
+  // React + JS render TWO icon spans inside a home link: the default
+  // `.arvo-bc__ico` (outline glyph) and a stacked `.arvo-bc__ico--filled`
+  // sibling (filled glyph). One is shown at a time; visibility flips on
+  // `:hover` and `:focus-visible` so the swap reads as an instant glyph
+  // change without relying on a hardcoded codepoint. Stays outside the
+  // `@include hover` block so the keyboard `:focus-visible` path also
+  // works on devices without hover.
+  &__ico--filled {
+    display: none;
+  }
+
+  &__lnk--home:hover .arvo-bc__ico,
+  &__lnk--home:focus-visible .arvo-bc__ico {
+    display: none;
+  }
+
+  &__lnk--home:hover .arvo-bc__ico--filled,
+  &__lnk--home:focus-visible .arvo-bc__ico--filled {
+    display: inline-flex;
+  }
+
+  // -- Focus -----------------------------------------------------------------
+  // Plain link: outline on the link itself + underline + recolor.
+  // Home: outline only (no underline -- icon-only control). Filled-glyph
+  // swap is handled by the dedicated rule above.
+  &__lnk:not(.arvo-bc__lnk--dd):not(.arvo-bc__lnk--home):focus-visible {
+    color: var(--arvo-color-t-info-light);
+    text-decoration: underline;
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: $arvo-space-1;
+
+    .arvo-bc__ico {
+      color: var(--arvo-color-i-info-light);
+    }
+  }
+
+  &__lnk--home:focus-visible {
+    color: var(--arvo-color-t-info-light);
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: $arvo-space-1;
+
+    .arvo-bc__ico,
+    .arvo-bc__ico--filled {
+      color: var(--arvo-color-i-info-light);
+    }
+  }
+
+  // Dropdown triggers: outline moves to the nested __lnk-inner so the
+  // trailing chevron sits outside the ring (figma section 3.3.3 note 4).
+  &__lnk--dd:focus-visible,
+  &__lbl--dd:focus-visible {
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: $arvo-space-1;
+  }
+
+  &__lnk--dd:focus-visible:not([aria-expanded='true']) {
+    color: var(--arvo-color-t-info-light);
+
+    .arvo-bc__ico {
+      color: var(--arvo-color-i-info-light);
+    }
+  }
+
+  &__lbl--dd:focus-visible:not([aria-expanded='true']) {
+    color: var(--arvo-color-t-info-light);
+
+    .arvo-bc__ico {
+      color: var(--arvo-color-i-info-light);
+    }
+  }
+
+  // Overflow: outline covers the entire 16x16 button (figma section 3.3.4).
+  &__overflow:focus-visible {
+    color: var(--arvo-color-i-info-light);
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: 0;
+  }
+
+  // -- Disabled --------------------------------------------------------------
+  // Anchors keep `aria-disabled` + drop href but stay focusable. <button>
+  // triggers receive the native `disabled` attribute.
+  &.is-disabled &__lnk,
+  &.is-disabled &__lbl--dd,
+  &.is-disabled &__overflow {
+    color: var(--arvo-color-t-disabled);
+    cursor: not-allowed;
+    text-decoration: none;
+    background-color: transparent;
+
+    .arvo-bc__ico {
+      color: var(--arvo-color-i-disabled);
+    }
+  }
+
+  &.is-disabled &__overflow {
+    color: var(--arvo-color-i-disabled);
+  }
+
+  // -- Loading state ---------------------------------------------------------
+  &.loading {
+    pointer-events: none;
+    cursor: default;
+
+    .arvo-bc__list,
+    .arvo-bc__lnk,
+    .arvo-bc__lbl,
+    .arvo-bc__ico,
+    .arvo-bc__overflow {
+      display: none;
+    }
+  }
+
+  &__skl {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+
+    &__sep {
+      color: var(--arvo-color-t-placeholder);
+      font-weight: $arvo-regular;
+      font-size: $arvo-font-size-14;
+      width: 7px;
+      text-align: center;
+      flex-shrink: 0;
+      line-height: normal;
+    }
+
+    &__icon,
+    &__bar {
+      position: relative;
+      overflow: hidden;
+      background-color: var(--arvo-color-s-pulse-dark);
+    }
+
+    &__icon {
+      width: var(--arvo-bc-icon-size);
+      height: var(--arvo-bc-icon-size);
+      flex-shrink: 0;
+    }
+
+    &__bar {
+      flex: 1 1 0;
+      height: var(--arvo-bc-skl-bar-height);
+      min-width: 0;
+    }
+
+    // Shared shimmer band: a light gradient sweeps left-to-right over each
+    // pulse-dark block. Uses the global arvo-skeleton-shimmer keyframes
+    // already defined in base/_global.scss.
+    &__icon::after,
+    &__bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-light) 50%,
+        transparent 100%
+      );
+      transform: translateX(-100%);
+      animation: arvo-skeleton-shimmer 1.5s ease-in-out infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &__icon::after,
+      &__bar::after {
+        animation: none;
+      }
+    }
+  }
+}

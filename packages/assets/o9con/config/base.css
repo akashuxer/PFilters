@@ -1,0 +1,177 @@
+/* ============================================================================
+ * o9con base styles
+ *
+ * Hand-maintained source for the static portion of o9con.css. The build
+ * pipeline (`pnpm --filter @arvo/assets run o9con:update`) inlines this file
+ * verbatim between the generated @font-face declaration and the generated
+ * per-icon ::before rules.
+ *
+ * Anything that does NOT depend on the per-icon codepoint table belongs here
+ * (base class, size modifiers, background helpers, list markers, animations,
+ * rotate/flip transforms, icon stacks). Per-icon ::before content is emitted
+ * by the build, not this file.
+ *
+ * Ported from o9.FontIcons/o9con/base/_base-o9con.scss + _mixins-o9con.scss.
+ * The legacy `progid:DXImageTransform` IE6-8 filters have been dropped.
+ * Vendor prefixes are kept where they remain useful for Safari / older
+ * Android browsers.
+ * ========================================================================== */
+
+/*------------------------
+	base class definition
+-------------------------*/
+.o9con {
+  display: inline-block;
+  /* Avoid `font` shorthand -- its font-size fights component __ico rules. */
+  font-family: "o9con";
+  font-weight: normal;
+  font-style: normal;
+  font-variant: normal;
+  line-height: 1;
+  speak: none;
+  text-transform: none;
+  /* Better Font Rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*------------------------
+  change icon size
+-------------------------*/
+
+/* relative units */
+.o9con-sz-xs { font-size: 0.75em; }
+.o9con-sz-sm { font-size: 0.875em; }
+.o9con-sz-lg { font-size: 1.33em; }
+.o9con-sz-2x { font-size: 2em; }
+.o9con-sz-3x { font-size: 3em; }
+.o9con-sz-4x { font-size: 4em; }
+.o9con-sz-5x { font-size: 5em; }
+.o9con-sz-6x { font-size: 6em; }
+.o9con-sz-7x { font-size: 7em; }
+.o9con-sz-8x { font-size: 8em; }
+.o9con-sz-9x { font-size: 9em; }
+.o9con-sz-10x { font-size: 10em; }
+
+/* absolute units */
+.o9con-16 { font-size: 16px; }
+.o9con-20 { font-size: 20px; }
+.o9con-24 { font-size: 24px; }
+.o9con-32 { font-size: 32px; }
+.o9con-40 { font-size: 40px; }
+.o9con-48 { font-size: 48px; }
+
+/*----------------------------------
+  add a square/circle background
+-----------------------------------*/
+.o9con-bg-color { background-color: inherit; }
+.o9con-text-color { color: inherit; }
+
+.o9con-bg-sqr,
+.o9con-bg-sqr-smooth,
+.o9con-bg-cir {
+  padding: 0.33em;
+}
+
+.o9con-bg-sqr { border-radius: 0; }
+.o9con-bg-sqr-smooth { border-radius: 0.25em; }
+.o9con-bg-cir { border-radius: 50%; }
+
+.o9con-bg-border {
+  border: solid 1.5px inherit;
+}
+
+/*------------------------------------
+  use icons as list item markers
+-------------------------------------*/
+.o9con-ul {
+  padding-left: 0;
+  list-style-type: none;
+}
+
+.o9con-ul > li {
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.4;
+}
+
+.o9con-ul > li > .o9con {
+  margin-right: 0.4em;
+  line-height: inherit;
+}
+
+/*------------------------
+  animated icons
+-------------------------*/
+.o9con-anim-spin {
+  -webkit-animation: o9con-spin 2s infinite linear;
+  animation: o9con-spin 2s infinite linear;
+}
+
+@-webkit-keyframes o9con-spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes o9con-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.o9con-anim-pulse {
+  -webkit-animation: o9con-pulse 1s ease infinite;
+  animation: o9con-pulse 1s ease infinite;
+}
+
+@-webkit-keyframes o9con-pulse {
+  0% { -webkit-transform: scale(1); }
+  50% { -webkit-transform: scale(1.3); }
+  100% { -webkit-transform: scale(1); }
+}
+
+@keyframes o9con-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/*------------------------
+  rotated/flipped icons
+-------------------------*/
+.o9con-rotate-45 { -webkit-transform: rotate(45deg); transform: rotate(45deg); }
+.o9con-rotate-90 { -webkit-transform: rotate(90deg); transform: rotate(90deg); }
+.o9con-rotate-135 { -webkit-transform: rotate(135deg); transform: rotate(135deg); }
+.o9con-rotate-180 { -webkit-transform: rotate(180deg); transform: rotate(180deg); }
+.o9con-rotate-225 { -webkit-transform: rotate(225deg); transform: rotate(225deg); }
+.o9con-rotate-270 { -webkit-transform: rotate(270deg); transform: rotate(270deg); }
+.o9con-rotate-315 { -webkit-transform: rotate(315deg); transform: rotate(315deg); }
+
+.o9con-flip-x { -webkit-transform: scale(-1, 1); transform: scale(-1, 1); }
+.o9con-flip-y { -webkit-transform: scale(1, -1); transform: scale(1, -1); }
+
+/*--------------------------------------
+  o9con icons stack
+-----------------------------------------*/
+.o9con-icons-stack {
+  position: relative;
+  display: inline-block;
+  width: 2em;
+  height: 2em;
+  line-height: 2em;
+  vertical-align: middle;
+}
+
+.o9con-stack-1x { line-height: inherit; }
+
+.o9con-stack-1x,
+.o9con-stack-2x {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: auto;
+}
+
+.o9con-stack-2x { font-size: 2em; }
+
+.o9con-inverse { color: #ffffff; }

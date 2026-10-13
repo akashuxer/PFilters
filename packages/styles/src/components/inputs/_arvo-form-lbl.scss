@@ -1,0 +1,44 @@
+// Shared form label block
+// BEM Block: .arvo-form-lbl
+// Public atomic primitive (ArvoFormLabel) and shared internal markup. Renders as
+// either <label> (default) or <span> for inner-caption use inside a wrapping
+// <label> on selection controls (Radio, Switch, Checkbox).
+//
+// Default size is sm (12px). Add the .arvo-form-lbl--lg modifier (or pass
+// `size="lg"` to the React component / JS class) to switch to 14px. Most form
+// controls render labels at 12px regardless of field size; the lg variant is
+// reserved for selection controls (Checkbox / Radio and their groups) where
+// the label scales with the control size.
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-label' as *;
+
+.arvo-form-lbl {
+  @include form-label-base;
+  @include form-label-sm;
+
+  &--lg {
+    @include form-label-lg;
+  }
+
+  &__req {
+    @include form-label-required-indicator;
+  }
+
+  // Inline wrapper for the embedded ArvoContextHelp. Sits in the flex flow
+  // right after the required-indicator asterisk (when present) so the icon
+  // always hugs the label text regardless of the label's rendered width.
+  // The 1px gap between siblings comes from `--arvo-lbl-gap` on the block.
+  &__ctx-help {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &.is-disabled {
+    @include form-label-disabled;
+  }
+
+  &.is-invalid {
+    @include form-label-invalid;
+  }
+}

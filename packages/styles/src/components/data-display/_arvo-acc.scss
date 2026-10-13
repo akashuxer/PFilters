@@ -1,0 +1,124 @@
+@use '../../../../tokens/src/scss/all' as *;
+
+// =============================================================================
+// Arvo Accordion  (_arvo-acc.scss)
+// Block: .arvo-acc (container, public)
+// Variants: --surface (default), --transparent
+// Sizes:    --sm (32px collapsed-item), --lg (40px collapsed-item, default)
+// Align:    --align-start, --align-end (default) -- cascades to items
+// State:    .is-disabled, .loading
+// Loading:  Pattern B (skeleton rows cascaded into the item slot list)
+// =============================================================================
+//
+// Companion file: _arvo-acc-item.scss owns the per-row block (.arvo-acc-item).
+// Spacing is consumed via SCSS tokens ($arvo-space-*), not CSS variables --
+// per the foundation rule in tokens/_root.scss.
+
+// -- Per-size header heights ---------------------------------------------------
+$arvo-acc-item-h-sm: 32px;
+$arvo-acc-item-h-lg: 40px;
+
+.arvo-acc {
+  // Cascaded defaults consumed by inner items (md = lg per spec; only sm + lg
+  // are supported on the public surface).
+  --arvo-acc-item-h: #{$arvo-acc-item-h-lg};
+  --arvo-acc-bg: var(--arvo-color-s-layer-01);
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  background-color: var(--arvo-acc-bg);
+  box-sizing: border-box;
+
+  // -- Variants ---------------------------------------------------------------
+  &--surface {
+    --arvo-acc-bg: var(--arvo-color-s-layer-01);
+  }
+
+  &--transparent {
+    --arvo-acc-bg: transparent;
+  }
+
+  // -- Sizes ------------------------------------------------------------------
+  &--sm {
+    --arvo-acc-item-h: #{$arvo-acc-item-h-sm};
+  }
+
+  &--lg {
+    --arvo-acc-item-h: #{$arvo-acc-item-h-lg};
+  }
+
+  // -- Item list --------------------------------------------------------------
+  &__list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  // -- Whole-accordion disabled cascade --------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+  }
+
+  // -- Whole-accordion loading (Pattern B) -----------------------------------
+  &.loading {
+    pointer-events: none;
+  }
+
+  &__skel {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  &__skel-row {
+    position: relative;
+    height: var(--arvo-acc-item-h);
+    width: 100%;
+    overflow: hidden;
+    // Match the item divider line.
+    border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: $arvo-space-8 $arvo-space-12;
+      background-color: var(--arvo-color-s-pulse-dark);
+      border-radius: $arvo-radius-none;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: $arvo-space-8 $arvo-space-12;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-light) 50%,
+        transparent 100%
+      );
+      animation: arvo-shimmer 1.5s infinite linear;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::after {
+        animation: none;
+      }
+    }
+  }
+}

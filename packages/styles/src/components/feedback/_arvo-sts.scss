@@ -1,0 +1,208 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/corner-host' as *;
+
+// ArvoStatus component styles.
+// BEM Block: .arvo-sts
+// Abbreviation: sts
+// Category: Feedback
+//
+// Compact visual status indicator. A small container with a single
+// centered o9con icon glyph -- the icon (not the container) carries the
+// semantic color.
+//
+// The `placement` prop is a single-axis layout selector. The React / JS
+// layers always emit an `arvo-sts--{placement}` modifier:
+//   - `arvo-sts--inline` (default): transparent background, normal-flow
+//     inline-flex element. Use when the status sits next to text or
+//     other content.
+//   - `arvo-sts--top-right` / `arvo-sts--bottom-right`: layer-01
+//     "separator" background AND absolute positioning at the matching
+//     corner of a `corner-host` parent (avatar, button, card, image,
+//     node). The HOST must have `position: relative` for the offsets to
+//     take effect; the shared `corner-host` SCSS mixin handles this.
+//
+// Most types are circular; `critical` and `warning` render as squares.
+//
+// The inner icon is rendered by React / JS as
+//   <i class="arvo-sts__ico o9con o9con-{name}"></i>
+// so this stylesheet never owns the per-type icon glyph -- it only owns
+// the size, color, background, and border-radius.
+
+.arvo-sts {
+  // -- Layout / size tokens (defaults = lg) --------------------------------
+  --arvo-sts-size: 16px;
+  --arvo-sts-icon-size: #{$arvo-icon-14};
+
+  // -- Color / shape tokens (defaults = positive type) ---------------------
+  --arvo-sts-icon-color: var(--arvo-color-i-positive);
+  --arvo-sts-bg: var(--arvo-color-s-layer-01);
+  --arvo-sts-radius: #{$arvo-radius-circle};
+
+  // -- Overlay positioning offsets (only applied when an
+  //    --{top-right|bottom-right} modifier is set on the root) ------------
+  --arvo-sts-offset-right: calc(var(--arvo-sts-size) * -0.5);
+  --arvo-sts-offset-top: calc(var(--arvo-sts-size) * -0.5);
+  --arvo-sts-offset-bottom: calc(var(--arvo-sts-size) * -0.5);
+
+  // -- Base layout ---------------------------------------------------------
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--arvo-sts-size);
+  height: var(--arvo-sts-size);
+  border-radius: var(--arvo-sts-radius);
+  background-color: var(--arvo-sts-bg);
+  pointer-events: none;
+  user-select: none;
+  flex: 0 0 auto;
+  vertical-align: middle;
+
+  // -- Inner icon ----------------------------------------------------------
+
+  .arvo-sts__ico {
+    font-family: $o9con;
+    font-size: var(--arvo-sts-icon-size);
+    color: var(--arvo-sts-icon-color);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // -- Size modifiers ------------------------------------------------------
+
+  &--sm {
+    --arvo-sts-size: 10px;
+    --arvo-sts-icon-size: #{$arvo-icon-8};
+  }
+
+  &--md {
+    --arvo-sts-size: 14px;
+    --arvo-sts-icon-size: #{$arvo-icon-12};
+  }
+
+  &--lg {
+    --arvo-sts-size: 16px;
+    --arvo-sts-icon-size: #{$arvo-icon-14};
+  }
+
+  // -- Placement: inline mode ----------------------------------------------
+  // `--inline` swaps the container background to transparent so the icon
+  // sits directly on the host surface, and the status flows as a normal
+  // inline-flex element (no absolute positioning). Container size, icon
+  // color, and border-radius are unchanged from the overlay modes.
+  &--inline {
+    --arvo-sts-bg: transparent;
+  }
+
+  // -- Type modifiers (per-type icon color + border-radius) ---------------
+  // The icon glyph itself is set by the React / JS layer via the
+  // o9con o9con-{name} classes; these rules only paint the color and the
+  // container shape.
+
+  &--available {
+    --arvo-sts-icon-color: var(--arvo-color-i-positive);
+  }
+
+  &--notAvailable {
+    --arvo-sts-icon-color: var(--arvo-color-i-disabled);
+  }
+
+  &--partialComplete {
+    --arvo-sts-icon-color: var(--arvo-color-i-warning-static);
+  }
+
+  &--busy {
+    --arvo-sts-icon-color: var(--arvo-color-i-negative);
+  }
+
+  &--failed {
+    --arvo-sts-icon-color: var(--arvo-color-i-negative);
+  }
+
+  &--blocked {
+    --arvo-sts-icon-color: var(--arvo-color-i-negative);
+  }
+
+  &--attention {
+    --arvo-sts-icon-color: var(--arvo-color-i-warning-static);
+  }
+
+  &--loading {
+    --arvo-sts-icon-color: var(--arvo-color-i-info-light);
+  }
+
+  &--paused {
+    --arvo-sts-icon-color: var(--arvo-color-i-placeholder);
+  }
+
+  // Critical and warning are square (no radius) -- the shape itself
+  // carries part of the semantic.
+  &--critical {
+    --arvo-sts-icon-color: var(--arvo-color-i-negative-static);
+    --arvo-sts-radius: #{$arvo-radius-none};
+  }
+
+  &--high {
+    --arvo-sts-icon-color: var(--arvo-color-i-negative);
+  }
+
+  &--medium {
+    --arvo-sts-icon-color: var(--arvo-color-i-warning-static);
+  }
+
+  &--low {
+    --arvo-sts-icon-color: var(--arvo-color-i-util-purple);
+  }
+
+  &--unknown {
+    --arvo-sts-icon-color: var(--arvo-color-i-util-purple);
+  }
+
+  &--positive {
+    --arvo-sts-icon-color: var(--arvo-color-i-positive);
+  }
+
+  &--negative {
+    --arvo-sts-icon-color: var(--arvo-color-i-negative);
+  }
+
+  &--warning {
+    --arvo-sts-icon-color: var(--arvo-color-i-warning);
+    --arvo-sts-radius: #{$arvo-radius-none};
+  }
+
+  &--info {
+    --arvo-sts-icon-color: var(--arvo-color-i-info-light);
+  }
+
+  &--neutral {
+    --arvo-sts-icon-color: var(--arvo-color-i-neutral);
+  }
+
+  // -- Overlay placement modifiers -----------------------------------------
+  // The HOST element must have position:relative for these offsets to
+  // take effect. Consuming components apply the `corner-host` shared
+  // mixin (or set position:relative themselves) on their BEM root.
+
+  &--top-right {
+    position: absolute;
+    top: calc(var(--arvo-sts-offset-top) + 1px);
+    right: calc(var(--arvo-sts-offset-right) + 1px);
+    z-index: 1;
+  }
+
+  &--bottom-right {
+    position: absolute;
+    bottom: var(--arvo-sts-offset-bottom);
+    right: var(--arvo-sts-offset-right);
+    z-index: 1;
+  }
+}
+
+// Reduced-motion safety -- the component has no animations of its own, but
+// future motion (e.g. loading spinner) should respect this gate.
+@media (prefers-reduced-motion: reduce) {
+  .arvo-sts__ico { animation: none !important; }
+}

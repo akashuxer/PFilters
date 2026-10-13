@@ -1,0 +1,28 @@
+$o9-mono: monospace;
+$o9con: "o9con";
+$o9-icon-old: "FontAwesome";
+$mono-font: $o9-mono;
+
+// Font weight tokens
+$arvo-regular: 400;
+$arvo-medium: 500;
+$arvo-bold: 700;
+
+// Font size tokens
+$arvo-font-size-64: 4rem; // 64px
+$arvo-font-size-40: 2.5rem; // 40px
+$arvo-font-size-32: 2rem; // 32px
+$arvo-font-size-24: 1.5rem; // 24px
+$arvo-font-size-20: 1.25rem; // 20px
+$arvo-font-size-18: 1.125rem; // 18px
+$arvo-font-size-16: 1rem; // 16px
+$arvo-font-size-14: 0.875rem; // 14px
+$arvo-font-size-12: 0.75rem; // 12px
+$arvo-font-size-10: 0.625rem; // 10px
+
+// o9con icon base font
+$o9con-reg-em-1: normal normal normal 1em/1 $o9con;
+
+// Font family references
+$o9-mono: monospace;
+$o9con: "o9con";

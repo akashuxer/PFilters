@@ -1,0 +1,647 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+
+// =============================================================================
+// Arvo Nav  (_arvo-nav.scss)
+// Blocks: .arvo-nav (wrapper, public) + .arvo-nav-item (row, internal)
+// Sizes: --sm (32px), --md (default 40px), --lg (48px)
+// Layout modifier: --actions-always
+// State classes: .active (selected row), .is-disabled, .is-loading,
+//                .is-pinned, .show-actions, .loading (whole-list)
+// =============================================================================
+
+// -- Default per-row metrics (md) -------------------------------------------
+// CSS variables are only used for values that change per size. Everything
+// else (gaps, leading-element sizes, fonts, colors) references SCSS tokens
+// or semantic color custom properties directly.
+$arvo-nav-item-h-sm: 32px;
+$arvo-nav-item-h-md: 40px;
+$arvo-nav-item-h-lg: 48px;
+
+// =============================================================================
+// Wrapper
+// =============================================================================
+
+.arvo-nav {
+  // Cascaded defaults consumed by the inner items.
+  --arvo-nav-item-h: #{$arvo-nav-item-h-md};
+  --arvo-nav-item-py: #{$arvo-space-8};
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-sizing: border-box;
+
+  // -- Sizes ----------------------------------------------------------------
+  &--sm {
+    --arvo-nav-item-h: #{$arvo-nav-item-h-sm};
+    --arvo-nav-item-py: #{$arvo-space-4};
+  }
+
+  &--md {
+    --arvo-nav-item-h: #{$arvo-nav-item-h-md};
+    --arvo-nav-item-py: #{$arvo-space-8};
+  }
+
+  &--lg {
+    --arvo-nav-item-h: #{$arvo-nav-item-h-lg};
+    --arvo-nav-item-py: #{$arvo-space-12};
+  }
+
+  // -- List container -------------------------------------------------------
+  // `position: relative` so the absolutely-positioned __indicator and
+  // __highlight slide-elements anchor to the list. The list owns the
+  // active accent and tinted background; the items themselves render
+  // only their content + hover bg.
+  &__list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  // -- Sliding active indicator + highlight ---------------------------------
+  // The indicator (2px left accent) and highlight (full-row tinted bg)
+  // are persistent absolutely-positioned elements that slide between
+  // rows when the selection changes. The component writes the active
+  // row's offsetTop and offsetHeight onto the list element via CSS
+  // variables (--arvo-nav-active-top / --arvo-nav-active-h); when no
+  // row is active the host carries `--no-active` so the slide elements
+  // collapse to height 0 and fade out. Honors `prefers-reduced-motion`.
+  &__indicator,
+  &__highlight {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: var(--arvo-nav-active-h, 0px);
+    transform: translateY(var(--arvo-nav-active-top, 0px));
+    transition: $arvo-motion-nav-indicator;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &__indicator {
+    width: $arvo-border-2;
+    background: var(--arvo-color-b-theme-active);
+  }
+
+  &__highlight {
+    right: 0;
+    background: var(--arvo-color-s-theme-active-4);
+  }
+
+  // No active row -- hide the slide elements (collapsed height already
+  // hides them, but we also disable the transition the first time the
+  // component mounts to avoid a slide-in from 0 -> first selection).
+  &--no-active &__indicator,
+  &--no-active &__highlight {
+    opacity: 0;
+  }
+
+  // First paint -- the indicator/highlight should appear at their resting
+  // position without animating from `transform: translateY(0)`. The
+  // component toggles this class off after the first measurement settles.
+  &--init &__indicator,
+  &--init &__highlight {
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__indicator,
+    &__highlight {
+      transition: none;
+    }
+  }
+
+  // -- Whole-list disabled --------------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+  }
+
+  // -- Whole-list loading ---------------------------------------------------
+  &.loading {
+    pointer-events: none;
+  }
+
+  // -- Compact icon-only rail ------------------------------------------------
+  // Applied when `isCompact=true` (cascaded to every item via the
+  // `arvo-nav-item--compact` class). The nav wrapper collapses to
+  // width = row height, centers the row content, and suppresses the
+  // sliding highlight / indicator's horizontal reach so the accent stays
+  // inside the icon-only column. NavItem-level rules (below) hide the
+  // label / avatar / actions / status / badge / pin toggle so only the
+  // leading icon remains visible.
+  &--compact {
+    width: var(--arvo-nav-item-h);
+    min-width: var(--arvo-nav-item-h);
+
+    .arvo-nav__list {
+      width: 100%;
+    }
+  }
+}
+
+// =============================================================================
+// Row (NavItem)
+// =============================================================================
+
+.arvo-nav-item {
+  // Allow the wrapper to override; fall back to md defaults when standalone.
+  --arvo-nav-item-h: #{$arvo-nav-item-h-md};
+  --arvo-nav-item-py: #{$arvo-space-8};
+  // Reserved width for the absolutely-positioned actions cluster. Set inline
+  // by the React/JS component when actionsVisibility='hover' so the label
+  // ellipsizes before it overlaps the action buttons.
+  --arvo-nav-item-actions-w: 0px;
+
+  // `position: relative` so the row sits above the absolutely-positioned
+  // .arvo-nav__indicator / .arvo-nav__highlight elements (z-index above 0
+  // is implicit because position:relative creates a stacking context).
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: var(--arvo-nav-item-h);
+  padding-block: var(--arvo-nav-item-py);
+  padding-inline: $arvo-space-12;
+  gap: $arvo-space-8; // outer gap: left content <-> action cluster
+
+  // Polymorphic root resets (anchor + button)
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--arvo-color-t-secondary);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--o9-font-family);
+  appearance: none;
+  outline: none;
+  box-sizing: border-box;
+  // Stable left-edge slot equal to the indicator's width so .active does
+  // not shift content to the right. The colored accent itself comes from
+  // the sliding .arvo-nav__indicator element on the list.
+  border-inline-start: $arvo-border-2 solid transparent;
+  transition: $arvo-motion-nav-item;
+
+  // -- Sizes (also applied directly when the item is rendered standalone) --
+  &--sm {
+    --arvo-nav-item-h: #{$arvo-nav-item-h-sm};
+    --arvo-nav-item-py: #{$arvo-space-4};
+  }
+
+  &--md {
+    --arvo-nav-item-h: #{$arvo-nav-item-h-md};
+    --arvo-nav-item-py: #{$arvo-space-8};
+  }
+
+  &--lg {
+    --arvo-nav-item-h: #{$arvo-nav-item-h-lg};
+    --arvo-nav-item-py: #{$arvo-space-12};
+  }
+
+  // -- Compact icon-only row -------------------------------------------------
+  // Applied when the parent `ArvoNav` has `isCompact=true`. The row
+  // collapses to a square that shows only the leading icon; the
+  // polymorphic root carries `aria-label` (and native `title`) so
+  // assistive tech and hover / focus tooltips still receive the row
+  // label. Label / avatar / status / badge / actions / pin toggle are
+  // hidden here (they remain in the DOM only for the non-compact
+  // wrapper case where a consumer might toggle compact at runtime).
+  &--compact {
+    width: var(--arvo-nav-item-h);
+    min-width: var(--arvo-nav-item-h);
+    padding-inline: 0;
+    justify-content: center;
+    gap: 0;
+
+    .arvo-nav-item__lft {
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+
+    .arvo-nav-item__lbl,
+    .arvo-nav-item__avt,
+    .arvo-nav-item__actions {
+      display: none;
+    }
+  }
+
+  // ============================================================================
+  // Inner slots
+  // ============================================================================
+
+  &__lft {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-8; // icon <-> avatar <-> label
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    transition: padding-right $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  &__ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: $o9con;
+    font-size: $arvo-icon-16;
+    color: var(--arvo-color-i-secondary);
+  }
+
+  &__avt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__lbl {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-regular;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-2;
+    flex-shrink: 0;
+    // Cluster wrapper is always rendered so passive indicators (status,
+    // badge) stay visible. Per-element visibility is controlled below so
+    // only the action BUTTONS (pin / inline IconButtons / overflow) honor
+    // actionsVisibility='hover'.
+    pointer-events: auto;
+  }
+
+  &__sts,
+  &__act,
+  &__overflow,
+  &__pin,
+  &__bdg {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  // Hover-revealed elements: pin toggle (when not yet pinned), inline
+  // action IconButtons, and the overflow DropdownIconButton trigger.
+  // Status and badge are passive indicators -- they're never hidden.
+  &__pin,
+  &__act,
+  &__overflow {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity $arvo-duration-fast $arvo-ease-simple,
+      visibility $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  // ============================================================================
+  // Reveal-on-hover / focus / selected (action buttons only)
+  // ============================================================================
+
+  &:not(.is-disabled):focus-visible &__pin,
+  &:not(.is-disabled):focus-visible &__act,
+  &:not(.is-disabled):focus-visible &__overflow,
+  &:not(.is-disabled):focus-within &__pin,
+  &:not(.is-disabled):focus-within &__act,
+  &:not(.is-disabled):focus-within &__overflow,
+  &.active:not(.is-disabled) &__pin,
+  &.active:not(.is-disabled) &__act,
+  &.active:not(.is-disabled) &__overflow,
+  &.is-pinned &__pin,
+  &.show-actions &__pin,
+  &.show-actions &__act,
+  &.show-actions &__overflow {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  @include hover {
+    &:not(.is-disabled):hover &__pin,
+    &:not(.is-disabled):hover &__act,
+    &:not(.is-disabled):hover &__overflow {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+  }
+
+  // ============================================================================
+  // Default (unselected) interactive states
+  // ============================================================================
+
+  // Hover: tinted bg + label/avatar darken; badge flips to filled in component
+  @include hover {
+    &:not(.is-disabled):not(.active):hover {
+      background-color: var(--arvo-color-s-theme-hover-4);
+      color: var(--arvo-color-t-theme-hover);
+
+      .arvo-nav-item__ico {
+        color: var(--arvo-color-i-theme-hover);
+      }
+    }
+
+    // Active + hover: the hover bg must not overpaint the sliding left
+    // indicator. The row reserves 2px on the left via a transparent
+    // `border-inline-start`, and the absolutely-positioned __indicator
+    // (z-index: 0, behind the row at z-index: 1) sits in that slot. By
+    // default, `background-color` paints inside `border-box` -- including
+    // behind the transparent border -- which covers the indicator. Switch
+    // `background-clip` to `padding-box` so the hover bg only fills inside
+    // the border, leaving the 2px slot transparent for the indicator to
+    // show through. Non-active hover keeps the default `border-box` clip
+    // so the hover bg still fills edge-to-edge on inactive rows.
+    &.active:not(.is-disabled):hover {
+      background-color: var(--arvo-color-s-theme-hover-4);
+      background-clip: padding-box;
+    }
+  }
+
+  // Focus ring (unselected): 1px theme-focus on all four sides via outline.
+  // Outline doesn't take layout space so the row content stays put.
+  &:not(.is-disabled):not(.active):focus-visible {
+    color: var(--arvo-color-t-theme-hover);
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: -#{$arvo-border-1};
+    z-index: 1;
+
+    .arvo-nav-item__ico {
+      color: var(--arvo-color-i-theme-hover);
+    }
+  }
+
+  // ============================================================================
+  // Selected (.active)
+  // ============================================================================
+  //
+  // The visual chrome for the active row (2px left accent + tinted bg) is
+  // painted by the sliding .arvo-nav__indicator and .arvo-nav__highlight
+  // elements on the list, NOT by per-item declarations. This rule only
+  // updates the text/icon color + label weight so the cluster reads as
+  // "currently active" while the indicator slides into position.
+
+  &.active {
+    color: var(--arvo-color-t-primary);
+
+    .arvo-nav-item__lbl {
+      font-weight: $arvo-medium;
+    }
+
+    .arvo-nav-item__ico {
+      color: var(--arvo-color-i-primary);
+    }
+  }
+
+  // Selected + focus: keep selected fill, add a 1px theme-focus ring on the
+  // remaining three sides via inset box-shadow (top, right, bottom). The 2px
+  // left accent is owned by border-inline-start above, so the visual
+  // composition matches the spec exactly without shifting layout.
+  &.active:not(.is-disabled):focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 #{$arvo-border-1} 0 var(--arvo-color-b-theme-focus),
+      inset -#{$arvo-border-1} 0 0 var(--arvo-color-b-theme-focus),
+      inset 0 -#{$arvo-border-1} 0 var(--arvo-color-b-theme-focus);
+    z-index: 1;
+  }
+
+  // ============================================================================
+  // Disabled
+  // ============================================================================
+
+  &.is-disabled {
+    cursor: not-allowed;
+    pointer-events: auto; // keep the not-allowed cursor on hover
+    color: var(--arvo-color-t-disabled);
+
+    .arvo-nav-item__ico {
+      color: var(--arvo-color-i-disabled);
+    }
+
+    // Avatar dims to 40% per spec
+    .arvo-nav-item__avt {
+      opacity: $arvo-opacity-40;
+    }
+
+    // Inner inline buttons can still be tab-stops if needed but the row
+    // suppresses click via JS/React handlers.
+  }
+
+  // Selected + disabled: drop label back to regular weight. The disabled
+  // chrome for the row itself (bg + border) is owned by the active
+  // indicator/highlight on the list -- a disabled-active row keeps its
+  // dimmed accent because the indicator paints in
+  // `--arvo-color-b-theme-active` and the highlight in
+  // `--arvo-color-s-theme-active-4`; the per-row .is-disabled rule above
+  // also dims label/icon color so the composite reads as "disabled but
+  // currently active".
+  &.active.is-disabled {
+    .arvo-nav-item__lbl {
+      font-weight: $arvo-regular;
+    }
+  }
+
+  // ============================================================================
+  // Pinned
+  // ============================================================================
+
+  // Visually identical to default; the pin button stays revealed via the
+  // `.is-pinned &__actions` rule above. Future extension: a small pin glyph
+  // overlay could be added here without breaking parity.
+
+  // ============================================================================
+  // Loading (Pattern C, per-row)
+  // ============================================================================
+
+  &__skel {
+    display: none;
+  }
+
+  &.is-loading {
+    pointer-events: none;
+    // Collapse padding so the skeleton bar fills the row.
+    padding: $arvo-space-2;
+    border-inline-start-color: transparent;
+    background: transparent;
+
+    .arvo-nav-item__lft,
+    .arvo-nav-item__actions,
+    .arvo-nav-item__sts,
+    .arvo-nav-item__bdg,
+    .arvo-nav-item__pin,
+    .arvo-nav-item__act,
+    .arvo-nav-item__overflow {
+      visibility: hidden;
+    }
+
+    .arvo-nav-item__skel {
+      display: block;
+      position: relative;
+      flex: 1 1 auto;
+      height: 100%;
+      overflow: hidden;
+      border-radius: inherit;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background-color: var(--arvo-color-s-pulse-dark);
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--arvo-color-s-pulse-light) 50%,
+          transparent 100%
+        );
+        animation: arvo-shimmer 1.5s infinite linear;
+        will-change: transform;
+        transform: translateZ(0);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        &::after {
+          animation: none;
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// Whole-list loading cascade (parent .arvo-nav.loading puts every item in
+// loading state, mirroring Tabstrip's Pattern C behavior).
+// =============================================================================
+
+.arvo-nav.loading .arvo-nav-item {
+  pointer-events: none;
+  padding: $arvo-space-2;
+  border-inline-start-color: transparent;
+  background: transparent;
+
+  .arvo-nav-item__lft,
+  .arvo-nav-item__actions,
+  .arvo-nav-item__sts,
+  .arvo-nav-item__bdg,
+  .arvo-nav-item__pin,
+  .arvo-nav-item__act,
+  .arvo-nav-item__overflow {
+    visibility: hidden;
+  }
+
+  .arvo-nav-item__skel {
+    display: block;
+    position: relative;
+    flex: 1 1 auto;
+    height: 100%;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-color: var(--arvo-color-s-pulse-dark);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-light) 50%,
+        transparent 100%
+      );
+      animation: arvo-shimmer 1.5s infinite linear;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::after {
+        animation: none;
+      }
+    }
+  }
+}
+
+// =============================================================================
+// Whole-list disabled cascade
+// =============================================================================
+
+.arvo-nav.is-disabled .arvo-nav-item {
+  pointer-events: none;
+  cursor: not-allowed;
+  color: var(--arvo-color-t-disabled);
+
+  .arvo-nav-item__ico {
+    color: var(--arvo-color-i-disabled);
+  }
+
+  .arvo-nav-item__avt {
+    opacity: $arvo-opacity-40;
+  }
+}
+
+// =============================================================================
+// Actions cluster layout
+// The cluster is always in the natural flex flow so passive indicators
+// (status, badge) always reserve their space at the trailing edge of the
+// row. Action BUTTONS (pin / inline / overflow) live inside the cluster and
+// are hidden via opacity/visibility when actionsVisibility='hover' so they
+// don't shift the badge on hover -- they fade in over the space they
+// already occupy.
+// =============================================================================
+
+// =============================================================================
+// actionsVisibility='always' -- show actions inline and reserve their width
+// in the natural flex flow (no absolute positioning).
+// =============================================================================
+
+.arvo-nav--actions-always .arvo-nav-item__actions {
+  position: static;
+  transform: none;
+}
+
+.arvo-nav--actions-always .arvo-nav-item__pin,
+.arvo-nav--actions-always .arvo-nav-item__act,
+.arvo-nav--actions-always .arvo-nav-item__overflow {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}

@@ -1,0 +1,412 @@
+@use '../../../tokens/src/scss/all' as *;
+@use 'loading' as *;
+@use 'typography' as *;
+@use 'list-item' as *;
+@use 'overlay-footer' as *;
+
+// Shared panel-shell mixins -- interior anatomy for side-panel-style panes.
+// Parametrized on $block so consumers render their own BEM block.
+// Used by: side-panel (arvo-sp), drawer (arvo-drw)
+//
+// HOST-ELEMENT CONTRACT
+// ---------------------
+// The mixin set below renders the inner anatomy. The CONSUMER (e.g. .arvo-sp,
+// .arvo-drw) owns the host element and MUST establish the following layout
+// chain so the body grows to fill available space and the footer pins to the
+// bottom:
+//
+//   .{block-host} {
+//     display: flex;
+//     flex-direction: column;
+//     height: 100%;        // or a deterministic height (e.g. 100vh, fixed px)
+//     min-height: 0;       // critical for nested flex containers
+//   }
+//
+// Stories embedding the host MUST provide a sized canvas (e.g. 480 x 720)
+// because the panel cannot infer its own height from a content-area parent.
+//
+// The scrollable body's scrollbar resolves to --arvo-color-s-layer-05.
+// --arvo-color-s-scroll is an OPTIONAL parent override hook (no global token
+// by design) -- if a host defines it, the scrollbar follows; otherwise the
+// layer-05 fallback applies.
+
+// ---------------------------------------------------------------------------
+// panel-shell-pane($block)
+// Inner pane wrapper that establishes the flex-column chain consumed by
+// __hdr / __sticky / __body / __footer. Consumers render the panel-shell
+// content tree inside an element whose class is `{block}__pane`.
+//
+// Note: the React layer wraps the panel-shell content in an additional
+// `<div class="arvo-panel-shell">` (see PanelShell.tsx). That wrapper must
+// preserve the flex-column chain so __body can still flex/scroll and __footer
+// pins to the bottom. The selector below makes the wrapper a transparent
+// flex passthrough.
+// ---------------------------------------------------------------------------
+@mixin panel-shell-pane($block) {
+  .#{$block}__pane {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+
+  .#{$block}__pane > .arvo-panel-shell {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// panel-shell-hdr($block)
+// Header row: back button, title, header-actions, close.
+// ---------------------------------------------------------------------------
+@mixin panel-shell-hdr($block) {
+  .#{$block}__hdr {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    padding: $arvo-space-4 $arvo-space-8 $arvo-space-4 $arvo-space-12;
+    gap: $arvo-space-8;
+    flex: 0 0 auto;
+    height: 40px;
+    font-family: var(--o9-font-family);
+  }
+
+  .#{$block}__hdr-lft {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .#{$block}__back {
+    flex: 0 0 auto;
+  }
+
+  // Wrapper hosts for the leading (icon) and trailing (status + badge)
+  // title slots. The JS shell always mounts both wrappers so it can swap
+  // their contents dynamically; empty wrappers collapse to `display: none`
+  // so the parent `__hdr-lft` gap doesn't leak into title spacing when
+  // there is no leading icon or trailing cluster.
+  .#{$block}__title-leading,
+  .#{$block}__title-trailing {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  .#{$block}__title-leading:empty,
+  .#{$block}__title-trailing:empty {
+    display: none;
+  }
+
+  .#{$block}__title-trailing {
+    gap: $arvo-space-4;
+  }
+
+  // Leading title icon glyph (20x20 o9con). Uses the token secondary
+  // text color so it reads as chrome rather than an active control.
+  .#{$block}__icon {
+    font-size: 20px;
+    line-height: 1;
+    color: var(--arvo-color-i-secondary);
+    flex: 0 0 auto;
+  }
+
+  .#{$block}__title {
+    @include arvo-font-h16-m;
+    color: var(--arvo-color-t-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  .#{$block}__hdr-actions {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex: 0 0 auto;
+    // Ensure header actions push to the trailing edge regardless of __hdr-lft
+    // content width. The default flex layout already does this via the `1 1 0`
+    // on __hdr-lft, but margin-inline-start: auto guarantees correct placement
+    // even if __hdr-lft is overridden to flex: 0 by a consumer.
+    margin-inline-start: auto;
+  }
+
+  .#{$block}__action {
+    flex: 0 0 auto;
+  }
+
+  .#{$block}__close {
+    flex: 0 0 auto;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// panel-shell-header-action($block)
+// Force inner interactive components to sm / tertiary.
+// ---------------------------------------------------------------------------
+@mixin panel-shell-header-action($block) {
+  .#{$block}__action {
+    .arvo-icon-btn,
+    .arvo-dd-icon-btn,
+    .arvo-split-icon-btn {
+      --arvo-btn-height: 24px;
+      --arvo-btn-icon-size: 16px;
+      --arvo-btn-padding-inline: #{$arvo-space-4};
+    }
+
+    // Tighten the gap between the action and caret segments of the embedded
+    // split-icon-button so the compact 24px control reads as one unit.
+    .arvo-split-icon-btn {
+      gap: 0;
+    }
+
+    .arvo-sw {
+      --arvo-sw-track-width: 28px;
+      --arvo-sw-track-height: 16px;
+    }
+
+    .arvo-cb {
+      --arvo-cb-size: 16px;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// panel-shell-sticky($block)
+// Regular flex sibling between __hdr and __body (NOT position: sticky).
+// ---------------------------------------------------------------------------
+@mixin panel-shell-sticky($block) {
+  .#{$block}__sticky {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+    padding-top: $arvo-space-8;
+    padding-inline: $arvo-space-12;
+    flex: 0 0 auto;
+  }
+
+  // Banner slot wrapper -- the inner ArvoBannerAlert paints its own border,
+  // background, padding, and close button; the wrapper carries layout only.
+  .#{$block}__banner {
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  // Tabs slot inside the sticky region. The strip grows to fill the panel
+  // width and visible tabs distribute leftover space evenly. Tabs that no
+  // longer fit are pushed to the overflow menu by ArvoTabstrip itself.
+  //
+  // Layout contract:
+  //   - The strip itself fills the parent (`display: flex; width: 100%;`)
+  //     even when the consumer enables overflow detection (which would
+  //     otherwise switch the strip to `inline-flex; width: auto;`).
+  //   - The inner `__list` fills the remaining width so the indicator rail
+  //     spans the whole panel width even when tabs would naturally be
+  //     content-sized.
+  //   - Each visible tab uses `flex: 1 1 0` so the strip distributes leftover
+  //     space evenly across all visible tabs (the same model as the
+  //     `arvo-tabs--full-width` modifier). Tabs that no longer fit collapse
+  //     into the overflow menu via the strip's overflow manager.
+  .#{$block}__tabs {
+    flex: 0 0 auto;
+
+    > .arvo-tabs {
+      display: flex;
+      width: 100%;
+    }
+
+    > .arvo-tabs > .arvo-tabs__list {
+      flex: 1 1 auto;
+    }
+
+    .arvo-tabs__list > .arvo-tabs__tab {
+      flex: 1 1 0;
+      max-width: none;
+      justify-content: center;
+    }
+  }
+
+  .#{$block}__sticky-slot {
+    flex: 0 0 auto;
+  }
+
+  // Search container row inside the sticky region. Hosts either an
+  // `ArvoSearch` (default) or `ArvoAdvanceSearch` (when the consumer sets
+  // `stickyHeader.search.variant = 'advance-search'`). The 32x32
+  // sliders / custom-filter trigger is provided by `ArvoAdvanceSearch`'s
+  // `customFilter` variant, so the shell renders only the single inner
+  // primitive inside this row -- the flex layout stays so the primitive
+  // can grow to full width.
+  .#{$block}__search {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: $arvo-space-8;
+  }
+
+  .#{$block}__search > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .#{$block}__info {
+    flex: 0 0 auto;
+  }
+
+  // Hide sticky region during loading
+  .#{$block}.loading .#{$block}__sticky {
+    display: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// panel-shell-body($block)
+// Scrollable content region.
+// ---------------------------------------------------------------------------
+@mixin panel-shell-body($block) {
+  .#{$block}__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 0;
+    overflow-y: auto;
+    padding: $arvo-space-16 $arvo-space-12 $arvo-space-8 $arvo-space-12;
+    box-sizing: border-box;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// panel-shell-list($block)
+// List container and items. Composes list-item mixins.
+// ---------------------------------------------------------------------------
+@mixin panel-shell-list($block) {
+  .#{$block}__list {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 0;
+    outline: none;
+
+    &[role='listbox'],
+    &[role='list'],
+    &[role='menu'] {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  .#{$block}__item {
+    @include list-item-base;
+    @include list-item-single-line;
+    @include list-item-states;
+    @include list-item-leading;
+    @include list-item-text;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// panel-shell-empty($block)
+// Empty-state illustration, message, and optional Clear Search action.
+// ---------------------------------------------------------------------------
+@mixin panel-shell-empty($block) {
+  .#{$block}__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $arvo-space-8;
+    padding: $arvo-space-16;
+    flex: 1 0 0;
+    text-align: center;
+    font-family: var(--o9-font-family);
+  }
+
+  .#{$block}__empty-illus {
+    width: 96px;
+    height: 96px;
+    flex: 0 0 auto;
+  }
+
+  .#{$block}__empty-title {
+    @include arvo-font-h14-m;
+    color: var(--arvo-color-t-secondary);
+  }
+
+  .#{$block}__empty-msg {
+    @include arvo-font-l12-r;
+    color: var(--arvo-color-t-tertiary);
+  }
+
+  .#{$block}__empty-action {
+    margin-top: $arvo-space-4;
+  }
+
+  // Visibility hooks on the host block
+  .#{$block}.no-data .#{$block}__empty,
+  .#{$block}.no-results .#{$block}__empty {
+    display: flex;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// panel-shell-skeleton($block)
+// Pattern B skeleton shown when .loading is on the host block.
+//
+// The shared `loading-skeleton-b` mixin applies `pointer-events: none` to
+// the entire host so list items and footer actions are inert. Panel-shell
+// consumers (drawer, side panel) need the user to be able to dismiss the
+// panel while loading -- otherwise a slow data fetch can trap the user
+// inside a non-interactive surface. Re-enable pointer events on the close
+// button, back button, and the optional mask so close / back / mask-click
+// keep working during loading. Escape and outside-click handlers live on
+// document and are already unaffected by the host's pointer-events: none.
+// ---------------------------------------------------------------------------
+@mixin panel-shell-skeleton($block) {
+  @include loading-skeleton-b($block);
+
+  &.loading {
+    .#{$block}__close,
+    .#{$block}__back {
+      pointer-events: auto;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// panel-shell-footer($block)
+// Fixed footer with action buttons.
+// ---------------------------------------------------------------------------
+@mixin panel-shell-footer($block) {
+  .#{$block}__footer {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    padding: $arvo-space-8 $arvo-space-12 $arvo-space-16 $arvo-space-12;
+    box-sizing: border-box;
+  }
+
+  // Footer actions: text/labeled buttons share an equal-shrink basis
+  // (default 112px, grown on demand by the JS `attachOverlayFooterFit`
+  // helper when labels would otherwise truncate) and icon-only controls
+  // stay at their natural width. The variant-driven order rule ensures
+  // primary (and danger) buttons render rightmost regardless of source
+  // order. Layout is owned by the shared `overlay-footer-actions-layout`
+  // mixin so popover, hybrid popover, side-panel, drawer, panel, window,
+  // and alert-dialog share one implementation.
+  .#{$block}__footer-actions {
+    @include overlay-footer-actions-layout;
+    gap: $arvo-space-8;
+  }
+
+  // Hide footer during loading
+  .#{$block}.loading .#{$block}__footer {
+    display: none;
+  }
+}

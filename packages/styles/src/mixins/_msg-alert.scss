@@ -1,0 +1,117 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Shared message-alert mixins -- icon + optional message used across form inputs,
+// selection controls, panel-shell __info, and as the public ArvoMessageAlert block.
+// Block: .arvo-msg-alert
+//
+// Six semantic types (error, success, warning, info, neutral, block) drive icon
+// glyph + color. Two layout modes are supported via separate mixins:
+//   * Full mode  -- @include msg-alert-base + msg-alert-icon + msg-alert-msg
+//   * Inline-only -- @include msg-alert-inline (icon-only 16x16 box)
+
+@mixin msg-alert-type($text-color, $icon-color, $icon-code) {
+  .arvo-msg-alert__msg {
+    color: $text-color;
+  }
+
+  .arvo-msg-alert__ico::before {
+    content: $icon-code;
+    color: $icon-color;
+  }
+}
+
+@mixin msg-alert-base {
+  display: inline-flex;
+  gap: var(--arvo-msg-alert-body-gap, #{$arvo-space-4});
+  align-items: flex-start;
+  font-family: var(--o9-font-family);
+  font-weight: $arvo-regular;
+  font-size: var(--arvo-msg-alert-font-size, #{$arvo-font-size-12});
+  line-height: $arvo-font-size-16;
+}
+
+@mixin msg-alert-icon {
+  flex: 0 0 auto;
+  font-family: $o9con;
+  font-size: var(--arvo-msg-alert-icon-size, #{$arvo-icon-16});
+  line-height: normal;
+}
+
+@mixin msg-alert-msg {
+  min-width: 0;
+  word-break: break-word;
+  flex: 1 0 0;
+  align-self: stretch;
+}
+
+// Type variants -- each sets text color, icon color, and icon glyph.
+@mixin msg-alert-negative {
+  @include msg-alert-type(
+    var(--arvo-color-t-negative),
+    var(--arvo-color-i-negative),
+    '\edd9' // o9con-blocker-action-filled-alt
+  );
+}
+
+@mixin msg-alert-positive {
+  @include msg-alert-type(
+    var(--arvo-color-t-positive),
+    var(--arvo-color-i-positive),
+    '\ec1b'
+  );
+}
+
+@mixin msg-alert-warning {
+  @include msg-alert-type(
+    var(--arvo-color-t-warning),
+    var(--arvo-color-i-warning),
+    '\ed72'
+  );
+}
+
+@mixin msg-alert-info {
+  @include msg-alert-type(
+    var(--arvo-color-t-info-dark),
+    var(--arvo-color-i-info-dark),
+    '\ed71'
+  );
+}
+
+@mixin msg-alert-neutral {
+  @include msg-alert-type(
+    var(--arvo-color-t-neutral),
+    var(--arvo-color-i-neutral),
+    '\ebe2'
+  );
+}
+
+@mixin msg-alert-block {
+  @include msg-alert-type(
+    var(--arvo-color-t-negative),
+    var(--arvo-color-i-negative),
+    '\ed75' // o9con-blocker-action-filled
+  );
+}
+
+// Inline mode -- icon-only 16x16 box. Hides the message + close slots so the
+// component collapses to a single glyph. Used inside form-input fields when
+// `errorDisplay === 'tooltip'`.
+@mixin msg-alert-inline {
+  gap: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+
+  & > .arvo-msg-alert__body { display: contents; }
+  & > .arvo-msg-alert__msg,
+  & > .arvo-msg-alert__close { display: none; }
+}
+
+// Dismissable layout -- the trailing __close ArvoIconButton slot. The button's
+// own visuals are supplied by ArvoIconButton (variant=tertiary, size=xs,
+// icon=close, tooltip=Dismiss); this mixin only controls the parent's flex
+// layout so the close button sits at the trailing edge with the right gap.
+@mixin msg-alert-dismissable {
+  align-items: flex-start;
+  gap: #{$arvo-space-8};
+}

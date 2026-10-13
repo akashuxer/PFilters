@@ -1,0 +1,470 @@
+// =============================================================================
+// Arvo List  (_arvo-list.scss)
+// Blocks: .arvo-list (wrapper, public) + .arvo-list-item (row, internal)
+// Variants: --standard (32px rows), --rich (40px rows with avatar + secondary)
+// Selection: --multi, --single, --none (cascaded down to rows)
+// Layout: --actions-always, --reorderable
+// State: .is-disabled, .loading, .is-empty
+// Row state: .active, .focused, .is-disabled, .is-dragging, .is-drop-target,
+//            .is-loading, .is-excluded
+// =============================================================================
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/list-item' as *;
+@use '../../mixins/list-group' as *;
+@use '../../mixins/loading' as *;
+
+// -- Per-variant row metrics -----------------------------------------------
+$arvo-list-item-h-standard: 32px;
+$arvo-list-item-h-rich: 40px;
+
+// =============================================================================
+// Wrapper
+// =============================================================================
+
+.arvo-list {
+  // Dynamic per-variant metrics consumed by the inner items via the shared
+  // list-item-* mixins. Only values that change per variant or are overridden
+  // by a parent are exposed as CSS variables.
+  --arvo-list-item-height-single: #{$arvo-list-item-h-standard};
+  --arvo-list-item-height-multi: #{$arvo-list-item-h-rich};
+  --arvo-list-item-padding-inline: #{$arvo-space-12};
+  --arvo-list-item-padding-block: #{$arvo-space-4};
+  --arvo-list-item-gap: #{$arvo-space-4};
+  // Spec section 5.1: ArvoList hover bg is theme-hover-3, NOT the shared
+  // mixin default theme-hover-4 (which is what Listbox/Select use).
+  --arvo-list-item-bg-hover: var(--arvo-color-s-theme-hover-3);
+  // Reserved width for the actions cluster when actionsVisibility='hover'.
+  // Set inline by the React/JS component via ResizeObserver so labels
+  // ellipsize before they overlap the revealed action buttons.
+  --arvo-list-item-actions-w: 0px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: var(--arvo-list-width, 100%);
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-sizing: border-box;
+  position: relative;
+
+  // -- Variant gap adjustments for rich (8px gap, 8px block padding) ------
+  &--rich {
+    --arvo-list-item-padding-block: #{$arvo-space-8};
+    --arvo-list-item-gap: #{$arvo-space-8};
+  }
+
+  // -- Whole-list disabled --------------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+  }
+
+  // -- Whole-list loading ---------------------------------------------------
+  &.loading {
+    pointer-events: none;
+  }
+
+  // -- Group structure ------------------------------------------------------
+  &__group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+  }
+
+  &__group-hdr {
+    @include list-group-header;
+    // Group heading gets extra vertical breathing room per spec section 7.3.
+    height: 32px;
+    padding-block: $arvo-space-12;
+    padding-inline-start: $arvo-space-12;
+    padding-inline-end: $arvo-space-8;
+  }
+
+  &__group-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+  }
+
+  &__divider {
+    @include list-group-divider-dashed;
+  }
+
+  // -- Global / per-group select-all row -----------------------------------
+  &__sa {
+    // The select-all row is built from the same row chassis as a regular
+    // list-item: a flex row with the selection control on the left and a
+    // label that grows to fill. We do not include a badge / actions / chev.
+    // Padding math matches list-item-base (calc(12px - 2px)) so the 2px
+    // transparent inline-start border does not push content right of the
+    // sibling item checkboxes. Gap follows the row's --arvo-list-item-gap
+    // CSS variable so standard (4px) and rich (8px) variants stay in sync.
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    height: $arvo-list-item-h-standard;
+    padding-inline-start: calc(#{$arvo-space-12} - 2px);
+    padding-inline-end: $arvo-space-8;
+    padding-block: $arvo-space-4;
+    gap: var(--arvo-list-item-gap, #{$arvo-space-8});
+    background: transparent;
+    border: none;
+    border-inline-start: $arvo-border-2 solid transparent;
+    cursor: pointer;
+    user-select: none;
+    font-family: var(--o9-font-family);
+    box-sizing: border-box;
+    transition: background-color $arvo-duration-fast $arvo-ease-simple;
+
+    .arvo-list__sa__lbl {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: $arvo-font-size-14;
+      font-weight: $arvo-regular;
+      color: var(--arvo-color-t-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @include hover {
+      &:not(.is-disabled):hover {
+        background-color: var(--arvo-color-s-theme-hover-3);
+
+        .arvo-list__sa__lbl {
+          color: var(--arvo-color-t-primary);
+        }
+      }
+    }
+
+    &:focus-visible {
+      outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+      outline-offset: -#{$arvo-border-1};
+      z-index: 1;
+    }
+
+    &.is-disabled {
+      cursor: not-allowed;
+      pointer-events: none;
+
+      .arvo-list__sa__lbl {
+        color: var(--arvo-color-t-disabled);
+      }
+    }
+  }
+
+  // -- Empty state ----------------------------------------------------------
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding-block-start: $arvo-space-12;
+    padding-block-end: $arvo-space-8;
+  }
+
+  // -- Pattern-B skeleton ---------------------------------------------------
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: $arvo-border-1;
+    padding: $arvo-space-2;
+  }
+
+  &__skeleton-row {
+    height: $arvo-list-item-h-standard;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-color: var(--arvo-color-s-pulse-dark);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-light) 50%,
+        transparent 100%
+      );
+      animation: arvo-shimmer 1.5s infinite linear;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::after {
+        animation: none;
+      }
+    }
+  }
+
+  // Rich variant skeleton rows mirror the rich row height.
+  &--rich &__skeleton-row {
+    height: $arvo-list-item-h-rich;
+  }
+
+  // -- Visually-hidden live region ------------------------------------------
+  &__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+// =============================================================================
+// Row (ListItem)
+// =============================================================================
+
+.arvo-list-item {
+  // Consumed by the shared list-item-* mixins via the CSS variables declared
+  // on the parent .arvo-list block. When a row renders standalone (rare), the
+  // mixin defaults apply so the row still has reasonable metrics.
+
+  @include list-item-base;
+  @include list-item-single-line;
+  @include list-item-states;
+  @include list-item-leading;
+  @include list-item-text;
+  @include list-item-selection;
+  @include list-item-drag-handle;
+  @include list-item-actions;
+  @include list-item-trailing;
+  @include list-item-search-highlight;
+
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--arvo-color-t-secondary);
+  text-align: left;
+  text-decoration: none;
+  appearance: none;
+  outline: none;
+
+  // Rich variant: taller row + multi-line text stack.
+  &--rich {
+    @include list-item-multi-line;
+    align-items: center;
+  }
+
+  // -- Inner label / secondary --------------------------------------------
+  // The shared list-item-text mixin owns __txt / __lbl / __secondary; the
+  // rich variant uses the multi-line stack, the standard variant collapses
+  // to a single line and the __secondary slot is not rendered.
+
+  // -- Inline-nav chevron uses the trailing chev slot from list-item-trailing.
+
+  // -- Skeleton bar (Pattern-B per-row) -----------------------------------
+  &__skel {
+    display: none;
+  }
+
+  &.is-loading {
+    pointer-events: none;
+    padding: $arvo-space-1;
+    border-inline-start-color: transparent;
+    background: transparent;
+    cursor: default;
+
+    > *:not(.arvo-list-item__skel) {
+      visibility: hidden;
+    }
+
+    .arvo-list-item__skel {
+      display: block;
+      position: relative;
+      flex: 1 1 auto;
+      height: 100%;
+      overflow: hidden;
+      border-radius: inherit;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background-color: var(--arvo-color-s-pulse-dark);
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--arvo-color-s-pulse-light) 50%,
+          transparent 100%
+        );
+        animation: arvo-shimmer 1.5s infinite linear;
+        will-change: transform;
+        transform: translateZ(0);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        &::after {
+          animation: none;
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// Whole-list cascades
+// =============================================================================
+
+// When the list is loading, every item content is hidden in favor of the
+// __skeleton stack rendered by ArvoList. Individual rows that pre-existed
+// in the DOM keep their per-row .is-loading treatment.
+.arvo-list.loading .arvo-list-item {
+  pointer-events: none;
+}
+
+// Whole-list disabled cascades to every row.
+.arvo-list.is-disabled .arvo-list-item {
+  pointer-events: none;
+  cursor: not-allowed;
+  color: var(--arvo-color-t-disabled);
+}
+
+// =============================================================================
+// actionsVisibility='hover' -- absolute-positioned reveal
+// When the list does not opt into --actions-always, the trailing actions
+// cluster takes itself out of flow and the left content reserves space via
+// --arvo-list-item-actions-w so the label ellipsizes before it overlaps
+// the revealed action buttons. Same pattern as ArvoNav.
+// =============================================================================
+
+.arvo-list:not(.arvo-list--actions-always) .arvo-list-item {
+  @include list-item-actions-on-hover;
+
+  &__actions {
+    position: absolute;
+    right: $arvo-space-8;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &:focus-visible &__txt,
+  &:focus-within &__txt,
+  &.active &__txt {
+    padding-inline-end: var(--arvo-list-item-actions-w, 0px);
+  }
+}
+
+@include hover {
+  .arvo-list:not(.arvo-list--actions-always) {
+    .arvo-list-item:not(.is-disabled):hover .arvo-list-item__txt {
+      padding-inline-end: var(--arvo-list-item-actions-w, 0px);
+    }
+  }
+}
+
+// actionsVisibility='always': show actions inline in the natural flex flow.
+.arvo-list--actions-always .arvo-list-item__actions {
+  position: static;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+// =============================================================================
+// Drag-and-drop (driven by @arvo/core's createSortableList)
+// The sortable handle physically relocates the source row in the DOM as the
+// pointer moves; ArvoList no longer toggles drag state on individual items.
+// Two classes flow in from core:
+//   .arvo-sortable--ghost     -- the in-list source row at its current slot
+//   .arvo-sortable--dragging  -- the floating clone that tracks the pointer
+// Both paint with `s-layer-05` bg + `b-theme` top accent + `arvo-shadow-down`.
+// =============================================================================
+
+// FLIP transition hook -- the sortable applies an inline `transform` to every
+// sibling that shifted due to a DOM move, then clears it on the next frame so
+// this transition animates the row into its new position.
+.arvo-list--reorderable .arvo-list-item {
+  transition:
+    background-color $arvo-duration-fast $arvo-ease-simple,
+    transform 180ms $arvo-ease-simple;
+}
+
+// Reserve a 16px drag-spacer column on the select-all row whenever the host
+// list is reorderable, so the SA checkbox aligns x-coord with item checkboxes
+// that sit behind a drag handle. The spacer is rendered by React/JS to keep
+// the slot count in sync with the items.
+.arvo-list--reorderable .arvo-list__sa .arvo-list-item__drag-spacer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+// The relocated source slot. The row is visually hidden so peers see open
+// space where the dragged item will land, but the ::before draws the
+// 1px theme line across the top edge as the live drop indicator.
+.arvo-list-item.arvo-sortable--ghost {
+  visibility: hidden;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: $arvo-border-1;
+    background-color: var(--arvo-color-b-theme);
+    visibility: visible;
+    pointer-events: none;
+    z-index: 2;
+  }
+}
+
+// The floating clone that follows the pointer. Inline position:fixed and
+// pointer-events:none come from createSortableList; styling is owned here so
+// it matches the Figma drag overlay (s-layer-05 bg, theme top accent,
+// arvo-shadow-down elevation).
+.arvo-list-item.arvo-sortable--dragging {
+  background-color: var(--arvo-color-s-layer-05);
+  box-shadow: $arvo-shadow-down;
+  color: var(--arvo-color-t-primary);
+  position: fixed;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: $arvo-border-1;
+    background-color: var(--arvo-color-b-theme);
+    pointer-events: none;
+    z-index: 2;
+  }
+}

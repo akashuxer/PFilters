@@ -1,0 +1,90 @@
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// DateTimeDropdown component styles
+// BEM Block: .arvo-dt-drop
+// Abbreviation: dt-drop
+// Category: DateTime
+// Descriptor: descriptors/datetime-dropdown.json
+//
+// Public Layer 4 floating date+time dropdown. Bring-your-own-trigger
+// wrapper that composes ArvoCalendar + CalendarNav + ArvoTimeDropdown in
+// a side-by-side layout. Rendered into a portal driven by the
+// OverlaySurface engine.
+
+.arvo-dt-drop {
+  --arvo-dt-drop-w: 450px;
+  --arvo-dt-drop-cal-padding: 12px;
+
+  // Display is gated on the engine-managed `.open` class so the panel is
+  // `display: none` (invisible AND inert) after the OverlaySurface engine
+  // removes `.open` once the exit transition completes. Required for the JS
+  // twin, where the popover element is created once and reused across opens
+  // rather than removed from the DOM.
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  flex-direction: row;
+  align-items: stretch;
+  gap: $arvo-border-2; // 2px gap reveals s-base surface as the divider
+  width: var(--arvo-dt-drop-w, 450px);
+  box-sizing: border-box;
+  background-color: var(--arvo-color-s-base);
+  box-shadow: $arvo-shadow-down;
+  z-index: var(--arvo-z-popover, 1000);
+  font-family: var(--o9-font-family);
+
+  &.open { display: flex; }
+
+  // Direction-aware popup enter / exit animation. See `popup-animation`.
+  @include popup-animation;
+
+  // Calendar column: layer-03 surface, padding-12, contains header above grid.
+  &__cal {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+    box-sizing: border-box;
+    padding: var(--arvo-dt-drop-cal-padding, 12px);
+    background-color: var(--arvo-color-s-layer-03);
+  }
+
+  &__header {
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  &__cal-grid {
+    width: 100%;
+  }
+
+  // Time column: layer-03 surface, padding-top 8 (no horizontal padding).
+  &__time {
+    flex: 0 0 auto;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    width: 144px;
+    max-height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: $arvo-space-8 0 $arvo-space-16 0;
+    background-color: var(--arvo-color-s-layer-03);
+
+    > .arvo-tdrop {
+      width: 100%;
+    }
+  }
+
+  &__sep {
+    flex: 0 0 auto;
+    width: $arvo-border-2;
+    align-self: stretch;
+    background: transparent; // s-base shows through via the row gap
+  }
+
+  // --show-weeks expands the calendar column by 40px (the week gutter)
+  &--show-weeks { --arvo-dt-drop-w: 490px; }
+}

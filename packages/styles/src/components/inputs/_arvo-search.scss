@@ -1,0 +1,433 @@
+// Search component styles
+// BEM Block: .arvo-search
+// Abbreviation: search
+// Loading Pattern: A (per-element shimmer on __field)
+// Variants: filter (default), expandable-filter, find
+// Layout modifier: multi-line (filter only)
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-input' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// --- .arvo-search ------------------------------------------------------------
+
+.arvo-search {
+  --arvo-form-input-bg-color: var(--arvo-color-s-layer-04);
+
+  // -- Root layout -----------------------------------------------------------
+  @include form-input-default-width;
+  display: inline-flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  position: relative;
+
+  &--full-width {
+    --arvo-form-input-width: 100%;
+  }
+
+  // -- __field ---------------------------------------------------------------
+  // Outer container: position: relative for absolutely-positioned children.
+  // form-input-base supplies inline-flex, align-items center, height, font.
+  // NOTE A: hover changes bg only -- no border appears on hover (unlike textbox).
+  &__field {
+    @include form-input-base;
+    @include form-input-hover-bg;
+    @include form-input-disabled-bg;
+
+    gap: $arvo-space-8;
+    height: 32px;
+    width: 100%;
+    cursor: text;
+  }
+
+  // -- __ico (leading search icon) -------------------------------------------
+  &__ico {
+    flex-shrink: 0;
+    font-family: $o9con;
+    font-size: $arvo-icon-16;
+    color: var(--arvo-color-i-secondary);
+    pointer-events: none;
+
+    .is-disabled & {
+      color: var(--arvo-color-i-disabled);
+    }
+  }
+
+  // -- __input (native <input type="search"> or <textarea>) -----------------
+  // NOTE B: padding-right reserves room for the absolutely-positioned __actions.
+  // NOTE J: strip webkit search decorations.
+  // NOTE K: text-overflow:ellipsis truncates long placeholder/value text so it
+  // never bleeds under the right-side actions (clear/counter/submit/etc.). The
+  // padding-right keeps the text content area clear of the actions; the
+  // ellipsis only takes effect when the visible text is longer than that
+  // content area (works for placeholder + unfocused value -- native inputs
+  // still scroll while focused, which is the expected typing behavior).
+  &__input {
+    @include form-input-text-colors;
+
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    padding-right: var(--arvo-form-input-pad-r, #{$arvo-space-4});
+    border: 0;
+    background: transparent;
+    outline: 0;
+    font: inherit;
+    box-sizing: border-box;
+    text-overflow: ellipsis;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &::-webkit-search-cancel-button,
+    &::-webkit-search-decoration {
+      display: none;
+      -webkit-appearance: none;
+    }
+  }
+
+  // -- __actions (right-side absolute container) -----------------------------
+  // NOTE B: absolutely positioned so it does not affect flex layout or width.
+  &__actions {
+    position: absolute;
+    right: $arvo-space-4;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    z-index: 1;
+    pointer-events: auto;
+  }
+
+  // -- __clear (clear icon button, hidden by default) ------------------------
+  // NOTE C: visibility driven by state selectors below.
+  &__clear {
+    display: none;
+  }
+
+  // -- __sep (vertical separator, 1px x 20px) ---------------------------------
+  // NOTE F: React conditionally renders the separator (so no extra visibility
+  // toggle is needed). JS keeps the element in the DOM and toggles the
+  // `--hidden` modifier when the surrounding actions collapse, instead of
+  // mutating inline styles.
+  &__sep {
+    display: inline-block;
+    width: 1px;
+    height: 20px;
+    background-color: var(--arvo-color-b-separator);
+    flex-shrink: 0;
+
+    &--hidden {
+      display: none;
+    }
+  }
+
+  // -- __shortcut (keyboard shortcut badge) ----------------------------------
+  &__shortcut {
+    display: none;
+    align-items: center;
+    height: 20px;
+    padding-inline: $arvo-space-4;
+    padding-block: $arvo-space-2;
+    border-radius: 0;
+    background-color: var(--arvo-color-s-layer-01);
+    color: var(--arvo-color-t-tertiary);
+    font-family: var(--arvo-font-family);
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-regular;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  // -- __counter (ArvoBadge instance; visual styles come from the badge) -----
+  &__counter {
+    flex-shrink: 0;
+  }
+
+  // -- __submit (submit-mode primary "Search" button) -----------------------
+  &__submit {
+    flex-shrink: 0;
+  }
+
+  // -- __expand-trigger (expandable-filter collapsed trigger) ----------------
+  &__expand-trigger {
+    flex-shrink: 0;
+  }
+
+  // -- __err-ico (slot for in-field <ArvoMessageAlert isInline /> child) ----
+  // Icon glyph + color come from the child .arvo-msg-alert; this slot only
+  // controls visibility based on the parent's .has-error.error-tooltip state.
+  &__err-ico {
+    display: none;
+    flex: 0 0 auto;
+  }
+
+  // -- __border (animated bottom border) ------------------------------------
+  &__border {
+    @include form-input-animated-border-focus-only;
+  }
+
+  // -- State: error-tooltip --------------------------------------------------
+  &.has-error.error-tooltip {
+    .arvo-search__err-ico {
+      display: inline-flex;
+    }
+  }
+
+  // -- State: is-disabled ----------------------------------------------------
+  // No border line at all when disabled; bg and cursor handled by mixin.
+  &.is-disabled {
+    cursor: not-allowed;
+
+    .arvo-search__field {
+      cursor: not-allowed;
+    }
+
+    // Border stays invisible (transparent base already set above)
+    .arvo-search__border {
+      background: transparent;
+
+      &::after {
+        background-color: transparent;
+        transform: none;
+        transition: none;
+      }
+    }
+
+    .arvo-search__clear,
+    .arvo-search__counter,
+    .arvo-search__submit {
+      display: none;
+    }
+  }
+
+  // -- State: is-readonly ----------------------------------------------------
+  // Text remains selectable for copy; clear + submit are suppressed; the
+  // underline stays transparent; form-input-text-colors already applies
+  // readonly text color via its .is-readonly & branch.
+  &.is-readonly {
+    .arvo-search__field {
+      cursor: text;
+    }
+
+    .arvo-search__clear {
+      display: none !important;
+    }
+
+    .arvo-search__submit {
+      display: none;
+    }
+  }
+
+  // -- State: has-value ------------------------------------------------------
+  // NOTE E: counter badge visible when value present (unless disabled)
+  &.has-value {
+    .arvo-search__counter {
+      display: inline-flex;
+    }
+  }
+
+  // Modifiers --filter and --find require no extra SCSS; base styles apply.
+  // Prev/next buttons in --find are always rendered; JS controls disabled state.
+  // --expandable-filter adds a collapsed state (see below).
+
+  // -- Modifier: --multi-line ------------------------------------------------
+  // NOTE H: filter variant only. Field becomes auto-height; actions and icon
+  // align to the first row via top offset and margin-top respectively.
+  &--multi-line {
+    .arvo-search__field {
+      height: auto;
+      min-height: 32px;
+      align-items: flex-start;
+    }
+
+    .arvo-search__ico {
+      align-self: flex-start;
+      margin-top: calc((32px - #{$arvo-icon-16}) / 2);
+    }
+
+    .arvo-search__input {
+      resize: none;
+      overflow-y: hidden;
+      line-height: 20px;
+      padding-top: calc((32px - 20px) / 2);
+      padding-bottom: calc((32px - 20px) / 2);
+
+      // Scrollbar handgrip when content overflows maxRows
+      &::-webkit-scrollbar { width: 8px; }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--arvo-color-s-layer-07);
+        border-radius: var(--arvo-radius-circle);
+      }
+
+      // Firefox
+      scrollbar-color: var(--arvo-color-s-layer-07) transparent;
+      scrollbar-width: thin;
+    }
+
+    .arvo-search__actions {
+      top: calc(32px / 2);
+    }
+
+    // NOTE C: never show clear in multiline
+    .arvo-search__clear {
+      display: none !important;
+    }
+  }
+
+  // -- Modifier: --summary (multiline collapsed-summary state) ---------------
+  // Applied when collapseBehavior='summary' and the field is blurred with
+  // > 1 parsed value; displays "First, +N more" with ellipsis truncation.
+  &--multi-line.arvo-search--summary {
+    .arvo-search__input {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      resize: none;
+    }
+  }
+
+  // -- Modifier: --expandable-filter -----------------------------------------
+  // The expandable-filter variant animates between a 32x32 icon-only trigger
+  // (.arvo-search--collapsed) and a full filter field (no --collapsed).
+  //
+  // Animation strategy (reference: $arvo-motion-search-expand):
+  //   * The ROOT carries the width transition. Collapsed = 32px; expanded =
+  //     whatever the form-input-default-width resolves to (`--arvo-form-input-width`
+  //     fallback 300px, capped by `max-width: 100%` from the mixin so the
+  //     field grows up to its default/configured max but shrinks gracefully
+  //     when its parent has less space).
+  //   * The FIELD is ALWAYS rendered. `overflow: hidden` on the root clips its
+  //     contents while the root is narrow, so the input + actions slide in
+  //     visually as the root expands.
+  //   * The TRIGGER is ALWAYS rendered too, but positioned absolutely over
+  //     the collapsed 32x32 area. Its opacity fades out on expand and back in
+  //     on collapse, in parallel with the width animation so the field's own
+  //     search icon takes the trigger's place once the field is wide enough
+  //     to be interactive.
+  //   * The `.has-error` border / inline alert is suppressed by the React/JS
+  //     layer when the variant is collapsed (a collapsed icon-only trigger
+  //     has no input to validate, so the invalid affordance would be
+  //     confusing). No CSS-side suppression needed because the consuming
+  //     component simply skips applying the error class while collapsed.
+  &--expandable-filter {
+    // position: relative already set on the .arvo-search root; needed here
+    // so the absolutely-positioned __expand-trigger anchors to the root.
+    overflow: hidden;
+    transition: $arvo-motion-search-expand;
+
+    .arvo-search__expand-trigger {
+      // Absolutely positioned overlay so it can coexist with the field in
+      // the layout (no display:none toggle = animation-friendly). The
+      // trigger MUST occupy the full 32x32 collapsed footprint so the
+      // ArvoIconButton renders at size `md` (32x32) -- using `sm` (24x24)
+      // left an alignment seam through which the field's own `__ico`
+      // showed up next to the trigger's search glyph (two search icons).
+      position: absolute;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      z-index: 1;
+      display: inline-flex;
+      transition: opacity $arvo-duration-fast $arvo-ease-simple;
+    }
+
+    &.arvo-search--collapsed {
+      width: 32px;
+
+      // Suppress the field's own leading icon while collapsed. The trigger
+      // IS the visible icon in this state; keeping the field's `__ico`
+      // displayed underneath -- even when the trigger fully covers it --
+      // leaves a duplicate search glyph in the accessibility tree and in
+      // any sub-pixel rendering gaps around the trigger.
+      .arvo-search__ico {
+        visibility: hidden;
+      }
+    }
+
+    // Expanded state: fade the trigger out in parallel with the width
+    // animation so the field's own search icon takes its place. `inert`
+    // (set by React/JS) removes it from tab order while invisible.
+    &:not(.arvo-search--collapsed) .arvo-search__expand-trigger {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  // -- Modifier: --expand-start / --expand-end (expandable-filter direction) -
+  // --expand-end (default): the expanded field grows rightward from the trigger
+  // following natural document flow. Trigger is pinned to the left edge.
+  // --expand-start: the expanded field grows leftward. `margin-left: auto`
+  // pushes the root to the trailing edge of its flex/inline-flex parent so
+  // the newly-widened root extends toward the start of the line. The trigger
+  // is pinned to the right edge so it stays anchored at the user's click
+  // origin throughout the width animation.
+  &--expandable-filter.arvo-search--expand-end .arvo-search__expand-trigger {
+    left: 0;
+  }
+
+  &--expandable-filter.arvo-search--expand-start {
+    margin-left: auto;
+
+    .arvo-search__expand-trigger {
+      right: 0;
+    }
+  }
+
+  // -- Loading (per-element shimmer on __field) ------------------------------
+  &.loading,
+  [data-arvo-loading="true"] &:not([data-arvo-loading-ignore="true"]) {
+    pointer-events: none;
+
+    .arvo-search__field {
+      @include loading-element-shimmer;
+    }
+
+    // Suppress interactive elements during loading
+    .arvo-search__clear,
+    .arvo-search__counter,
+    .arvo-search__shortcut,
+    .arvo-search__submit {
+      display: none;
+    }
+  }
+}
+
+// --- Clear button visibility (NOTE C) ----------------------------------------
+// Show when has-value + hovered (hover-capable devices)
+@include hover {
+  .arvo-search:not(.is-disabled):not(.loading):not(.arvo-search--multi-line):hover.has-value {
+    .arvo-search__clear {
+      display: inline-flex;
+    }
+  }
+}
+
+// Show when has-value + focus-within
+.arvo-search:not(.is-disabled):not(.loading):not(.arvo-search--multi-line):focus-within.has-value {
+  .arvo-search__clear {
+    display: inline-flex;
+  }
+}
+
+// Always visible on touch / non-hover devices when has-value (no hover available)
+@media (hover: none), (pointer: coarse) {
+  .arvo-search:not(.is-disabled):not(.loading):not(.arvo-search--multi-line).has-value {
+    .arvo-search__clear {
+      display: inline-flex;
+    }
+  }
+}
+
+// --- Shortcut badge visibility (NOTE D) --------------------------------------
+// Visible only when empty and not focused
+.arvo-search:not(.has-value):not(:focus-within) {
+  .arvo-search__shortcut {
+    display: inline-flex;
+  }
+}

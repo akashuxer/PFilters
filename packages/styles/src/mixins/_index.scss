@@ -1,0 +1,33 @@
+// Arvo Design System -- shared SCSS mixins index.
+// Forwards every mixin file so external consumers can import the entire
+// mixin library via a single @use directive:
+//
+//   @use '@arvo/styles/mixins' as *;
+//
+// Mixin files produce no CSS output on their own; @forwarding them does not
+// inflate the bundle. Component SCSS files typically prefer individual file
+// imports for clarity (e.g. @use '../../mixins/form-input' as *).
+//
+// NOTE: _loading.scss is intentionally excluded here because it emits a
+// top-level @keyframes rule. Include it individually to avoid duplicate
+// keyframe output when compiling a combined entry point.
+
+@forward 'form-input';
+@forward 'form-label';
+@forward 'form-char-counter';
+@forward 'hover';
+@forward 'typography';
+@forward 'status-host';
+@forward 'list-item';
+@forward 'list-group';
+@forward 'panel-shell';
+@forward 'overlay-footer';
+@forward 'resize-handle';
+@forward 'msg-alert';
+@forward 'inline-content';
+@forward 'calendar-grid';
+@forward 'member-tile-grid';
+@forward 'calendar-nav-header';
+@forward 'picker-field-actions';
+@forward 'rolling-stepper';
+@forward 'popup-animation';

@@ -1,0 +1,448 @@
+@use '../../mixins/hover' as *;
+@use '../../mixins/list-item' as *;
+@use '../../mixins/list-group' as *;
+@use '../../mixins/loading' as *;
+@use '../../mixins/inline-panel-stack' as *;
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-action-menu --------------------------------------------------------
+
+.arvo-action-menu {
+  // -- Root layout ------------------------------------------------------------
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: column;
+  min-width: $arvo-filter-menu-wmin;
+  max-width: $arvo-filter-menu-wmax;
+  // The position engine emits `--arvo-overlay-max-height` from
+  // `computePosition` so the panel always fits inside the viewport (or
+  // boundary). Consuming the variable here keeps the panel inside the
+  // viewport and forces `__scroll` to take over -- without it the panel
+  // can extend below the viewport and grow `<body>`, producing the
+  // double-scrollbar bug observed on tall menus. A consumer-supplied
+  // `maxHeight` prop overwrites the same variable and continues to win.
+  max-height: var(--arvo-overlay-max-height, none);
+  background-color: var(--arvo-color-s-layer-03);
+  box-shadow: $arvo-shadow-down;
+  border-radius: 0;
+  z-index: var(--arvo-z-popover, 1000);
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // Direction-aware popup enter / exit animation. Positioning uses the
+  // standalone `translate` property (not `transform`) so this animation
+  // is free to use `transform`. See `popup-animation` mixin.
+  @include popup-animation;
+
+  // -- State: open ------------------------------------------------------------
+  &.open {
+    display: flex;
+  }
+
+  // -- __scroll ---------------------------------------------------------------
+  // Items stack with a 1px hairline gap between rows per spec section 3.1.
+  // The container's own background shows through the gap, which is the
+  // intended visual cue separating consecutive rows.
+  //
+  // CRITICAL: direct flex children must opt OUT of `flex-shrink` so the rows,
+  // group headers, dividers, and skeleton placeholders keep their fixed
+  // heights when `--arvo-overlay-max-height` clamps the panel below the
+  // intrinsic content height. Without `flex-shrink: 0` the column would
+  // compress every row vertically (smaller than the 32 / 40 px row spec)
+  // instead of letting `overflow-y: auto` engage internal scrolling. The
+  // empty-state wrapper is the one exception -- it intentionally stretches
+  // to fill the visible area when there are no items, so it keeps the
+  // default `flex: 1 1 auto` from `&__empty`.
+  &__scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    // Belt-and-suspenders horizontal-scroll suppression. Per the CSS spec,
+    // `overflow-y: auto` paired with `overflow-x: visible` is automatically
+    // promoted by the browser to `overflow-x: auto`, which is what allows a
+    // horizontal scrollbar to appear when inner content (an oversized empty
+    // illustration, a long unwrapped meta value, etc.) exceeds the panel
+    // width. The action menu must never expose horizontal scroll -- the
+    // panel sizes itself to its content -- so we explicitly clamp the
+    // horizontal axis to `hidden`. Vertical scroll for long item lists is
+    // preserved.
+    overflow-x: hidden;
+    min-height: 0;
+    padding-block: $arvo-space-4;
+    display: flex;
+    flex-direction: column;
+
+    > * {
+      flex-shrink: 0;
+    }
+  }
+
+  // -- __search ---------------------------------------------------------------
+  &__search {
+    padding: $arvo-space-12 $arvo-space-16;
+    flex-shrink: 0;
+    display: flex;
+  }
+
+  .arvo-search {
+    flex-grow: 1;
+  }
+
+  // -- __hdr ------------------------------------------------------------------
+  &__hdr {
+    @include list-group-header;
+  }
+
+  // -- __divider --------------------------------------------------------------
+  &__divider {
+    @include list-group-divider;
+  }
+
+  // -- __empty ---------------------------------------------------------------
+  // Wraps the shared .arvo-empty figure so it centers within the scroll area.
+  // Typography + illustration sizing are owned by the empty-state mixin.
+  &__empty {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: stretch;
+    justify-content: center;
+    min-height: 0;
+    padding-block: $arvo-space-16;
+  }
+
+  // -- __inline-panel (inline panel stack host) -------------------------------
+  // The mixin MUST be included at the block root (not nested under
+  // `&__inline-panel`), otherwise the generated selectors would be
+  // double-prefixed (`.arvo-action-menu__inline-panel .arvo-action-menu__inline-panel`)
+  // and never match the single inline-panel container created by
+  // `createInlinePanelStack`. Without these rules the container falls back to
+  // `position: static`, so the inline popover / hybrid popover would render
+  // BELOW the menu's items instead of replacing the menu's visible area.
+  @include inline-panel-stack('arvo-action-menu__inline-panel');
+
+  // When an inline panel is open, the popover / hybrid popover REPLACES the
+  // action menu entirely. The menu chrome (search input + scroll list) is
+  // hidden, the menu's size and the inline panel container collapse to the
+  // popover's NATURAL size, and the menu's transform keeps one corner pinned
+  // to the trigger's anchored corner (the JS position watcher recomputes
+  // transform when the panel resizes, so corner alignment holds regardless
+  // of how much bigger or smaller the popover is than the previous item list).
+  //
+  // The mixin defaults `position: absolute; inset: 0` work for `.arvo-hpop`
+  // (which has a fixed clamped width/height -- the inline panel filling the
+  // hpop area is correct there). For the action menu we override so the
+  // popover dictates the menu's dimensions, NOT the other way around.
+  &:has(&__inline-panel.open) {
+    // Allow the menu to grow beyond its filter-menu-w cap so a 280-700px
+    // popover doesn't get clipped to the menu's previous item-list width.
+    max-width: none;
+    // Lift overflow:hidden so the popover's box-shadow (none for inline)
+    // and any focus rings/scrollbars aren't clipped at the menu's edge.
+    overflow: visible;
+
+    .arvo-action-menu__search,
+    .arvo-action-menu__scroll {
+      display: none;
+    }
+  }
+
+  // Inline panel container in the action menu: flex item that sizes to the
+  // popover's natural content (NOT the absolute overlay used by hpop).
+  // The `& &__inline-panel` chain produces a descendant selector matching
+  // the specificity of the rules the mixin emits, and is placed AFTER the
+  // mixin include so the cascade picks these values.
+  & &__inline-panel {
+    position: relative;
+    inset: auto;
+    flex: 0 0 auto;
+  }
+
+  // The popover that lives directly inside the action menu's inline panel
+  // renders at NATURAL size by default. The shared `.arvo-popover--inline`
+  // modifier defaults to `width: 100%; height: 100%` so an inline popover
+  // fills its hpop host; in the action menu the popover should dictate the
+  // menu's box, so we revert width/height on the FIRST popover layer only.
+  // When the consumer sets an explicit width/height on the inline popover
+  // config, `--arvo-popover-width` / `--arvo-popover-height` are populated
+  // (by the ArvoPopover instance and the ActionMenu host respectively) and
+  // win over the `auto` fallback. The `> * >` chain targets the host wrapper
+  // div that the inline-panel-stack creates around each pushed element, so a
+  // nested popover (e.g. a row's inline popover inside an inline hybrid
+  // popover) is unaffected and keeps the default `width: 100%; height: 100%`.
+  & &__inline-panel__layer > * > .arvo-popover--inline {
+    width: var(--arvo-popover-width, auto);
+    height: var(--arvo-popover-height, auto);
+  }
+
+  // -- __skeleton (structured Pattern B rows) ---------------------------------
+  &__skeleton {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-8;
+    height: 32px;
+    padding: $arvo-space-4 $arvo-space-16;
+    box-sizing: border-box;
+  }
+
+  &__skeleton-icon,
+  &__skeleton-text,
+  &__skeleton-trailing {
+    border-radius: 2px;
+    background-color: var(--arvo-color-s-pulse-light, var(--arvo-color-s-disabled));
+    flex-shrink: 0;
+  }
+
+  &__skeleton-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &__skeleton-text {
+    flex: 1 1 auto;
+    height: 12px;
+    max-width: 60%;
+  }
+
+  &__skeleton-trailing {
+    width: 48px;
+    height: 12px;
+    margin-inline-start: auto;
+  }
+
+  // -- Loading skeleton (Pattern B) -------------------------------------------
+  @mixin _action-menu-loading-skeleton {
+    pointer-events: none;
+
+    .arvo-action-menu__search {
+      display: none;
+    }
+  }
+
+  &.loading {
+    @include _action-menu-loading-skeleton;
+  }
+
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _action-menu-loading-skeleton;
+  }
+}
+
+// --- .arvo-menu-item ----------------------------------------------------------
+
+.arvo-menu-item {
+  @include list-item-base;
+  @include list-item-single-line;
+  @include list-item-states;
+  @include list-item-leading;
+  @include list-item-text;
+
+  // Items live inside `__scroll` containers that may be flex columns
+  // (action-menu) or blocks (context-menu). Belt-and-suspenders rule so
+  // the row's fixed 32 / 40 px height is NEVER compressed when the panel
+  // is clamped by `--arvo-overlay-max-height`. Without this, a tall menu
+  // in a tight viewport would shrink each row vertically (squashing the
+  // 32 px chassis into ~12 px) instead of letting the scroll container
+  // engage `overflow-y: auto`.
+  flex-shrink: 0;
+  // Search-match treatment: when the React/JS layer wraps a matched fragment
+  // in `<span class="arvo-menu-item__match">`, the shared mixin paints the
+  // ~hover-2 highlight pill behind it and bumps the matched chars to Medium.
+  @include list-item-search-highlight;
+
+  // -- Anchor rows -- when an item carries `href` it is rendered as an <a>;
+  // the menu-item visuals must not depend on the element type.
+  &,
+  &:link,
+  &:visited {
+    text-decoration: none;
+    color: var(--arvo-list-item-text-color, var(--arvo-color-t-secondary));
+  }
+
+  // -- Modifier: --multi-line -------------------------------------------------
+  // Rich rows: 40px height, py-8 padding so primary + secondary stack with
+  // top-aligned content under the avatar (spec section 4.3).
+  &--multi-line {
+    @include list-item-multi-line;
+    padding-block: $arvo-space-8;
+    align-items: center;
+
+    .arvo-menu-item__ico {
+      align-self: flex-start;
+    }
+
+    .arvo-menu-item__avatar {
+      padding: $arvo-space-2;
+      box-sizing: border-box;
+    }
+
+    // Rich secondary-color cascade: placeholder by default, bumps to
+    // `--arvo-color-t-secondary` on hover / focus / selected (spec
+    // section 4.3 + 5.15 state matrix).
+    @include hover {
+      &:not(.is-disabled):hover {
+        --arvo-list-item-secondary-color: var(--arvo-color-t-secondary);
+      }
+    }
+
+    &:not(.is-disabled):focus-visible,
+    &:not(.is-disabled).focused,
+    &.active:not(.is-disabled) {
+      --arvo-list-item-secondary-color: var(--arvo-color-t-secondary);
+    }
+  }
+
+  // -- Modifier: --destructive ------------------------------------------------
+  &--destructive {
+    --arvo-list-item-text-color: var(--arvo-color-t-negative);
+
+    .arvo-menu-item__ico {
+      color: var(--arvo-color-i-negative);
+    }
+
+    @include hover {
+      &:not(.is-disabled):hover {
+        --arvo-list-item-text-color: var(--arvo-color-t-negative);
+      }
+    }
+  }
+
+  // -- Modifier: --actions-on-hover -------------------------------------------
+  &--actions-on-hover &__actions {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity $arvo-duration-fast $arvo-ease-simple,
+                visibility $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  &--actions-on-hover:focus-visible &__actions,
+  &--actions-on-hover.focused &__actions,
+  &--actions-on-hover.active &__actions,
+  &--actions-on-hover &__actions:focus-within {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  @include hover {
+    &--actions-on-hover:hover &__actions {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  // -- __trailing ------------------------------------------------------------
+  &__trailing {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex-shrink: 0;
+    margin-inline-start: auto;
+  }
+
+  // -- __shortcut ------------------------------------------------------------
+  &__shortcut {
+    color: var(--arvo-menu-item-shortcut-color, var(--arvo-color-t-placeholder));
+    font-size: var(--arvo-menu-item-shortcut-font-size, #{$arvo-font-size-12});
+    white-space: nowrap;
+    font-family: var(--o9-font-family);
+  }
+
+  // -- __meta (right-aligned value text) -------------------------------------
+  // Placeholder color by default; bumps to t-secondary on hover / focus /
+  // selected per spec section 5.4 (selected meta is emphasized while the
+  // shortcut stays muted). Single-line, ellipsizes before the trailing
+  // actions cluster -- never the label.
+  &__meta {
+    flex-shrink: 0;
+    text-align: end;
+    color: var(--arvo-menu-item-meta-color, var(--arvo-color-t-placeholder));
+    font-size: $arvo-font-size-12;
+    font-family: var(--o9-font-family);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // -- __status (10x10 outer pill / 8x8 inner circle) -----------------------
+  // Spec section 4.2: status indicator that sits before meta. The outer pill
+  // uses --arvo-color-s-layer-01 so it always reads above the row background;
+  // the inner circle is colored by the per-status modifier classes below.
+  &__status {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 10px;
+    height: 10px;
+    border-radius: $arvo-radius-circle;
+    background-color: var(--arvo-color-s-layer-01);
+
+    &::before {
+      content: '';
+      display: block;
+      width: 8px;
+      height: 8px;
+      border-radius: $arvo-radius-circle;
+      background-color: var(--arvo-menu-item-status-color, var(--arvo-color-i-warning-static));
+    }
+  }
+
+  &--status-success { --arvo-menu-item-status-color: var(--arvo-color-i-positive); }
+  &--status-warning { --arvo-menu-item-status-color: var(--arvo-color-i-warning-static); }
+  &--status-danger  { --arvo-menu-item-status-color: var(--arvo-color-i-negative); }
+  &--status-info    { --arvo-menu-item-status-color: var(--arvo-color-i-info-light); }
+
+  // -- __external (external-link arrow) -------------------------------------
+  // Trailing 16x16 glyph shown when an item links to an external destination
+  // (href + target='_blank'). Decorative -- AT announcement is owned by the
+  // anchor's aria-label suffix.
+  &__external {
+    flex-shrink: 0;
+    color: var(--arvo-color-i-secondary);
+    font-family: $o9con;
+    font-size: $arvo-icon-16;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // -- __submenu -------------------------------------------------------------
+  &__submenu {
+    color: var(--arvo-menu-item-submenu-color, var(--arvo-color-i-secondary));
+    font-family: $o9con;
+    font-size: 12px;
+  }
+
+  // -- __actions -------------------------------------------------------------
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-2;
+  }
+
+  // -- __overflow (ellipsis dropdown when actions exceed the visible cap) ---
+  // Hosts the ArvoDropdownIconButton instance that exposes the overflow
+  // actions. Stays adjacent to the inline action cluster.
+  &__overflow {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  // -- __switch (inline toggle in trailing zone) ------------------------------
+  &__switch {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  // -- Inner component overrides ----------------------------------------------
+  // Icon buttons (inline actions + the overflow dropdown trigger) inside
+  // menu items are forced to sm size via CSS variable override.
+  .arvo-icon-btn,
+  .arvo-dd-icon-btn {
+    --arvo-btn-height: 24px;
+    --arvo-btn-icon-size: 14px;
+  }
+}

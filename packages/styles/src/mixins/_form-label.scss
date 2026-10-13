@@ -1,0 +1,55 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Shared form label mixins -- consumed by all form controls with a label.
+// The consuming BEM block (arvo-textbox, arvo-sel, etc.) applies these
+// to its __lbl element. Parent-context CSS variable overrides flow naturally.
+
+@mixin form-label-base {
+  // inline-flex so the label shrink-wraps to its text content in non-flex
+  // parents; align-self: flex-start opts out of the default cross-axis
+  // `stretch` when the parent is a flex column (textbox, cb-grp, rb-grp,
+  // checkbox's __text-container, etc. -- nearly every form-control
+  // wrapper). Without these the label would stretch to the wrapper's
+  // width and the inline-flow `__req` (asterisk) and `__ctx-help` (icon)
+  // siblings would render against the wrapper's right edge instead of
+  // hugging the end of the label text.
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--arvo-lbl-gap, #{$arvo-space-1});
+  font-family: var(--o9-font-family);
+  font-weight: $arvo-regular;
+  color: var(--arvo-lbl-color, var(--arvo-color-t-form-label));
+  user-select: none;
+  cursor: default;
+}
+
+@mixin form-label-sm {
+  font-size: $arvo-font-size-12;
+}
+
+@mixin form-label-lg {
+  font-size: $arvo-font-size-14;
+}
+
+@mixin form-label-disabled {
+  color: var(--arvo-lbl-color-disabled, var(--arvo-color-t-disabled));
+  cursor: not-allowed;
+}
+
+// form-label-invalid is intentionally a no-op for color across all sizes.
+// The invalid signal lives on the field border + inline error message; the
+// label stays in its normal `--arvo-lbl-color` palette so multi-field forms
+// don't read as a wall of red text. The mixin is preserved (instead of
+// removed) so consumers / future overrides can still hook the `.is-invalid`
+// state class, and so the `--arvo-lbl-color-invalid` CSS variable remains
+// a recognized escape hatch if a product surface ever needs to opt back in.
+@mixin form-label-invalid {
+  color: var(--arvo-lbl-color-invalid, var(--arvo-lbl-color, var(--arvo-color-t-form-label)));
+}
+
+@mixin form-label-required-indicator {
+  color: var(--arvo-lbl-required-color, var(--arvo-color-t-negative));
+  font-size: $arvo-font-size-12;
+  line-height: 1;
+}

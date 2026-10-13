@@ -1,0 +1,560 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// ArvoAvatar component styles.
+// BEM Block: .arvo-avt
+// Abbreviation: avt
+// Category: Feedback
+//
+// Compact identity surface for a person, AI assistant, brand, connector,
+// application, organization, or system. Six variants:
+//   - image    : photo with image-cover layout, no chrome
+//   - initials : 1-2 character monogram on chrome
+//   - icon     : default o9con glyph on chrome (the most permutated variant)
+//   - logo     : third-party brand glyph on chrome (no filled appearance)
+//   - o9logo   : fixed o9 wordmark on inverse surface (no chrome theming)
+//   - novai    : Nova GenAI mark with gradient border + gradient icon fill
+//
+// Five sizes (xs / sm / md / lg / xl) map to $arvo-image-* tokens. The outer
+// surface is a perfect square -- consumers that want rounded avatars must
+// clip externally.
+//
+// Color cascade strategy (matches ArvoBadge): each color modifier class sets
+// a few canonical CSS variables (bg-strong, bg-subtle, fg-color). Appearance
+// modifiers are placed AFTER all color modifiers in source order so they win
+// the cascade. --filled swaps --arvo-avt-bg to --arvo-avt-bg-strong and
+// inverts the foreground; --outline and --primary do their own mapping.
+//
+// Status and counter overlays are NOT rendered in this release -- the
+// related BEM elements (__status, __counter) are reserved for a future
+// pass once ArvoStatus's global composition story and ArvoBadge's
+// corner-counter mode are finalized.
+
+.arvo-avt {
+  // -- Size tokens (defaults = md) -----------------------------------------
+  --arvo-avt-size: #{$arvo-image-32};
+  --arvo-avt-padding: #{$arvo-space-4};
+  --arvo-avt-inner-size: #{$arvo-icon-24};
+  --arvo-avt-font-size: #{$arvo-font-size-16};
+
+  // -- Canonical color tokens set by color modifiers (defaults = default mode)
+  --arvo-avt-bg-strong: var(--arvo-color-s-theme);
+  --arvo-avt-bg-subtle: var(--arvo-color-s-layer-02);
+  --arvo-avt-fg-color: var(--arvo-color-i-primary);
+
+  // -- Final color tokens consumed by base styles (defaults = filled) -------
+  --arvo-avt-bg: var(--arvo-avt-bg-strong);
+  --arvo-avt-fg: var(--arvo-color-i-inverse);
+  --arvo-avt-border-color: var(--arvo-color-b-subtle);
+  --arvo-avt-border-width: 0;
+
+  // -- Base layout ----------------------------------------------------------
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--arvo-avt-size);
+  height: var(--arvo-avt-size);
+  padding: var(--arvo-avt-padding);
+  background-color: var(--arvo-avt-bg);
+  border: var(--arvo-avt-border-width) solid var(--arvo-avt-border-color);
+  border-radius: 0;
+  color: var(--arvo-avt-fg);
+  font-family: var(--o9-font-family);
+  line-height: 1;
+  vertical-align: middle;
+  overflow: hidden;
+  flex: 0 0 auto;
+  user-select: none;
+  text-decoration: none;
+  cursor: default;
+
+  // -- Elements -------------------------------------------------------------
+
+  &__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 0;
+  }
+
+  &__text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: $arvo-regular;
+    font-size: var(--arvo-avt-font-size);
+    color: var(--arvo-avt-fg);
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  &__ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: $o9con;
+    font-size: var(--arvo-avt-inner-size);
+    color: var(--arvo-avt-fg);
+    line-height: 1;
+    width: var(--arvo-avt-inner-size);
+    height: var(--arvo-avt-inner-size);
+    flex: 0 0 auto;
+  }
+
+  // Logo SVG element for variant='logo' with a brand asset (--arvo-avt-svg).
+  // The component sets --arvo-avt-logo-url-light / --arvo-avt-logo-url-dark
+  // inline; the surface picks light/dark via prefers-color-scheme.
+  &__logo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-image: var(--arvo-avt-logo-url-light, none);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    flex: 0 0 auto;
+  }
+ 
+  // -- Size modifiers -------------------------------------------------------
+  // Mapping (px / token):
+  //   xs  16 / $arvo-image-16   pad 2 / $arvo-space-2   inner 12   text 12
+  //   sm  24 / $arvo-image-24   pad 2 / $arvo-space-2   inner 20   text 14
+  //   md  32 / $arvo-image-32   pad 4 / $arvo-space-4   inner 24   text 16
+  //   lg  40 / $arvo-image-40   pad 4 / $arvo-space-4   inner 32   text 20
+  //   xl  60 / $arvo-image-60   pad 10/ $arvo-space-10  inner 40   text 24
+
+  &--xs {
+    --arvo-avt-size: #{$arvo-image-16};
+    --arvo-avt-padding: #{$arvo-space-2};
+    --arvo-avt-inner-size: #{$arvo-icon-12};
+    --arvo-avt-font-size: #{$arvo-font-size-12};
+  }
+
+  &--sm {
+    --arvo-avt-size: #{$arvo-image-24}; // 1.5rem = 24px (token name predates value)
+    --arvo-avt-padding: #{$arvo-space-2};
+    --arvo-avt-inner-size: #{$arvo-icon-20};
+    --arvo-avt-font-size: #{$arvo-font-size-14};
+  }
+
+  &--md {
+    --arvo-avt-size: #{$arvo-image-32};
+    --arvo-avt-padding: #{$arvo-space-4};
+    --arvo-avt-inner-size: #{$arvo-icon-24};
+    --arvo-avt-font-size: #{$arvo-font-size-16};
+  }
+
+  &--lg {
+    --arvo-avt-size: #{$arvo-image-40};
+    --arvo-avt-padding: #{$arvo-space-4};
+    --arvo-avt-inner-size: #{$arvo-icon-32};
+    --arvo-avt-font-size: #{$arvo-font-size-20};
+  }
+
+  &--xl {
+    --arvo-avt-size: #{$arvo-image-60};
+    --arvo-avt-padding: #{$arvo-space-10};
+    --arvo-avt-inner-size: #{$arvo-icon-40};
+    --arvo-avt-font-size: #{$arvo-font-size-24};
+  }
+
+  // -- Color mode modifiers --------------------------------------------------
+  // Order matters: color modifiers BEFORE appearance modifiers so appearance
+  // overrides win the cascade when both classes are present.
+
+  // Semantic color types (always render filled regardless of `appearance`)
+  &--positive {
+    --arvo-avt-bg-strong: var(--arvo-color-s-positive-strong);
+  }
+
+  &--negative {
+    --arvo-avt-bg-strong: var(--arvo-color-s-negative);
+  }
+
+  &--warning {
+    --arvo-avt-bg-strong: var(--arvo-color-s-warning-strong);
+  }
+
+  &--info {
+    --arvo-avt-bg-strong: var(--arvo-color-s-info-strong);
+  }
+
+  // Custom util color families
+  &--purple {
+    --arvo-avt-bg-strong: var(--arvo-color-s-util-purple-dark);
+    --arvo-avt-bg-subtle: var(--arvo-color-s-util-purple-subtle);
+    --arvo-avt-fg-color: var(--arvo-color-i-util-purple);
+  }
+
+  &--pink {
+    --arvo-avt-bg-strong: var(--arvo-color-s-util-pink-dark);
+    --arvo-avt-bg-subtle: var(--arvo-color-s-util-pink-subtle);
+    --arvo-avt-fg-color: var(--arvo-color-i-util-pink);
+  }
+
+  &--glacier {
+    --arvo-avt-bg-strong: var(--arvo-color-s-util-glacier-dark);
+    --arvo-avt-bg-subtle: var(--arvo-color-s-util-glacier-subtle);
+    --arvo-avt-fg-color: var(--arvo-color-i-util-glacier);
+  }
+
+  &--amber {
+    --arvo-avt-bg-strong: var(--arvo-color-s-util-amber-dark);
+    --arvo-avt-bg-subtle: var(--arvo-color-s-util-amber-subtle);
+    --arvo-avt-fg-color: var(--arvo-color-i-util-amber);
+  }
+
+  &--greenish {
+    --arvo-avt-bg-strong: var(--arvo-color-s-util-greenish-dark);
+    --arvo-avt-bg-subtle: var(--arvo-color-s-util-greenish-subtle);
+    --arvo-avt-fg-color: var(--arvo-color-i-util-greenish);
+  }
+
+  &--bluish {
+    --arvo-avt-bg-strong: var(--arvo-color-s-util-bluish-dark);
+    --arvo-avt-bg-subtle: var(--arvo-color-s-util-bluish-subtle);
+    --arvo-avt-fg-color: var(--arvo-color-i-util-bluish);
+  }
+
+  // -- Appearance modifiers (AFTER color modifiers to win the cascade) ------
+
+  &--filled {
+    --arvo-avt-bg: var(--arvo-avt-bg-strong);
+    --arvo-avt-fg: var(--arvo-color-i-inverse);
+    --arvo-avt-border-width: 0;
+  }
+
+  &--outline {
+    --arvo-avt-bg: transparent;
+    --arvo-avt-fg: var(--arvo-avt-fg-color);
+    --arvo-avt-border-width: #{$arvo-border-1};
+    --arvo-avt-border-color: var(--arvo-color-b-subtle);
+  }
+
+  &--primary {
+    --arvo-avt-bg: var(--arvo-avt-bg-subtle);
+    --arvo-avt-fg: var(--arvo-avt-fg-color);
+    --arvo-avt-border-width: 0;
+  }
+
+  // -- Variant chrome overrides (AFTER appearance to win for non-themeable) -
+  // image / o9logo / novai ignore `appearance` and color modes. Variant
+  // modifiers therefore come last so they override the appearance cascade.
+
+  &--image {
+    --arvo-avt-bg: transparent;
+    --arvo-avt-border-width: 0;
+    padding: 0;
+  }
+
+  &--o9logo {
+    --arvo-avt-bg: var(--arvo-color-s-inverse);
+    --arvo-avt-fg: var(--arvo-color-i-inverse);
+    --arvo-avt-border-width: 0;
+    padding: 0;
+
+    // The o9-logo glyph renders at the full surface dimension (the icon font
+    // is designed to fit its glyph box).
+    .arvo-avt__ico {
+      width: 100%;
+      height: 100%;
+      font-size: var(--arvo-avt-size);
+    }
+  }
+
+  // -- Nova AI variant -----------------------------------------------------
+  // Two visual modes:
+  //   - outline  (default, rest state): transparent surface + gradient ring;
+  //               icon glyph filled with the gradient via background-clip:text
+  //   - filled   (active state, opt-in via appearance='filled'): gradient
+  //               surface + inverse-color icon
+  // When `.interactive` is also present (the avatar is rendered as a button
+  // or anchor), the mode-specific living animation runs.
+  //
+  // outline interactive  -> conic-gradient border-orbit on the ::before ring
+  // filled  interactive  -> linear-gradient drift on the surface
+  //
+  // Reduced-motion is honored via the @media block at the bottom of this
+  // file.
+  &--novai {
+    --arvo-avt-bg: transparent;
+    --arvo-avt-fg: var(--arvo-color-i-inverse);
+    --arvo-avt-border-width: 0;
+    border-color: transparent;
+
+    // -- Outline mode (default) -------------------------------------------
+    // The 1px gradient ring is rendered as a ::before pseudo using
+    // conic-gradient + mask-composite (border-image cannot animate).
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: conic-gradient(
+        from var(--mp-nova-border-orbit, 135deg),
+        $arvo-global-nova-start,
+        $arvo-global-nova-end,
+        $arvo-global-nova-start
+      );
+      padding: $arvo-border-1;
+      box-sizing: border-box;
+      // Punch the inner area out so only a 1px ring is visible.
+      -webkit-mask:
+        linear-gradient(#000, #000) content-box,
+        linear-gradient(#000, #000);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#000, #000) content-box,
+        linear-gradient(#000, #000);
+      mask-composite: exclude;
+    }
+
+    // Icon glyph fills with the gradient via background-clip: text.
+    .arvo-avt__ico {
+      background: linear-gradient(135deg, $arvo-global-nova-start, $arvo-global-nova-end);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    // -- Filled mode (active / appearance='filled') -----------------------
+    &.arvo-avt--filled {
+      // Suppress the ring; the surface itself carries the gradient.
+      &::before { display: none; }
+
+      // Static-feeling diagonal gradient by default; the interactive variant
+      // animates --mp-nova-* to make the gradient breathe and drift.
+      background: linear-gradient(
+        var(--mp-nova-angle, 135deg),
+        $arvo-global-nova-start 0.88%,
+        $arvo-global-nova-end var(--mp-nova-end-stop, 100%)
+      );
+      background-size: 260% 260%;
+      background-position: var(--mp-nova-shift-x, 50%) var(--mp-nova-shift-y, 50%);
+
+      // Icon flips to a solid inverse fill against the gradient surface.
+      .arvo-avt__ico {
+        background: none;
+        background-clip: initial;
+        -webkit-background-clip: initial;
+        color: var(--arvo-color-i-inverse);
+      }
+    }
+
+    // -- Interactive animations -------------------------------------------
+    // ONLY runs when the avatar is interactive (renders as button/anchor).
+    // Outline -> border ring orbits; Filled -> gradient drifts.
+    &.interactive::before {
+      animation: nova-border-orbit $arvo-motion-nova-border;
+    }
+
+    &.arvo-avt--filled.interactive {
+      animation:
+        nova-fill-alive $arvo-motion-nova-fill,
+        nova-fill-breathe $arvo-motion-nova-breathe;
+    }
+  }
+
+  // -- Logo variant: no filled appearance, optional SVG asset --------------
+  // - Default (icon-driven o9con glyph): chrome from `appearance`. The brand
+  //   keeps its own color; defensive fallback if a consumer passes
+  //   --filled+--logo simultaneously: force outline chrome.
+  // - SVG-driven (`.arvo-avt--svg`): the component renders an `__logo`
+  //   element with background-image, surface is transparent (the SVG is
+  //   the visual content).
+  &--logo#{&}--filled {
+    --arvo-avt-fg: var(--arvo-color-i-primary);
+    --arvo-avt-border-width: #{$arvo-border-1};
+    --arvo-avt-border-color: var(--arvo-color-b-subtle);
+  }
+
+  &--logo#{&}--svg {
+    padding: var(--arvo-avt-padding);
+  }
+
+  // -- Interactive states ---------------------------------------------------
+
+  &.interactive {
+    cursor: pointer;
+
+    @include hover {
+      &:not([aria-disabled='true']):not(.loading):not(:active):hover {
+        opacity: $arvo-opacity-80;
+      }
+    }
+
+    &:focus-visible {
+      outline: none;
+      opacity: $arvo-opacity-80;
+
+      // Square focus ring 1.5px outside the surface (per spec).
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -1.5px;
+        border: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+        pointer-events: none;
+      }
+    }
+
+    &:not([aria-disabled='true']):not(.loading):active {
+      opacity: 1;
+    }
+  }
+
+  // -- Disabled state -------------------------------------------------------
+  &[aria-disabled='true'],
+  &:disabled {
+    opacity: $arvo-opacity-40;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  // -- Loading state (Pattern A) -------------------------------------------
+  // Pattern A applies a shimmer overlay covering the full square surface.
+  @include loading-overlay-a;
+
+  // Hide inner content during loading so the shimmer reads cleanly.
+  &.loading {
+    .arvo-avt__img { visibility: hidden; }
+    .arvo-avt__text,
+    .arvo-avt__ico { color: transparent; }
+  }
+
+  // -- Parent loading propagation -------------------------------------------
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @extend .arvo-avt, .loading;
+  }
+}
+
+// =========================================================================
+// Logo SVG dark-mode swap
+// =========================================================================
+// When the avatar is in SVG-logo mode, the inner __logo element renders the
+// brand asset. The component sets --arvo-avt-logo-url-light/-dark inline
+// (full url(...) values); the active mode picks the right one.
+//
+// Selection strategy (highest specificity wins in the cascade):
+//   1. Default -- --arvo-avt-logo-url-light (baked into the &__logo rule).
+//   2. `html[data-mode="dark"]` -- explicit app-controlled dark mode used
+//      by the o9 platform + docs + playground. This is the CANONICAL
+//      dark-mode signal for Arvo (matches the token dark palette
+//      selector in @arvo/tokens).
+//   3. `@media (prefers-color-scheme: dark)` -- OS-level fallback for
+//      consumers that have NOT set `data-mode` at all. Scoped so it
+//      does NOT fire when `data-mode="light"` is explicitly set (a
+//      light-mode app must never inherit the dark SVG just because the
+//      OS is in dark mode).
+html[data-mode='dark'] .arvo-avt--logo.arvo-avt--svg .arvo-avt__logo {
+  background-image: var(
+    --arvo-avt-logo-url-dark,
+    var(--arvo-avt-logo-url-light, none)
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']):not([data-mode='dark']) .arvo-avt--logo.arvo-avt--svg .arvo-avt__logo {
+    background-image: var(
+      --arvo-avt-logo-url-dark,
+      var(--arvo-avt-logo-url-light, none)
+    );
+  }
+}
+
+// =========================================================================
+// Nova AI custom-property registrations + keyframes
+// =========================================================================
+// @property registrations are required so CSS can interpolate these values
+// during animation. Without them, browsers treat the var as a string and the
+// animation will not run.
+
+@property --mp-nova-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 135deg;
+}
+
+@property --mp-nova-shift-x {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 50%;
+}
+
+@property --mp-nova-shift-y {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 50%;
+}
+
+@property --mp-nova-end-stop {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 100%;
+}
+
+@property --mp-nova-border-orbit {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 135deg;
+}
+
+// One-shot "wake up" easing into the resting drift values + a continuous
+// breathing loop that gently shifts the background-position to make the
+// gradient feel alive. Composed together inside the avatar's animation
+// shorthand.
+@keyframes nova-fill-alive {
+  0% {
+    --mp-nova-angle: 110deg;
+    --mp-nova-shift-x: 30%;
+    --mp-nova-shift-y: 30%;
+    --mp-nova-end-stop: 60%;
+  }
+  100% {
+    --mp-nova-angle: 135deg;
+    --mp-nova-shift-x: 50%;
+    --mp-nova-shift-y: 50%;
+    --mp-nova-end-stop: 100%;
+  }
+}
+
+@keyframes nova-fill-breathe {
+  0% {
+    --mp-nova-angle: 125deg;
+    --mp-nova-shift-x: 40%;
+    --mp-nova-shift-y: 40%;
+    background-size: 240% 240%;
+  }
+  100% {
+    --mp-nova-angle: 155deg;
+    --mp-nova-shift-x: 60%;
+    --mp-nova-shift-y: 60%;
+    background-size: 280% 280%;
+  }
+}
+
+// Continuous orbit of the conic-gradient ring for the interactive outline
+// novai avatar.
+@keyframes nova-border-orbit {
+  from { --mp-nova-border-orbit: 135deg; }
+  to   { --mp-nova-border-orbit: 495deg; }
+}
+
+// =========================================================================
+// Reduced motion safety
+// =========================================================================
+// Pattern A shimmer animation is gated by the shared loading mixin; the
+// Nova-mode animations are scoped to .interactive novai avatars.
+@media (prefers-reduced-motion: reduce) {
+  .arvo-avt.loading::after { animation: none !important; }
+
+  .arvo-avt--novai.interactive,
+  .arvo-avt--novai.interactive::before {
+    animation: none !important;
+  }
+}

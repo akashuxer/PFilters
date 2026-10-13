@@ -1,0 +1,169 @@
+@use '../../../../tokens/src/scss/all' as *;
+
+.arvo-img-view {
+  position: fixed;
+  inset: 0;
+  z-index: var(--arvo-z-popover, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $arvo-space-24;
+}
+
+.arvo-img-view--embedded {
+  position: absolute;
+  inset: 0;
+  padding: $arvo-space-16;
+}
+
+.arvo-img-view__panel {
+  position: relative;
+  z-index: 1;
+  inline-size: min(100%, 1320px);
+  block-size: min(100%, 820px);
+  min-inline-size: min(100%, 640px);
+  min-block-size: min(100%, 520px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: $arvo-space-16;
+  padding: $arvo-space-24 $arvo-space-24 $arvo-space-20;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--arvo-color-t-inverse);
+  pointer-events: auto;
+}
+
+.arvo-img-view__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 1px;
+}
+
+.arvo-img-view__title,
+.arvo-img-view__position {
+  min-inline-size: 0;
+  font-size: $arvo-font-size-12;
+  line-height: 16px;
+  color: color-mix(in srgb, #fff 82%, transparent);
+}
+
+.arvo-img-view__title {
+  text-align: center;
+  display: none;
+}
+
+.arvo-img-view__btn {
+  flex: 0 0 auto;
+}
+
+.arvo-img-view__zoom-label {
+  min-inline-size: 72px;
+  padding-inline: $arvo-space-12;
+  text-align: center;
+  font-size: $arvo-font-size-12;
+  line-height: 16px;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-img-view__body {
+  position: relative;
+  min-block-size: 0;
+  block-size: 100%;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: $arvo-space-20;
+}
+
+.arvo-img-view__nav {
+  inline-size: auto;
+  block-size: auto;
+  justify-self: center;
+}
+
+.arvo-img-view__stage {
+  position: relative;
+  min-inline-size: 0;
+  min-block-size: 0;
+  block-size: 100%;
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 0;
+  background: transparent;
+}
+
+.arvo-img-view__viewport {
+  inline-size: 100%;
+  block-size: 100%;
+  display: grid;
+  place-items: center;
+  padding: $arvo-space-24;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.arvo-img-view__asset {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  transform: translate(var(--arvo-img-view-pan-x, 0px), var(--arvo-img-view-pan-y, 0px)) scale(var(--arvo-img-view-zoom, 1));
+  transform-origin: center center;
+  transition: transform 120ms ease;
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 18%, transparent);
+}
+
+.arvo-img-view__panel[data-mode='actualPixels'] .arvo-img-view__viewport {
+  place-items: start center;
+}
+
+.arvo-img-view__panel[data-can-pan='true'] .arvo-img-view__stage {
+  cursor: grab;
+}
+
+.arvo-img-view__panel[data-is-dragging='true'] .arvo-img-view__stage {
+  cursor: grabbing;
+}
+
+.arvo-img-view__panel[data-zoom-cursor='in'] .arvo-img-view__stage {
+  cursor: zoom-in;
+}
+
+.arvo-img-view__panel[data-zoom-cursor='out'] .arvo-img-view__stage {
+  cursor: zoom-out;
+}
+
+.arvo-img-view__state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: $arvo-space-24;
+  background: color-mix(in srgb, #f6fbf8 94%, #fff);
+}
+
+.arvo-img-view__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $arvo-space-4;
+  padding-inline: $arvo-space-8;
+  inline-size: fit-content;
+  margin-inline: auto;
+  border: 1px solid var(--arvo-color-b-divider);
+  background: var(--arvo-color-s-layer-03, #fff);
+  box-shadow: $arvo-shadow-down;
+  color: var(--arvo-color-t-secondary);
+  min-block-size: 48px;
+}
+
+.arvo-img-view__footer:empty {
+  display: none;
+}
+
+.arvo-img-view__position {
+  min-inline-size: 56px;
+  text-align: center;
+  margin-inline: $arvo-space-8;
+}

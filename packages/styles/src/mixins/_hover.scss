@@ -1,0 +1,29 @@
+// Hover capability mixin
+// Wraps content in a media query that only matches devices with a true hover
+// capability (mouse, trackpad, stylus). Use for any :hover style to prevent
+// sticky-hover artifacts on touch devices.
+//
+// Replaces the legacy `.no-touch` ancestor selector pattern. The media query
+// approach is CSS-native, requires no platform JS, correctly handles hybrid
+// devices (Surface, iPad + trackpad), and reduces selector specificity.
+//
+// Usage:
+//   @include hover {
+//     &:not(.is-disabled):hover { ... }
+//   }
+
+@mixin hover {
+  @media (hover: hover) and (pointer: fine) {
+    @content;
+  }
+}
+
+// no-hover
+// Inverse of `hover` -- matches devices that lack a true hover capability
+// (touch-only phones/tablets). Used for the few cases where styles should
+// only apply on touch devices (e.g. always-visible action buttons).
+@mixin no-hover {
+  @media (hover: none), (pointer: coarse) {
+    @content;
+  }
+}

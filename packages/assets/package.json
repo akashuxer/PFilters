@@ -1,0 +1,39 @@
+{
+  "name": "@arvo/assets",
+  "version": "2.2.5",
+  "description": "Arvo Design System static assets: icon font, web fonts, illustrations, file-type symbols, and brand/integration logos. Pre-built CSS with zero token dependencies.",
+  "license": "UNLICENSED",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://o9git.pkgs.visualstudio.com/_packaging/o9UI/npm/registry/"
+  },
+  "sideEffects": true,
+  "exports": {
+    "./fonts/css": "./fonts/fonts.css",
+    "./fonts/files/*": "./fonts/*",
+    "./o9con/css": "./o9con/css/o9con.css",
+    "./o9con/files/*": "./o9con/fonts/*",
+    "./o9illus/css": "./o9illus/o9illus.css",
+    "./o9illus/files/*": "./o9illus/*",
+    "./symbol/files/*": "./symbol/*",
+    "./logos/files/*": "./logos/*",
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "o9con/css/",
+    "o9con/fonts/",
+    "o9illus/",
+    "symbol/",
+    "logos/",
+    "fonts/",
+    "dist/"
+  ],
+  "scripts": {
+    "build": "node scripts/minify.mjs",
+    "clean": "node -e \"import('fs').then(fs => fs.rmSync('dist', { recursive: true, force: true }))\"",
+    "o9con:update": "node scripts/o9con-update.mjs",
+    "o9con:diff": "node scripts/o9con-update.mjs --diff",
+    "o9con:cheatsheet:data": "node scripts/o9con-update.mjs --cheatsheet-data"
+  }
+}

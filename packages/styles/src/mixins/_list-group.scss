@@ -1,0 +1,68 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Shared list group mixins -- section headers and dividers for grouped lists,
+// menus, and dropdown panels.
+// Used by: action-menu, select, combobox, multi-select, dropdown-button, list, listbox.
+//
+// Consumers declare these CSS custom properties on their block selector:
+
+// list-group-header
+// 32px height, uppercase 12px text, inline padding matching item padding.
+@mixin list-group-header {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 32px;
+  padding-inline: var(--arvo-list-item-padding-inline, #{$arvo-space-16});
+  font-family: var(--o9-font-family);
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-medium;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--arvo-color-t-placeholder);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+// list-group-divider
+// 8px-tall slot with a 1px hairline centered vertically. Color uses the
+// canonical divider token so action-menu / context-menu / hybrid-popover /
+// listbox / option-list separators read as `b-divider` (matches the rest of
+// the DS, where every other separator already uses `--arvo-color-b-divider`).
+// Total vertical space is the same 8px regardless of how the host stacks rows;
+// the hairline sits at mid-height via a single-row gradient.
+@mixin list-group-divider {
+  border: none;
+  height: $arvo-space-8;
+  background:
+    linear-gradient(var(--arvo-color-b-divider), var(--arvo-color-b-divider))
+    center/100% 1px no-repeat;
+  margin: 0;
+}
+
+// list-group-divider-dashed
+// 8px-tall dashed horizontal separator used between containers in ArvoList
+// (per spec section 7.2). Renders as a 1px dashed border centered inside an
+// 8px-tall element so consecutive groups read as visually disjoint sections
+// without the heavy emphasis of a solid rule.
+@mixin list-group-divider-dashed {
+  border: none;
+  height: $arvo-space-8;
+  background: transparent;
+  position: relative;
+  margin: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: $arvo-border-1 dashed var(--arvo-color-b-subtle);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+}

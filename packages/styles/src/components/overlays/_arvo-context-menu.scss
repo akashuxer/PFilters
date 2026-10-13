@@ -1,0 +1,96 @@
+@use '../../mixins/list-group' as *;
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-context-menu --------------------------------------------------
+//
+// Panel chrome for ArvoContextMenu. Rows reuse the shared `.arvo-menu-item`
+// block defined alongside `_arvo-action-menu.scss` (so single-line,
+// multi-line, destructive, leading icon, trailing shortcut + submenu
+// chevron + checkbox/radio indicator styles all carry over). The
+// ContextMenu surface is intentionally compact -- no search input, no
+// inline panel stack, no skeleton -- so the chrome stays minimal.
+//
+// The block uses the same overlay surface plumbing as .arvo-action-menu:
+// the @arvo/core enter()/exit() helpers toggle `.arvo-enter-*` /
+// `.arvo-exit-*` classes for the fade transition.
+
+.arvo-context-menu {
+  // -- Root layout ----------------------------------------------------------
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: column;
+  min-width: $arvo-filter-menu-wmin;
+  max-width: $arvo-filter-menu-wmax;
+  // Consume the engine-emitted `--arvo-overlay-max-height` so the panel
+  // never exceeds the viewport. The internal `__scroll` (overflow-y:auto)
+  // takes over when item list height exceeds the clamp.
+  max-height: var(--arvo-overlay-max-height, none);
+  background-color: var(--arvo-color-s-layer-03);
+  box-shadow: $arvo-shadow-down;
+  border-radius: 0;
+  z-index: var(--arvo-z-popover, 1000);
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // Direction-aware popup enter / exit animation. Positioning uses the
+  // standalone `translate` property (not `transform`) so this animation
+  // is free to use `transform`. See `popup-animation` mixin.
+  @include popup-animation;
+
+  // -- State: open ---------------------------------------------------------
+  &.open {
+    display: flex;
+  }
+
+  // -- __scroll ------------------------------------------------------------
+  // Block container so direct children (menu items, headers, dividers) stack
+  // at their intrinsic heights and overflow into `auto` scrolling when the
+  // panel is clamped by `--arvo-overlay-max-height`. The `> *` rule below is
+  // a defensive guard: should this container ever switch to `display: flex`
+  // (for example to host a stretching `__empty` figure), the rows still keep
+  // their fixed 32 / 40 px height instead of being compressed vertically.
+  &__scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    padding-block: $arvo-space-4;
+
+    > * {
+      flex-shrink: 0;
+    }
+  }
+
+  // -- __hdr (group header) ------------------------------------------------
+  &__hdr {
+    @include list-group-header;
+  }
+
+  // -- __divider (between groups) ------------------------------------------
+  &__divider {
+    @include list-group-divider;
+  }
+
+  // -- __empty (empty-state wrapper) ---------------------------------------
+  // Centers the shared .arvo-empty figure inside the scroll area when the
+  // resolved items list is empty AND the consumer provided `emptyConfig`.
+  // Mirrors `arvo-action-menu__empty` so both menu surfaces handle empty
+  // content identically.
+  &__empty {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: stretch;
+    justify-content: center;
+    min-height: 0;
+    padding-block: $arvo-space-16;
+  }
+}
+
+// Per spec section 4.5 ContextMenu does NOT render a trailing checkbox /
+// radio indicator glyph -- selection (checkbox.checked, radio.checked, or
+// item.isSelected) is conveyed by the shared `.active` state on the
+// `.arvo-menu-item` row (2 px left-border + s-theme-active-4 background)
+// from the `list-item-states` mixin. ARIA continues to carry the semantic
+// state via `role=menuitemcheckbox` / `role=menuitemradio` + `aria-checked`.

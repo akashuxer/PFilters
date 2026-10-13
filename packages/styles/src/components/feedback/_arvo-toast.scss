@@ -1,0 +1,270 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+
+// ---------------------------------------------------------------------------
+// Toast -- Feedback
+// ---------------------------------------------------------------------------
+
+// -- Container -------------------------------------------------------------
+
+.arvo-toast-container {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-12;
+  max-height: 100vh;
+  overflow: visible;
+  pointer-events: none;
+
+  // Default: top-right
+  &--top-right,
+  &:not([class*='--']) {
+    top: 16px;
+    right: 16px;
+  }
+
+  &--bottom-right {
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+// -- Toast card ------------------------------------------------------------
+
+.arvo-toast {
+  --arvo-toast-bg-color: var(--arvo-color-s-info-subtle);
+  --arvo-toast-border-color: var(--arvo-color-b-info, #0037ff);
+  --arvo-toast-title-color: var(--arvo-color-t-info-dark, #002ed2);
+  --arvo-toast-icon-color: var(--arvo-color-i-info-dark);
+
+  width: 300px;
+  padding: $arvo-space-12;
+  display: flex;
+  align-items: flex-start;
+  gap: $arvo-space-4;
+  background: var(--arvo-toast-bg-color);
+  border-left: $arvo-border-2 solid var(--arvo-toast-border-color);
+  box-shadow: $arvo-shadow-center;
+  pointer-events: auto;
+  outline: none;
+
+  // Enter/exit pose: a toast mounts in the "exit" pose (opacity 0,
+  // translated up-and-right), and the JS/React layer adds `is-visible`
+  // on the next animation frame to trigger the feedback motion token
+  // transition into the resting pose. On dismissal `is-removing` swaps
+  // back to the exit pose -- transitionend then drives DOM removal.
+  opacity: 0;
+  transform: $arvo-transform-feedback-exit;
+  transition: $arvo-motion-feedback;
+
+  &:focus-visible {
+    outline: 1px solid var(--arvo-color-b-theme-focus);
+    outline-offset: 2px;
+  }
+
+  // -- Entered (visible) ----------------------------------------------
+  &.is-visible {
+    opacity: 1;
+    transform: $arvo-transform-feedback-enter;
+  }
+
+  // -- Exiting --------------------------------------------------------
+  &.is-removing {
+    opacity: 0;
+    transform: $arvo-transform-feedback-exit;
+  }
+
+  // -- Paused (hover) -------------------------------------------------
+  &.is-paused {
+    opacity: 1;
+    transform: $arvo-transform-feedback-enter;
+  }
+
+  // -- Type modifiers --------------------------------------------------
+
+  &--negative {
+    --arvo-toast-bg-color: var(--arvo-color-s-negative-subtle);
+    --arvo-toast-border-color: var(--arvo-color-b-negative);
+    --arvo-toast-title-color: var(--arvo-color-t-negative);
+    --arvo-toast-icon-color: var(--arvo-color-i-negative);
+  }
+
+  &--warning {
+    --arvo-toast-bg-color: var(--arvo-color-s-warning-subtle);
+    --arvo-toast-border-color: var(--arvo-color-b-warning);
+    --arvo-toast-title-color: var(--arvo-color-t-warning);
+    --arvo-toast-icon-color: var(--arvo-color-i-warning);
+  }
+
+  &--info {
+    --arvo-toast-bg-color: var(--arvo-color-s-info-subtle);
+    --arvo-toast-border-color: var(--arvo-color-b-info);
+    --arvo-toast-title-color: var(--arvo-color-t-info-dark);
+    --arvo-toast-icon-color: var(--arvo-color-i-info-dark);
+  }
+
+  &--positive {
+    --arvo-toast-bg-color: var(--arvo-color-s-positive-subtle);
+    --arvo-toast-border-color: var(--arvo-color-b-positive);
+    --arvo-toast-title-color: var(--arvo-color-t-positive);
+    --arvo-toast-icon-color: var(--arvo-color-i-positive);
+  }
+
+  &--block {
+    --arvo-toast-bg-color: var(--arvo-color-s-negative-subtle);
+    --arvo-toast-border-color: var(--arvo-color-b-negative);
+    --arvo-toast-title-color: var(--arvo-color-t-negative);
+    --arvo-toast-icon-color: var(--arvo-color-i-negative);
+  }
+
+  &--neutral {
+    --arvo-toast-bg-color: var(--arvo-color-s-layer-04);
+    --arvo-toast-border-color: var(--arvo-color-b-neutral);
+    --arvo-toast-title-color: var(--arvo-color-t-neutral);
+    --arvo-toast-icon-color: var(--arvo-color-i-neutral);
+  }
+}
+
+// -- Icon ------------------------------------------------------------------
+
+.arvo-toast__ico {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  font-size: $arvo-icon-16;
+  align-self: baseline;
+  color: var(--arvo-toast-icon-color);
+
+  &::before {
+    font-family: 'o9con', sans-serif;
+  }
+
+  // Block uses the dedicated block glyph (\ed75) per descriptor.
+  .arvo-toast--negative &::before { content: '\edd9'; }
+  .arvo-toast--warning &::before  { content: '\ed72'; }
+  .arvo-toast--info &::before     { content: '\ed71'; }
+  .arvo-toast--positive &::before { content: '\ec1b'; }
+  .arvo-toast--block &::before    { content: '\ed75'; }
+  .arvo-toast--neutral &::before  { content: '\ebe2'; }
+}
+
+// Custom-icon override: when consumers pass an `icon` while `type="neutral"`,
+// the per-type `::before` glyph is suppressed and a child `<i class="o9con-*">`
+// renders inside `__ico` instead. The icon color still follows the neutral
+// type modifier so the override stays color-coordinated. Mirrors the
+// MessageAlert / BannerAlert pattern (`has-icon-override` state class).
+.arvo-toast.has-icon-override .arvo-toast__ico::before {
+  content: none;
+}
+
+// -- Content ---------------------------------------------------------------
+
+.arvo-toast__content {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  min-width: 0;
+}
+
+// -- Text (title + message wrapper) ----------------------------------------
+
+.arvo-toast__text {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+  min-width: 0;
+
+  > .arvo-toast__msg:first-child {
+    margin-top: 1px;
+  }
+}
+
+// -- Title -----------------------------------------------------------------
+
+.arvo-toast__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--arvo-medium, 500);
+  color: var(--arvo-toast-title-color);
+
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+// -- Message ---------------------------------------------------------------
+
+.arvo-toast__msg {
+  margin: 0;
+  font-size: $arvo-font-size-12;
+  font-weight: var(--arvo-regular, 400);
+  color: var(--arvo-color-t-secondary, #303030);
+  word-break: break-word;
+}
+
+// -- Inline ArvoLink (single-line, truncates with ellipsis) ----------------
+
+.arvo-toast > .arvo-toast__content > .arvo-lnk {
+  max-width: 100%;
+  min-width: 0;
+
+  .arvo-lnk__lbl {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// -- SR-only prefix span (type label for live-region announcement) --------
+//
+// Visually hidden but read by screen readers. The toast announces "{type}:
+// {title}. {message}" so the type context is always part of the live-region
+// payload regardless of whether a title is provided.
+
+.arvo-toast .arvo-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// -- Close button (rendered as ArvoIconButton xs / tertiary) ---------------
+
+.arvo-toast > .arvo-icon-btn {
+  flex: 0 0 auto;
+  align-self: baseline;
+}
+
+// -- Reduced motion --------------------------------------------------------
+//
+// Skip enter/exit transitions; the toast is rendered directly in its
+// resting pose and removed instantly without the fade-out animation.
+// FLIP stack-reflow animations are also skipped at the JS/React layer.
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-toast {
+    transition: none;
+
+    // Without `is-visible` the base rules above would render the toast
+    // in the exit pose (opacity 0, translated). Force the resting pose
+    // unconditionally for reduced-motion users so the toast appears
+    // instantly at its final position.
+    opacity: 1;
+    transform: $arvo-transform-feedback-enter;
+
+    &.is-removing {
+      opacity: 0;
+    }
+  }
+}

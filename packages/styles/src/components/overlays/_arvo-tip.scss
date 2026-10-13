@@ -1,0 +1,67 @@
+@use '../../mixins/typography' as *;
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-tip --------------------------------------------------------------
+
+.arvo-tip {
+  // -- Root layout ----------------------------------------------------------
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: $arvo-space-4;
+  max-width: $arvo-tooltip-wmax;
+  padding: $arvo-space-4 $arvo-space-6;
+  background-color: var(--arvo-color-s-inverse);
+  color: var(--arvo-color-t-inverse);
+  box-shadow: $arvo-shadow-center;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  // Standard tooltip is purely informational: the cursor must be able to
+  // pass through it so adjacent tooltipped controls can be hovered without
+  // the tip persisting, and the text must not be selectable. For
+  // interactive informational overlays use `ArvoRichTooltip` instead -- it
+  // ships on a separate OverlaySurface engine with its own panel
+  // hover-bridge.
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+
+  // Direction-aware popup enter / exit animation. Positioning uses the
+  // standalone `translate` property (not `transform`) so this animation
+  // is free to use `transform`. See `popup-animation` mixin.
+  @include popup-animation;
+
+  // -- __txt ----------------------------------------------------------------
+  &__txt {
+    flex: 1 0 0;
+    min-width: 1px;
+    @include arvo-font-l12-r;
+    line-height: normal;
+    color: var(--arvo-color-t-inverse);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  // -- __shortcut -----------------------------------------------------------
+  &__shortcut {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: $arvo-space-20;
+    padding: $arvo-space-4;
+    background-color: var(--arvo-color-s-on-inverse);
+    @include arvo-font-l12-r;
+    line-height: normal;
+    color: var(--arvo-color-t-inverse);
+    white-space: nowrap;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}

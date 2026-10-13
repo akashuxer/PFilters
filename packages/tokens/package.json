@@ -1,0 +1,39 @@
+{
+  "name": "@arvo/tokens",
+  "version": "2.2.5",
+  "description": "Arvo Design System design tokens (SCSS source)",
+  "license": "UNLICENSED",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://o9git.pkgs.visualstudio.com/_packaging/o9UI/npm/registry/"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": "./_index.scss",
+    "./scss": "./src/scss/_all.scss",
+    "./scss/variables": "./src/scss/_variables.scss",
+    "./scss/colors": "./src/scss/_colors.scss",
+    "./scss/spacing": "./src/scss/_spacing.scss",
+    "./scss/typography": "./src/scss/_typography.scss",
+    "./scss/borders": "./src/scss/_borders.scss",
+    "./scss/widths": "./src/scss/_widths.scss",
+    "./scss/animation": "./src/scss/_animation.scss",
+    "./scss/effects": "./src/scss/_effects.scss",
+    "./scss/icon-size": "./src/scss/_icon-size.scss",
+    "./scss/illustration-size": "./src/scss/_illustration-size.scss",
+    "./scss/root": "./src/scss/_root.scss",
+    "./css": "./dist/arvo-tokens.css",
+    "./css/min": "./dist/arvo-tokens.min.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "dist/",
+    "scripts/",
+    "_index.scss"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "clean": "node -e \"import('fs').then(fs => fs.rmSync('dist', { recursive: true, force: true }))\""
+  }
+}

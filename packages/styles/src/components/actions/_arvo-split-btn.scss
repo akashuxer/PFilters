@@ -1,0 +1,411 @@
+@use '../../../../tokens/src/scss/all' as *;
+
+// SplitButton (arvo-split-btn) & SplitIconButton (arvo-split-icon-btn)
+// BEM Blocks: arvo-split-btn / arvo-split-icon-btn
+// Abbreviation: split-btn / split-icon-btn
+// Loading Pattern: A (single shimmer overlay across the wrapper, NOT per-segment)
+//
+// Both segments carry .arvo-btn (or .arvo-icon-btn for the action segment of
+// SplitIconButton), so all base layout, colors, focus, disabled, hover, and
+// loading states are inherited from _arvo-btn.scss. This file only adds:
+// two-segment flex layout, trigger width/padding overrides, caret styling,
+// .open caret rotation, and tertiary action right-padding override.
+
+// --- .arvo-split-btn ---------------------------------------------------------
+
+.arvo-split-btn {
+  // -- CSS custom properties (md defaults) -----------------------------------
+  --arvo-split-btn-gap: #{$arvo-space-1};
+  --arvo-split-btn-trigger-width: 16px;
+  --arvo-split-btn-trigger-pad-block: #{$arvo-space-8};
+  --arvo-split-btn-caret-size: #{$arvo-icon-16};
+  --arvo-split-btn-action-pad-inline-tertiary-end: #{$arvo-space-4};
+  --arvo-split-btn-focus-outline-color: var(--arvo-color-b-theme-focus);
+  --arvo-split-btn-focus-bg-color: var(--arvo-color-s-theme-hover-2);
+  border: none;
+  background-color: transparent;
+  // -- Wrapper layout --------------------------------------------------------
+  // 1px gap between segments lets the page background show through, creating
+  // the visual split. All segment styling (height, padding, font, colors,
+  // hover, focus, active, disabled, loading shimmer) is inherited from the
+  // .arvo-btn .arvo-btn--{variant} .arvo-btn--{size} classes on each segment.
+  display: inline-flex;
+  align-items: stretch;
+  gap: var(--arvo-split-btn-gap);
+  vertical-align: middle;
+  position: relative;
+
+  // -- Icon (leading icon inside __action) -----------------------------------
+  &__icon {
+    flex-shrink: 0;
+    line-height: normal;
+    pointer-events: none;
+  }
+
+  // -- Label -----------------------------------------------------------------
+  &__lbl {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  // -- Trigger segment (narrow caret-only button) ----------------------------
+  // Width is fixed per size; horizontal padding collapses to zero so the
+  // caret sits centered. Block padding is set to --arvo-split-btn-trigger-
+  // pad-block so the inner caret area sizes to the caret exactly (e.g. md:
+  // 32px height - 2*8px pad = 16px caret area). Segment height stays in
+  // lockstep with __action via the inherited --arvo-btn-height.
+  &__trigger {
+    width: var(--arvo-split-btn-trigger-width);
+    min-width: var(--arvo-split-btn-trigger-width);
+    padding-inline: 0;
+    padding-block: var(--arvo-split-btn-trigger-pad-block);
+    --arvo-btn-padding-inline: 0;
+    --arvo-btn-padding-block: var(--arvo-split-btn-trigger-pad-block);
+    gap: 0;
+    --arvo-btn-gap: 0;
+  }
+
+  // -- Caret element ---------------------------------------------------------
+  // Sets --arvo-btn-icon-size locally so the inherited btn-base icon rule
+  // (font-size: var(--arvo-btn-icon-size)) renders the caret at the correct
+  // size regardless of the trigger segment's own --arvo-btn-icon-size.
+  &__caret {
+    --arvo-btn-icon-size: var(--arvo-split-btn-caret-size);
+    color: inherit;
+    width: var(--arvo-split-btn-caret-size);
+    height: var(--arvo-split-btn-caret-size);
+    flex-shrink: 0;
+    line-height: normal;
+    pointer-events: none;
+    transition: transform $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  // -- Open state: caret rotates 180deg --------------------------------------
+  &.open &__caret {
+    transform: rotate(180deg);
+  }
+
+  // -- Variant: Primary -- open trigger surface -------------------------------
+  // arvo-btn's &.open rule looks for .open on the same element as .arvo-btn,
+  // but our .open lives on the wrapper. Forward the active surface tokens
+  // explicitly to the trigger segment for each variant.
+  &--primary.open &__trigger {
+    --arvo-btn-bg-color: var(--arvo-color-s-theme-active-5);
+    --arvo-btn-text-color: var(--arvo-color-t-active-inverse);
+    --arvo-btn-icon-color: var(--arvo-color-i-active-inverse);
+  }
+
+  &--primary {
+    --arvo-split-btn-focus-outline-color: var(--arvo-color-b-focus-inverse);
+    --arvo-split-btn-focus-bg-color: var(--arvo-color-s-theme-hover-1);
+  }
+
+  // -- Variant: Secondary -- open trigger surface -----------------------------
+  &--secondary.open &__trigger {
+    --arvo-btn-bg-color: var(--arvo-color-s-theme-active-2);
+    --arvo-btn-text-color: var(--arvo-color-t-theme-active);
+    --arvo-btn-icon-color: var(--arvo-color-i-theme-active);
+  }
+
+  // -- Variant: Tertiary -----------------------------------------------------
+  // Right-side padding tweak -- visually tightens the gap to the caret since
+  // both segments share a transparent surface. Uses padding-inline-end so the
+  // left padding inherited from arvo-btn--tertiary is preserved.
+  &--tertiary &__action {
+    padding-inline-end: var(--arvo-split-btn-action-pad-inline-tertiary-end);
+  }
+
+  &--tertiary.open &__trigger {
+    --arvo-btn-bg-color: var(--arvo-color-s-theme-active-2);
+    --arvo-btn-text-color: var(--arvo-color-t-theme-active);
+    --arvo-btn-icon-color: var(--arvo-color-i-theme-active);
+  }
+
+  // -- Size: Small -----------------------------------------------------------
+  &--sm {
+    --arvo-split-btn-trigger-width: 16px;
+    --arvo-split-btn-trigger-pad-block: #{$arvo-space-4};
+    --arvo-split-btn-caret-size: #{$arvo-icon-16};
+  }
+
+  &--md {
+    --arvo-split-btn-trigger-width: 18px;
+    --arvo-split-btn-trigger-pad-block: #{$arvo-space-4};
+    --arvo-split-btn-caret-size: #{$arvo-icon-16};
+  }
+  // -- Size: Medium (default) -- block defaults already match -----------------
+
+  // -- Size: Large -----------------------------------------------------------
+  &--lg {
+    --arvo-split-btn-trigger-width: 20px;
+    --arvo-split-btn-trigger-pad-block: #{$arvo-space-12};
+    --arvo-split-btn-caret-size: #{$arvo-icon-16};
+  }
+
+  // -- Loading State (Pattern A -- single overlay across the wrapper) ---------
+  // Shimmer covers BOTH segments at once; the split button is treated as one
+  // cohesive control during loading. Reuses the global arvo-skeleton-shimmer
+  // keyframes declared in base/_global.scss.
+  &.loading {
+    pointer-events: none;
+    cursor: default;
+    overflow: hidden;
+
+    // Background skeleton layer
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-color: var(--arvo-color-s-pulse-light);
+    }
+
+    // Shimmer sweep layer
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-dark) 50%,
+        transparent 100%
+      );
+      transform: translateX(-100%);
+      animation: arvo-skeleton-shimmer 1.5s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::before {
+        animation: none;
+      }
+    }
+  }
+
+  // Hide segment content + suppress any per-segment shimmer pseudos when the
+  // wrapper is loading. (.loading is only on the wrapper, not the segments,
+  // but defend against the inherited .arvo-btn loading rule just in case.)
+  &.loading &__action,
+  &.loading &__trigger {
+    color: transparent;
+    border-width: 0;
+
+    &::before,
+    &::after {
+      display: none;
+      content: none;
+    }
+
+    .arvo-split-btn__icon,
+    .arvo-split-btn__lbl,
+    .arvo-split-btn__caret,
+    [class^="o9con-"],
+    [class*=" o9con-"] {
+      opacity: 0;
+    }
+  }
+
+  // -- Focus ----------------------------------------------------------------
+  .arvo-btn:focus-visible {
+    outline-color: var(--arvo-split-btn-focus-outline-color);
+    outline-offset: -2px;
+    background-color: var(--arvo-split-btn-focus-bg-color);
+  }
+}
+
+// --- .arvo-split-icon-btn ----------------------------------------------------
+
+.arvo-split-icon-btn {
+  // -- CSS custom properties (md defaults) -----------------------------------
+  --arvo-split-icon-btn-gap: #{$arvo-space-2};
+  --arvo-split-icon-btn-trigger-width: 16px;
+  --arvo-split-icon-btn-trigger-pad-block: #{$arvo-space-8};
+  --arvo-split-icon-btn-caret-size: #{$arvo-icon-16};
+  --arvo-split-icon-btn-focus-outline-color: var(--arvo-color-b-theme-focus);
+  --arvo-split-icon-btn-focus-bg-color: var(--arvo-color-s-theme-hover-2);
+  // -- Wrapper layout --------------------------------------------------------
+  // 2px gap between segments lets the page background show through, creating
+  // the visual split. The action segment carries .arvo-icon-btn, so its square
+  // dimensions / padding / hover / focus / active / disabled state come from
+  // _arvo-btn.scss for free. The trigger segment carries .arvo-btn for color
+  // tokens but uses the rules below for its narrow rectangular layout.
+  display: inline-flex;
+  align-items: stretch;
+  gap: var(--arvo-split-icon-btn-gap);
+  vertical-align: middle;
+  position: relative;
+
+  // -- Icon (inside __action) ------------------------------------------------
+  &__icon {
+    flex-shrink: 0;
+    line-height: normal;
+    pointer-events: none;
+  }
+
+  // -- Trigger segment (narrow caret-only button) ----------------------------
+  // Width is fixed per size; horizontal padding collapses to zero so the
+  // caret sits centered. Block padding is set to --arvo-split-icon-btn-
+  // trigger-pad-block so the inner caret area sizes to the caret exactly.
+  // Segment height stays in lockstep with __action via the inherited
+  // --arvo-btn-height from arvo-btn--{size} on the trigger element.
+  &__trigger {
+    width: var(--arvo-split-icon-btn-trigger-width);
+    min-width: var(--arvo-split-icon-btn-trigger-width);
+    padding-inline: 0;
+    padding-block: var(--arvo-split-icon-btn-trigger-pad-block);
+    --arvo-btn-padding-inline: 0;
+    --arvo-btn-padding-block: var(--arvo-split-icon-btn-trigger-pad-block);
+    gap: 0;
+    --arvo-btn-gap: 0;
+  }
+
+  // -- Caret element ---------------------------------------------------------
+  // Sets --arvo-btn-icon-size locally so the inherited btn-base icon rule
+  // (font-size: var(--arvo-btn-icon-size)) renders the caret at the correct
+  // size regardless of the trigger segment's own --arvo-btn-icon-size.
+  &__caret {
+    --arvo-btn-icon-size: var(--arvo-split-icon-btn-caret-size);
+    color: inherit;
+    width: var(--arvo-split-icon-btn-caret-size);
+    height: var(--arvo-split-icon-btn-caret-size);
+    flex-shrink: 0;
+    line-height: normal;
+    pointer-events: none;
+    transition: transform $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  // -- Open state: caret rotates 180deg --------------------------------------
+  &.open &__caret {
+    transform: rotate(180deg);
+  }
+
+
+  // -- Variant: Primary -- open trigger surface -------------------------------
+  // arvo-btn's &.open rule looks for .open on the same element as .arvo-btn,
+  // but our .open lives on the wrapper. Forward the active surface tokens
+  // explicitly to the trigger segment for each variant.
+  &--primary.open &__trigger {
+    --arvo-btn-bg-color: var(--arvo-color-s-theme-active-5);
+    --arvo-btn-text-color: var(--arvo-color-t-active-inverse);
+    --arvo-btn-icon-color: var(--arvo-color-i-active-inverse);
+  }
+
+  &--primary {
+    --arvo-split-icon-btn-focus-outline-color: var(--arvo-color-b-focus-inverse);
+    --arvo-split-icon-btn-focus-bg-color: var(--arvo-color-s-theme-hover-1);
+  }
+
+  // -- Variant: Secondary -- open trigger surface -----------------------------
+  &--secondary.open &__trigger {
+    --arvo-btn-bg-color: var(--arvo-color-s-theme-active-2);
+    --arvo-btn-text-color: var(--arvo-color-t-theme-active);
+    --arvo-btn-icon-color: var(--arvo-color-i-theme-active);
+  }
+
+  // -- Variant: Tertiary -- open trigger surface ------------------------------
+  // No right-padding tweak on tertiary __action: SplitIconButton has no left
+  // text segment to tighten against (the action is already a fixed square).
+  &--tertiary.open &__trigger {
+    --arvo-btn-bg-color: var(--arvo-color-s-theme-active-2);
+    --arvo-btn-text-color: var(--arvo-color-t-theme-active);
+    --arvo-btn-icon-color: var(--arvo-color-i-theme-active);
+  }
+
+  // -- Size: Small -----------------------------------------------------------
+  &--sm {
+    --arvo-split-icon-btn-trigger-width: 16px;
+    --arvo-split-icon-btn-trigger-pad-block: #{$arvo-space-4};
+    --arvo-split-icon-btn-caret-size: #{$arvo-icon-16};
+  }
+
+  &--md {
+    --arvo-split-icon-btn-trigger-width: 18px;
+    --arvo-split-icon-btn-trigger-pad-block: #{$arvo-space-4};
+    --arvo-split-icon-btn-caret-size: #{$arvo-icon-16};
+  }
+
+  // -- Size: Medium (default) -- block defaults already match -----------------
+
+  // -- Size: Large -----------------------------------------------------------
+  &--lg {
+    --arvo-split-icon-btn-trigger-width: 20px;
+    --arvo-split-icon-btn-trigger-pad-block: #{$arvo-space-12};
+    --arvo-split-icon-btn-caret-size: #{$arvo-icon-16};
+  }
+
+  // -- Loading State (Pattern A -- single overlay across the wrapper) ---------
+  // Shimmer covers BOTH segments at once; the split icon button is treated as
+  // one cohesive control during loading. Reuses arvo-skeleton-shimmer keyframes
+  // declared in base/_global.scss.
+  &.loading {
+    pointer-events: none;
+    cursor: default;
+    overflow: hidden;
+
+    // Background skeleton layer
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-color: var(--arvo-color-s-pulse-light);
+    }
+
+    // Shimmer sweep layer
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-dark) 50%,
+        transparent 100%
+      );
+      transform: translateX(-100%);
+      animation: arvo-skeleton-shimmer 1.5s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::before {
+        animation: none;
+      }
+    }
+  }
+
+  // Hide segment content + suppress any per-segment shimmer pseudos when the
+  // wrapper is loading. (.loading is only on the wrapper, not the segments,
+  // but defend against the inherited .arvo-icon-btn / .arvo-btn loading rule.)
+  &.loading &__action,
+  &.loading &__trigger {
+    color: transparent;
+    border-width: 0;
+
+    &::before,
+    &::after {
+      display: none;
+      content: none;
+    }
+
+    .arvo-split-icon-btn__icon,
+    .arvo-split-icon-btn__caret,
+    [class^="o9con-"],
+    [class*=" o9con-"] {
+      opacity: 0;
+    }
+  }
+
+  // -- Focus ----------------------------------------------------------------
+  .arvo-icon-btn:focus-visible,
+  .arvo-btn:focus-visible {
+    outline-color: var(--arvo-split-icon-btn-focus-outline-color);
+    outline-offset: -2px;
+    background-color: var(--arvo-split-icon-btn-focus-bg-color);
+  }
+}

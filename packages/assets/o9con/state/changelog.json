@@ -1,0 +1,38 @@
+[
+  {
+    "date": "2026-07-01",
+    "version": "2.2.1",
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  {
+    "date": "2026-06-26",
+    "version": "2.1.0",
+    "added": [
+      "bell-filled",
+      "bin-filled",
+      "clipboard-filled",
+      "cog-filled",
+      "comment-filled",
+      "deltalake-datanode",
+      "deltalake-datanode-in",
+      "deltalake-datanode-out",
+      "deltalake-datastore",
+      "deltalake-datastore-in",
+      "deltalake-datastore-out",
+      "deltalake-node-in",
+      "deltalake-node-out",
+      "deltalake-share-in",
+      "deltalake-share-out",
+      "home-filled",
+      "paste",
+      "question-circle-filled",
+      "task"
+    ],
+    "removed": [
+      "o9-circle"
+    ],
+    "changed": []
+  }
+]

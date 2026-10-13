@@ -1,0 +1,42 @@
+// Shared corner-host pattern.
+//
+// Used by any component that wants to embed an ArvoStatus or ArvoBadge
+// pinned to a corner of its BEM root. The mixin establishes the
+// positioning context (position: relative) that the absolutely
+// positioned overlay placement modifiers
+// (`.arvo-sts--top-right` / `.arvo-sts--bottom-right` /
+// `.arvo-bdg--top-right`) anchor against. Note: ArvoBadge supports
+// `--top-right` only; ArvoStatus retains both top- and bottom-right
+// overlay corners.
+//
+// Consumers also re-export the `ArvoStatusConfig` / `ArvoBadgeConfig`
+// TypeScript types (from @arvo/react / @arvo/js) and re-export their
+// own narrowed slot config (`Arvo<Comp>StatusConfig` /
+// `Arvo<Comp>BadgeConfig`) so the integration shape stays identical
+// across the design system.
+//
+// Example consumer SCSS:
+//
+//   @use '../../mixins/corner-host' as *;
+//
+//   .arvo-btn { @include corner-host; }
+//
+// And then the consumer's React / JS layer mounts the resolved
+// configurations:
+//
+//   <ArvoStatus type="available" size="sm" placement="top-right" />
+//   <ArvoBadge variant="counter" count={5} placement="top-right" ... />
+//
+// inside its root.
+
+@mixin corner-host {
+  position: relative;
+}
+
+// Backwards-compat alias for the legacy pattern name. Existing call
+// sites that `@use '../../mixins/status-host'` and `@include status-host`
+// continue to work via this alias. Removal is tracked as a follow-up to
+// the badge/status slot foundation wave.
+@mixin status-host {
+  @include corner-host;
+}

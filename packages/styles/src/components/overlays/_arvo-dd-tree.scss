@@ -1,0 +1,352 @@
+@use '../../mixins/hover' as *;
+@use '../../mixins/list-group' as *;
+@use '../../mixins/typography' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-dd-tree -------------------------------------------------------------
+// Composes ArvoPopover -- panel chrome (header, footer, body, shadow, arrow,
+// positioning, transitions) lives in _arvo-popover.scss. This file only styles
+// DropdownTree-specific elements rendered inside the Popover slots, plus the
+// shared resize-handle block (parity with ArvoHybridPopover).
+//
+// SCAFFOLD SCOPE -- this initial pass styles the shell: width clamp + sticky
+// header + search row + tree body + resize handles. Empty / skeleton / global
+// select-all / sections rules are stubbed (compact placeholders) so the
+// follow-up that wires those features is additive, not a rewrite.
+
+.arvo-dd-tree {
+  --arvo-dd-tree-width: 362px;
+  --arvo-dd-tree-min-width: #{$arvo-popover-wmin};
+  --arvo-dd-tree-max-width: #{$arvo-popover-wmax};
+  --arvo-dd-tree-min-height: 272px;
+
+  // Width flows through ArvoPopover -> --arvo-popover-width. Clamp here so the
+  // JS twin's inline style stays in band even when the consumer passes an
+  // out-of-range value.
+  width: clamp(
+    var(--arvo-dd-tree-min-width),
+    var(--arvo-popover-width, var(--arvo-dd-tree-width)),
+    var(--arvo-dd-tree-max-width)
+  );
+  min-width: var(--arvo-dd-tree-min-width);
+  max-width: var(--arvo-dd-tree-max-width);
+
+  // Yield to ArvoPopover's positioner clamp (`--arvo-popover-max-height`) so a
+  // viewport-constrained panel can shrink below the comfort floor of 272px.
+  // Mirrors the HPop pattern -- without the yield the placement selector would
+  // flicker as the panel re-measures every frame.
+  min-height: min(var(--arvo-dd-tree-min-height), var(--arvo-popover-max-height, 90vh));
+  max-height: var(--arvo-popover-max-height, 90vh);
+
+  // -- __sticky --------------------------------------------------------------
+  // Vertical flex column inside Popover's stickyHeader slot. Owns its own
+  // padding (12 horizontal, 8 top, 8 bottom on the small viewport from the
+  // Figma 38556-43419 search-container -- closer to the 16/12/8 popover
+  // baseline than HPop's filter layout) and the column gap holding the search
+  // row above an optional global select-all row.
+  &__sticky {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+    padding: $arvo-space-12 $arvo-space-16;
+    box-sizing: border-box;
+  }
+
+  // Null out the outer Popover sticky-header padding when nested inside
+  // .arvo-dd-tree so the only padding source is __sticky above. Other Popover
+  // consumers are unaffected. Mirrors the HPop parent override.
+  .arvo-popover__sticky-header {
+    padding: 0;
+  }
+
+  // -- __search --------------------------------------------------------------
+  // Horizontal flex row: ArvoSearch grows, the filter ArvoDropdownIconButton
+  // stays at its natural width. Gap 8px per the Figma 38556-43419 spec.
+  &__search {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-8;
+    width: 100%;
+  }
+
+  // -- __search-input --------------------------------------------------------
+  // Wraps the ArvoSearch instance and forces width: 100% so the field grows.
+  &__search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+
+    .arvo-search {
+      width: 100%;
+    }
+  }
+
+  // -- __filter --------------------------------------------------------------
+  // Adjacent filter ArvoDropdownIconButton (icon-only, sm, secondary).
+  &__filter {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  // -- __sa (B4 global select-all row, multi-select only) --------------------
+  // Sits below the search row inside __sticky. The checkbox toggles
+  // every eligible tree row; the external label is clickable too.
+  &__sa {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-8;
+    padding-block: $arvo-space-4;
+  }
+
+  &__sa__lbl {
+    @include arvo-font-l14-r;
+    color: var(--arvo-color-t-form-label);
+    cursor: pointer;
+    font-family: var(--o9-font-family);
+    user-select: none;
+  }
+
+  // -- __body ----------------------------------------------------------------
+  // The body wraps the embedded ArvoTreeView (single-tree shape) or one
+  // section per sections entry (RESERVED). Padding only on top so the tree's
+  // own row padding governs left/right.
+  &__body {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding-top: $arvo-space-8;
+    padding-bottom: $arvo-space-12;
+    box-sizing: border-box;
+  }
+
+  // -- __section / __section-hdr / __divider (RESERVED) ----------------------
+  // Stubs that lock the BEM contract for the multi-tree sections shape.
+  &__section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__section-hdr {
+    @include list-group-header;
+  }
+
+  &__divider {
+    @include list-group-divider;
+  }
+
+  // -- __tree ----------------------------------------------------------------
+  // Wrapper around the embedded ArvoTreeView. The inner .arvo-tree owns all
+  // row rendering, connectors, chevrons, checkboxes, and keyboard navigation.
+  &__tree {
+    width: 100%;
+  }
+
+  // -- __empty ---------------------------------------------------------------
+  // Hosts the shared ArvoEmptyState primitive (size sm, vertical) for both
+  // noData (items.length === 0) and noResults (non-empty query, zero matches)
+  // branches. Container fills __body so the figure centers vertically inside
+  // the dropdown panel. The figma reference padding (12 top / 8 bottom on
+  // noResults, 12 top / 8 bottom on noData with bigger illustration) maps to
+  // the canonical Arvo space tokens applied here.
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: $arvo-space-12 0 $arvo-space-8;
+    box-sizing: border-box;
+
+    // Drop the host's own padding so the wrapper above governs spacing and
+    // the figure can shrink for narrower DropdownTree panels.
+    .arvo-empty {
+      padding: 0;
+      min-height: 0;
+    }
+  }
+
+  // -- __skeleton / __skeleton-row ------------------------------------------
+  // Pattern B body skeleton: header + footer are hidden upstream by the
+  // component (sticky region display:none, popover footer hidden via
+  // setFooterVisible(false) / actions=undefined). The skeleton column sits
+  // inside __body and uses the same row-gap as TreeView (2px) so the
+  // transition into the data state is visually stable. Each skeleton row
+  // mimics a TreeItem row anatomy: leading 16x16 square (chevron / checkbox
+  // slot), text fill, two trailing 16x16 squares (lock + badge slots).
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-2;
+    width: 100%;
+    min-height: 0;
+  }
+
+  &__skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-8;
+    height: 32px;
+    padding: $arvo-space-6 $arvo-space-8;
+    box-sizing: border-box;
+  }
+
+  &__skeleton-icon,
+  &__skeleton-text {
+    background-color: var(--arvo-color-s-pulse-dark);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__skeleton-icon {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &__skeleton-text {
+    flex: 1 1 auto;
+    height: 16px;
+    max-width: 60%;
+  }
+
+  &__skeleton-icon::after,
+  &__skeleton-text::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--arvo-color-s-pulse-light) 50%,
+      transparent 100%
+    );
+    animation: arvo-dd-tree-skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  // -- State: loading -------------------------------------------------------
+  // Belt-and-braces visual contract: when the panel is in the loading state
+  // the body owns the full vertical run (skeleton column expands) and the
+  // sticky region is fully hidden. Both rules are aligned with the JS twin's
+  // inline `display: none` on `__sticky` so the box geometry never depends
+  // on which renderer painted the panel.
+  &.loading &__sticky {
+    display: none;
+  }
+
+  &.loading &__body {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  // -- __resize --------------------------------------------------------------
+  // Shape parity with ArvoHybridPopover. The createResizeHandle utility from
+  // @arvo/core mounts the SVG strokes and toggles --is-resizing.
+  &__resize {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  // -- __handle --------------------------------------------------------------
+  // Embedded SVG (two parallel diagonal strokes). createResizeHandle writes
+  // `stroke="currentColor"` so the handle picks up
+  // `color: var(--arvo-color-b-divider)` in both light and dark modes.
+  &__handle {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 11px;
+    height: 11px;
+    pointer-events: auto;
+    z-index: 2;
+    opacity: 0;
+    color: var(--arvo-color-b-divider);
+    transition: opacity $arvo-duration-fast $arvo-ease-simple;
+
+    > svg {
+      width: 11px;
+      height: 11px;
+      pointer-events: none;
+      display: block;
+    }
+
+    &--br {
+      bottom: 2px;
+      right: 2px;
+      cursor: nwse-resize;
+    }
+
+    &--bl {
+      bottom: 2px;
+      left: 2px;
+      cursor: nesw-resize;
+
+      > svg {
+        transform: scaleX(-1);
+      }
+    }
+
+    &--tr {
+      top: 2px;
+      right: 2px;
+      cursor: nesw-resize;
+
+      > svg {
+        transform: scaleY(-1);
+      }
+    }
+
+    &--tl {
+      top: 2px;
+      left: 2px;
+      cursor: nwse-resize;
+
+      > svg {
+        transform: scale(-1, -1);
+      }
+    }
+  }
+
+  @include hover {
+    &:hover &__handle {
+      opacity: 1;
+    }
+  }
+
+  // Keyboard discoverability: when the panel is keyboard-focused (or
+  // explicitly opted into resize via --with-resize) reveal the handles so
+  // they are not hover-only.
+  &--with-resize:focus-within &__handle {
+    opacity: 1;
+  }
+
+  // -- State: is-resizing ----------------------------------------------------
+  &.is-resizing {
+    user-select: none;
+
+    .arvo-dd-tree__handle {
+      opacity: 1;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton shimmer keyframes
+// ---------------------------------------------------------------------------
+
+@keyframes arvo-dd-tree-skeleton-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-dd-tree__skeleton-icon::after,
+  .arvo-dd-tree__skeleton-text::after {
+    animation: none;
+  }
+}

@@ -1,0 +1,379 @@
+@use '../../mixins/form-input' as *;
+@use '../../mixins/hover' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-multi-sel ----------------------------------------------------------
+// Multi-value select field. Label, field container, value area (chips + input),
+// trailing actions cluster (clear + separator + chevron), animated border,
+// overflow modes, and validation states. The floating ArvoOptionList panel
+// (option rows, groups, dividers, empty, skeleton) is styled in
+// overlays/_arvo-option-list.scss. Inner chip layout, overflow, and the
+// '+N more' action are owned by ArvoChipList (_arvo-chip-list.scss).
+//
+// No size modifier: the field always renders at its default (32px base row)
+// size; height is dynamic only via chip wrapping (overflow modes).
+//
+// Layout model:
+//   .arvo-multi-sel__field is a CSS GRID with two columns:
+//     column 1 (minmax(0, 1fr))  -> .arvo-multi-sel__value
+//     column 2 (auto)            -> .arvo-multi-sel__actions
+//   The optional .arvo-multi-sel__err-ico sits between value and actions when
+//   errorDisplay='tooltip'. The animated border (.arvo-multi-sel__border) is
+//   absolutely positioned and does not participate in the grid.
+//
+//   .arvo-multi-sel__value is a SINGLE-ROW flex container (flex-wrap: nowrap)
+//   that holds the inner chip-list (.arvo-multi-sel__chips, only when
+//   has-value) and the native filter input (.arvo-multi-sel__input). The
+//   chip-list takes its intrinsic content width but can SHRINK
+//   (flex: 0 1 auto + min-width: 0) when the input claims its 6ch minimum,
+//   so the chip-list's own internal max-rows / single-line overflow logic
+//   keeps content within bounds and the input always shares the row instead
+//   of wrapping below.
+//
+//   align-items: flex-end vertically pins the input to the bottom of the
+//   chip stack -- with a multi-row chip-list (max-rows = 2/3) the input sits
+//   to the right of the last chip row (adjacent to the +N more disclosure),
+//   which is the natural "cursor goes after the chips" placement.
+//
+//   Actions are a real grid column -- NO absolute positioning and NO
+//   ResizeObserver-driven --arvo-multi-sel-pad-r. The cluster stays
+//   top-aligned via `align-self: start` so it never floats in the middle of a
+//   tall chip stack.
+//
+// Custom properties set by JS at runtime (do NOT hardcode here):
+//   --arvo-multi-sel-max-rows           collapsed chip-row cap (from maxRows prop)
+//   --arvo-multi-sel-expanded-max-rows  expanded chip-row cap (from expandedMaxRows prop)
+//   --arvo-multi-sel-gap                column gap between __value, __err-ico, __actions
+//                                       (defaults to var(--arvo-space-8) per Figma)
+
+.arvo-multi-sel {
+  // -- CSS custom properties (dynamic: consumed by form-input mixins) ---------
+  --arvo-form-input-height: auto;
+  --arvo-form-input-font-size: #{$arvo-font-size-14};
+  --arvo-form-input-bg-color: var(--arvo-color-s-layer-04);
+  --arvo-form-input-hover-bg-color: var(--arvo-color-s-theme-hover-4);
+  --arvo-multi-sel-gap: #{$arvo-space-8};
+
+  // -- Root layout ------------------------------------------------------------
+  @include form-input-default-width;
+  display: inline-flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+  gap: $arvo-space-8;
+  font-family: var(--o9-font-family);
+
+  // -- Modifier: --full-width -------------------------------------------------
+  &--full-width {
+    --arvo-form-input-width: 100%;
+  }
+
+  // -- Modifier: --surface-* (filled default | base) --------------------------
+  // Swaps the at-rest field background between tinted (filled) and host
+  // surface (base) via the shared form-input-surface pattern. The compound
+  // selector outranks the block-root --arvo-form-input-bg-color declaration
+  // above, so `&--surface-base` cleanly overrides it.
+  &--surface-filled { @include form-input-surface-filled; }
+  &--surface-base { @include form-input-surface-base; }
+
+  // -- Overflow mode modifiers ------------------------------------------------
+  // Chip wrapping and overflow behaviour are delegated to the inner ArvoChipList;
+  // these modifiers provide host-level layout adjustments (scroll, height cap).
+
+  &--expandable,
+  &--single-line,
+  &--wrap {
+    // Collapsed / single-line / wrap layout adjustments live on the inner
+    // ChipList. The host only adjusts vertical scrolling when --expanded.
+  }
+
+  // Expanded state: chip area becomes scrollable capped at expandedMaxRows.
+  // Row height = chip md (24px) + row-gap (4px) = 28px per row. The global
+  // scrollbar styling in `base/_scrollbar.scss` already paints an 8px
+  // scrollbar with the design-system thumb color / radius -- no per-component
+  // ::-webkit-scrollbar override is needed.
+  &--expanded &__chips {
+    max-height: calc(var(--arvo-multi-sel-expanded-max-rows, 5) * 28px - 4px);
+    overflow-y: auto;
+  }
+
+  // -- __field (role="combobox" trigger) --------------------------------------
+  // CSS grid: column 1 is the value area (chip-list + input), column 2 is the
+  // actions cluster. When the optional __err-ico is rendered it sits between
+  // them as a 3rd grid column. align-items: start so when the chip-list is
+  // vertically multi-row (max-rows = 2/3, or expanded) the actions cluster
+  // stays anchored to the first chip row (it never floats in the middle of
+  // a tall chip stack).
+  &__field {
+    @include form-input-base;
+    @include form-input-hover-bg;
+    @include form-input-disabled-bg;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    cursor: text;
+    height: auto;
+    min-height: 32px;
+    column-gap: var(--arvo-multi-sel-gap);
+    padding-block: $arvo-space-4;
+    padding-inline-start: $arvo-space-8;
+    padding-inline-end: $arvo-space-4;
+    outline: none;
+    overflow: visible;
+    width: 100%;
+  }
+
+  // When the in-field error icon is rendered the grid grows to three columns:
+  // value | err-ico | actions.
+  &.has-error.error-tooltip &__field {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  &.is-disabled &__field {
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  // -- State: readonly (shared readonly treatment) --------------------------
+  // Dashed border via form-input-readonly-border; field uses
+  // form-input-readonly-field (cursor: not-allowed while allowing chip
+  // labels to remain readable); chevron (__ico) is inert and muted via
+  // form-input-readonly-action. Clear + separator are already gated by
+  // the .has-value:not(.is-readonly) rules elsewhere in this file.
+  &.is-readonly &__field {
+    @include form-input-readonly-field;
+  }
+
+  &.is-readonly &__ico {
+    @include form-input-readonly-action;
+  }
+
+  &.is-readonly &__border {
+    @include form-input-readonly-border;
+  }
+
+  // -- __value (chip-list + input single-row flex container) -----------------
+  // First grid column. Single-row flex (flex-wrap: nowrap) so the chip-list
+  // and input ALWAYS share __value's row -- the chip-list takes its content
+  // width but can shrink (flex: 0 1 auto + min-width: 0 below) when needed,
+  // and the chip-list's own internal max-rows / single-line overflow keeps
+  // chips within its measured bounds. align-items: flex-end pins the input
+  // to the bottom of the chip stack so when the chip-list is multi-row the
+  // input visually sits adjacent to the last chip row (where the +N more
+  // disclosure lives).
+  &__value {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: var(--arvo-multi-sel-gap);
+    min-width: 0;
+    min-height: 24px;
+  }
+
+  // -- __chips (inner ArvoChipList) -------------------------------------------
+  // Mounted only when value.length > 0. Carries the chip-list class set plus
+  // arvo-multi-sel__chips. flex: 0 1 auto lets the chip-list shrink past its
+  // content size when the input claims its 6ch min; min-width: 0 removes the
+  // intrinsic min-size floor so the chip-list can fully respect the column;
+  // overflow: hidden is a safety net so any in-flight transition that
+  // produces visual overflow never escapes the column 1 boundary into the
+  // actions cluster.
+  //
+  // Also bump the chip-list __overflow disclosure's font size to match the
+  // 14px chip labels inside a token-field (chip-list standalone default is
+  // 12px) and pin its height to 24px so it matches the chip row.
+  &__chips {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &__chips.arvo-chip-list[data-within-field='true'] .arvo-chip-list__overflow {
+    --arvo-disc-btn-font-size: #{$arvo-font-size-14};
+    min-height: 24px;
+    padding-inline: $arvo-space-2;
+  }
+
+  // Strict single-line mode (overflowMode='single-line'): the chip-list
+  // renders its overflow indicator as a non-interactive `<span>` sized to
+  // match the field row's 14px chip labels.
+  &__chips.arvo-chip-list[data-within-field='true'] .arvo-chip-list__overflow--static {
+    font-size: $arvo-font-size-14;
+    min-height: 24px;
+    padding-inline: $arvo-space-2;
+  }
+
+  // -- __input (native text filter input) -------------------------------------
+  // Sits inside __value (flex sibling of __chips). Reserves a 6ch minimum so
+  // the caret always has room to type; grows to fill remaining row width when
+  // the chip-list + input fit on one row.
+  &__input {
+    flex: 1 1 2ch;
+    min-width: 2ch;
+    width: auto;
+    height: 24px;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0;
+    font-size: $arvo-font-size-14;
+    font-family: var(--o9-font-family);
+    color: var(--arvo-color-t-form-value);
+    line-height: 24px;
+
+    &::placeholder {
+      color: var(--arvo-color-t-placeholder);
+    }
+
+    .is-disabled & {
+      color: var(--arvo-color-t-disabled);
+      pointer-events: none;
+    }
+
+    .is-readonly & {
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  &--v2.has-value:not(.has-input-text) &__input {
+    flex: 0 0 2ch;
+  }
+
+  &--v2 .arvo-chip-list-v2__trailing {
+    flex-shrink: 0;
+  }
+
+  // -- __actions (right-side cluster: clear + sep + chevron) ------------------
+  // Real grid column (no absolute positioning, no ResizeObserver, no
+  // --arvo-multi-sel-pad-r). align-self: start keeps it anchored to the first
+  // row when __value wraps to multiple rows.
+  &__actions {
+    display: inline-flex;
+    align-items: center;
+    align-self: start;
+    gap: $arvo-space-4;
+    pointer-events: auto;
+  }
+
+  // -- __clear (clear-all ArvoIconButton) ------------------------------------
+  &__clear {
+    display: none;
+  }
+
+  &.has-value:not(.is-disabled):not(.is-readonly):not(.loading) &__clear {
+    display: inline-flex;
+  }
+
+  // -- __sep (vertical separator between clear and chevron) ------------------
+  &__sep {
+    display: none;
+    width: 1px;
+    height: 20px;
+    flex-shrink: 0;
+    background-color: var(--arvo-color-b-divider);
+  }
+
+  &.has-value:not(.is-disabled):not(.is-readonly):not(.loading) &__sep {
+    display: block;
+  }
+
+  // -- __ico (chevron ArvoIconButton: icon angle-down, size sm, tertiary) ----
+  &__ico {
+    flex: 0 0 auto;
+  }
+
+  &__ico .arvo-btn__ico {
+    transition: transform $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  &.open &__ico .arvo-btn__ico {
+    transform: rotate(180deg);
+  }
+
+  &.open &__ico {
+    --arvo-btn-bg-color: var(--arvo-color-s-theme-active-2);
+  }
+
+  &.is-disabled &__ico {
+    color: var(--arvo-color-i-disabled);
+    pointer-events: none;
+  }
+
+  // -- __err-ico (in-field error icon for errorDisplay='tooltip') ------------
+  // Renders as the middle grid column when error-tooltip is active (see
+  // &.has-error.error-tooltip &__field rule above).
+  &__err-ico {
+    display: none;
+    flex: 0 0 auto;
+    align-self: start;
+  }
+
+  &.has-error.error-tooltip &__err-ico {
+    display: inline-flex;
+  }
+
+  // The +N more / Show less affordance is owned end-to-end by the inner
+  // ArvoChipList (.arvo-chip-list__overflow); the multi-select no longer
+  // renders a separate __show-less element. The disabled / read-only tones
+  // for the disclosure are applied by the chip-list itself.
+
+  // -- __border (animated bottom border) -------------------------------------
+  // Uses the default variant (visible 1px base line, animated hover reveal
+  // in --arvo-color-b-theme-hover-2, thicker 1.5px focus reveal in
+  // --arvo-color-b-theme-focus, instant red on error). Only Search uses
+  // the focus-only variant.
+  &__border {
+    @include form-input-animated-border-base;
+  }
+
+  // -- Loading (Pattern C): spinner replaces chevron -------------------------
+  @mixin _multi-sel-loading {
+    pointer-events: none;
+
+    .arvo-multi-sel__field {
+      cursor: default;
+    }
+
+    .arvo-multi-sel__ico {
+      display: none;
+    }
+
+    .arvo-multi-sel__input {
+      pointer-events: none;
+    }
+
+    .arvo-multi-sel__clear {
+      display: none;
+    }
+
+    .arvo-multi-sel__sep {
+      display: none;
+    }
+
+    .arvo-multi-sel__actions::after {
+      content: '';
+      display: block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--arvo-color-b-disabled);
+      border-top-color: var(--arvo-color-b-theme);
+      border-radius: 50%;
+      animation: arvo-spin 0.7s linear infinite;
+    }
+  }
+
+  &.loading {
+    @include _multi-sel-loading;
+  }
+
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _multi-sel-loading;
+  }
+
+  // -- Parent override: inside arvo-form-field --------------------------------
+  .arvo-form-field & {
+    --arvo-form-input-width: 100%;
+  }
+}

@@ -1,0 +1,248 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// --- .arvo-sw -----------------------------------------------------------------
+
+.arvo-sw {
+
+  // -- Root layout ------------------------------------------------------------
+  display: inline-flex;
+  position: relative;
+  user-select: none;
+
+  // -- __field ----------------------------------------------------------------
+  &__field {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-8;
+    cursor: pointer;
+  }
+
+  // -- __input (hidden native checkbox with role="switch") --------------------
+  &__input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  // -- __track ----------------------------------------------------------------
+  // Track / thumb dimensions consume CSS variables so the size modifiers
+  // below can swap to the `-sm` token set without rewriting the rule.
+  // The default unchecked / checked tracks render WITHOUT a border per Figma
+  // (node 25784:972). A border is only drawn for the disabled (solid) and
+  // readonly (dashed) states; those state rules use the full `border:`
+  // shorthand so the width is always 1px regardless of the base style.
+  &__track {
+    width: var(--arvo-sw-track-width, #{$arvo-switch-track-width});
+    height: var(--arvo-sw-track-height, #{$arvo-switch-track-height});
+    background-color: var(--arvo-color-s-layer-07);
+    border: 0 solid transparent;
+    position: relative;
+    flex-shrink: 0;
+    transition: $arvo-transition-switch-slide;
+    box-sizing: border-box;
+  }
+
+  // -- __thumb ----------------------------------------------------------------
+  // Position is driven by transform (not `left`) so the slide can be GPU-
+  // composited and so the shared switch motion token (which transitions
+  // `transform`) actually applies. Vertical centering uses `top: 50%` +
+  // `translateY(-50%)` so the thumb stays centered even when the track
+  // grows a 1px border in disabled / readonly states (box-sizing: border-box
+  // shrinks the inner content area by 2px in those states). Track motion
+  // token covers thumb transform, bg color, and opacity in one shorthand.
+  &__thumb {
+    position: absolute;
+    top: 50%;
+    left: $arvo-space-2;
+    width: var(--arvo-sw-thumb-size, #{$arvo-switch-thumb-size});
+    height: var(--arvo-sw-thumb-size, #{$arvo-switch-thumb-size});
+    background-color: var(--arvo-color-s-placeholder);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(0, -50%);
+    transition: $arvo-transition-switch-slide;
+    will-change: transform;
+
+    &::before {
+      content: '\ea82';
+      font-family: $o9con;
+      font-size: 12px;
+      color: var(--arvo-color-i-primary);
+      opacity: 0;
+      transition: opacity $arvo-duration-base $arvo-ease-simple;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  }
+
+  // -- __lbl (form label) -----------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS, rendered with
+  // as: 'span' inside the wrapping <label>). Switch labels are always sm (12px)
+  // per Figma.
+
+  // -- Modifier: --label-start ------------------------------------------------
+  &--label-start .arvo-sw__field {
+    flex-direction: row-reverse;
+  }
+
+  // -- Modifier: size --------------------------------------------------------
+  // `lg` is the canonical default and matches the unsuffixed track / thumb
+  // tokens; the rule is included for parity with sibling components and so
+  // the modifier class is always present in the rendered HTML.
+  &--lg {
+    --arvo-sw-track-width: #{$arvo-switch-track-width};
+    --arvo-sw-track-height: #{$arvo-switch-track-height};
+    --arvo-sw-thumb-size: #{$arvo-switch-thumb-size};
+  }
+
+  &--sm {
+    --arvo-sw-track-width: #{$arvo-switch-track-width-sm};
+    --arvo-sw-track-height: #{$arvo-switch-track-height-sm};
+    --arvo-sw-thumb-size: #{$arvo-switch-thumb-size-sm};
+
+    // The thumb glyph (the small check) shrinks alongside the thumb so it
+    // continues to read correctly inside the smaller circle.
+    .arvo-sw__thumb::before {
+      font-size: 10px;
+    }
+  }
+
+  // -- Checked state (input:checked + __track) --------------------------------
+  // Thumb slides via transform; the slide distance equals the thumb size
+  // (track width = thumb-size + 2*2px padding + thumb-size). The CSS
+  // variable lets the size modifiers above swap the value without
+  // duplicating the rule. Default checked state has no border per Figma.
+  &__input:checked + &__track {
+    background-color: var(--arvo-color-s-theme-active-1);
+
+    .arvo-sw__thumb {
+      background-color: var(--arvo-color-s-layer-01);
+      transform: translate(var(--arvo-sw-thumb-size, #{$arvo-switch-thumb-size}), -50%);
+
+      &::before {
+        opacity: 1;
+      }
+    }
+  }
+
+  // -- Focus ring via input:focus-visible sibling -----------------------------
+  // Drawn with `outline` (not `border`) so the track box never shifts and so
+  // it stacks correctly on top of the disabled / readonly track borders. The
+  // 2px offset matches the Figma focus-ring spec (1px stroke, 2px gap).
+  &__input:focus-visible + &__track {
+    outline: 1px solid var(--arvo-color-b-theme-focus);
+    outline-offset: 2px;
+  }
+
+  &__input:focus-visible:not(:checked) + &__track {
+    background-color: var(--arvo-color-s-hover);
+  }
+
+  &__input:focus-visible:checked + &__track {
+    background-color: var(--arvo-color-s-theme-hover-1);
+  }
+
+  // -- State: disabled --------------------------------------------------------
+  // Per Figma (node 25784:972): a 1px solid b-disabled border is drawn on the
+  // TRACK only -- never on the .arvo-sw wrapper -- so the border hugs the
+  // toggle and does not bleed into surrounding chrome (menu items, table
+  // rows, etc). Full `border:` shorthand is required because the base track
+  // rule has `border: 0 solid transparent` -- setting only border-color
+  // would leave the width at 0 and the border would never render.
+  &.is-disabled {
+    pointer-events: none;
+
+    .arvo-sw__field {
+      cursor: not-allowed;
+    }
+
+    .arvo-sw__track {
+      background-color: var(--arvo-color-s-disabled);
+      border: 1px solid var(--arvo-color-b-disabled);
+    }
+
+    .arvo-sw__thumb {
+      background-color: var(--arvo-color-s-layer-07);
+
+      &::before {
+        color: var(--arvo-color-i-disabled);
+      }
+    }
+
+    // Disabled checked -- same track styling, thumb stays right
+    .arvo-sw__input:checked + .arvo-sw__track {
+      background-color: var(--arvo-color-s-disabled);
+      border: 1px solid var(--arvo-color-b-disabled);
+
+      .arvo-sw__thumb {
+        background-color: var(--arvo-color-s-layer-07);
+      }
+    }
+  }
+
+  // -- State: readonly --------------------------------------------------------
+  // Dashed 1px border on the TRACK for both unchecked and checked variants
+  // per Figma (node 25784:972). Unchecked track uses --arvo-color-s-readonly
+  // background; checked-readonly keeps the layer-07 track + layer-01 (white)
+  // thumb so the selected state stays legible while interaction is blocked.
+  // Full `border:` shorthand is required for the same reason as the disabled
+  // state above.
+  &.is-readonly {
+    .arvo-sw__field {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .arvo-sw__track {
+      background-color: var(--arvo-color-s-readonly);
+      border: 1px dashed var(--arvo-color-b-readonly);
+    }
+
+    .arvo-sw__input:checked + .arvo-sw__track {
+      background-color: var(--arvo-color-s-layer-07);
+      border: 1px dashed var(--arvo-color-b-readonly);
+
+      .arvo-sw__thumb {
+        background-color: var(--arvo-color-s-layer-01);
+
+        &::before {
+          color: var(--arvo-color-i-primary);
+        }
+      }
+    }
+  }
+
+  // -- Loading (per-element shimmer on __track + __lbl) ----------------------
+  &.loading,
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    pointer-events: none;
+
+    .arvo-sw__track {
+      @include loading-element-shimmer;
+    }
+
+    .arvo-sw__lbl {
+      @include loading-element-shimmer;
+    }
+  }
+}
+
+// -- Hover (hover-capable devices only, not disabled, not readonly) ----------
+@include hover {
+  .arvo-sw:not(.is-disabled):not(.is-readonly) {
+    &:hover .arvo-sw__input:not(:checked) + .arvo-sw__track {
+      background-color: var(--arvo-color-s-hover);
+    }
+
+    &:hover .arvo-sw__input:checked + .arvo-sw__track {
+      background-color: var(--arvo-color-s-theme-hover-1);
+    }
+  }
+}

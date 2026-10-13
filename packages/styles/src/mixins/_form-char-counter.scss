@@ -1,0 +1,19 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Character counter for form inputs (textbox, textarea).
+// Displays "00/00" below the input, right-aligned.
+
+@mixin form-char-counter-base {
+  display: block;
+  font-family: var(--o9-font-family);
+  font-size: var(--arvo-counter-font-size, #{$arvo-font-size-12});
+  font-weight: $arvo-regular;
+  color: var(--arvo-counter-color, var(--arvo-color-t-tertiary));
+  text-align: right;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+@mixin form-char-counter-disabled {
+  color: var(--arvo-counter-color-disabled, var(--arvo-color-t-disabled));
+}

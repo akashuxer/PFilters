@@ -1,0 +1,343 @@
+@use '../../../tokens/src/scss/all' as *;
+@use 'hover' as *;
+
+// Shared list/menu item mixins -- consumed by action-menu, select, combobox,
+// multi-select, dropdown-button, list, listbox, hybrid-popover, nav.
+// Each consumer applies these to its own BEM element class.
+//
+// Consumers declare these CSS custom properties on their block selector:
+//   --arvo-list-item-height-single    (default: 32px)
+//   --arvo-list-item-height-multi     (default: 40px)
+//   --arvo-list-item-padding-inline   (default: $arvo-space-16)
+//   --arvo-list-item-padding-block    (default: $arvo-space-4)
+//   --arvo-list-item-gap              (default: $arvo-space-8)
+//   --arvo-list-item-text-color       (default: var(--arvo-color-t-secondary))
+//   --arvo-list-item-text-hover-color (default: var(--arvo-color-t-primary))
+//   --arvo-list-item-secondary-color  (default: var(--arvo-color-t-placeholder))
+//   --arvo-list-item-bg-hover         (default: var(--arvo-color-s-theme-hover-4))
+
+// list-item-base
+// Flex layout, padding, cursor, and transition for all item types.
+@mixin list-item-base {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding-inline-start: var(--arvo-list-item-padding-inline, #{$arvo-space-16});
+  padding-inline-end: var(--arvo-list-item-padding-inline, #{$arvo-space-16});
+  padding-block: var(--arvo-list-item-padding-block, #{$arvo-space-4});
+  border-inline-start: 2px solid transparent;
+  gap: var(--arvo-list-item-gap, #{$arvo-space-8});
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--o9-font-family);
+  transition: background-color $arvo-duration-fast $arvo-ease-simple;
+}
+
+// list-item-single-line
+// Fixed 32px height with single-line text ellipsis.
+@mixin list-item-single-line {
+  height: var(--arvo-list-item-height-single, 32px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// list-item-multi-line
+// Fixed 40px height with vertical text stack (primary + secondary label).
+@mixin list-item-multi-line {
+  height: var(--arvo-list-item-height-multi, 40px);
+}
+
+// list-item-states
+// Interactive states: hover (background), keyboard focus (outline),
+// active/selected (background + inline-start border), and disabled.
+@mixin list-item-states {
+  @include hover {
+    &:not(.is-disabled):hover {
+      background-color: var(--arvo-list-item-bg-hover, var(--arvo-color-s-theme-hover-4));
+      color: var(--arvo-list-item-text-hover-color, var(--arvo-color-t-primary));
+    }
+  }
+
+  // Keyboard navigation indicator (items that are the keyboard target but may
+  // not have native :focus-visible, e.g. in filterable menus where focus
+  // stays on the search input).
+  &.focused {
+    outline: 1px solid var(--arvo-color-b-theme-focus);
+    outline-offset: -1px;
+  }
+
+  // Selected / toggled -- includes the inline-start border indicator.
+  &.active {
+    background-color: var(--arvo-color-s-theme-active-4);
+    border-inline-start-color: var(--arvo-color-b-theme-active);
+    color: var(--arvo-list-item-text-hover-color, var(--arvo-color-t-primary));
+  }
+
+  &:focus-visible {
+    outline: 1px solid var(--arvo-color-b-theme-focus);
+    outline-offset: -1px;
+  }
+
+  &.is-disabled {
+    opacity: $arvo-opacity-40;
+    pointer-events: none;
+    cursor: default;
+  }
+}
+
+// list-item-leading
+// Avatar (24px circle) and icon (16px) slots before the text content.
+@mixin list-item-leading {
+  &__avatar {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  &__ico {
+    flex: 0 0 auto;
+    font-family: $o9con;
+    font-size: $arvo-icon-16;
+  }
+}
+
+// list-item-text
+// Primary label (14px) and secondary label (10px) typography.
+@mixin list-item-text {
+  &__txt {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  &__lbl {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-regular;
+    color: var(--arvo-list-item-text-color, var(--arvo-color-t-secondary));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__secondary {
+    font-size: $arvo-font-size-10;
+    font-weight: $arvo-regular;
+    color: var(--arvo-list-item-secondary-color, var(--arvo-color-t-placeholder));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// list-item-selection
+// Leading 18x18 selection control slot (checkbox / radio / exclude check).
+// Consumers (ArvoList, HybridPopover, Listbox, OptionList) mount their own
+// ArvoCheckbox / ArvoRadio inside __check; this mixin reserves the slot
+// width, aligns it vertically, and harmonizes the host-row hover/focus/drag
+// states with the embedded control's border color.
+@mixin list-item-selection {
+  &__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+
+    // Embedded selection-control colors react to host-row state so the
+    // checkbox/radio border doesn't fight the row's emphasis.
+    .arvo-cb__box,
+    .arvo-rb__box {
+      transition: border-color $arvo-duration-fast $arvo-ease-simple;
+    }
+  }
+
+  // Host hover/focus darken the embedded checkbox/radio border to b-theme-hover.
+  @include hover {
+    &:not(.is-disabled):hover &__check {
+      .arvo-cb__box,
+      .arvo-rb__box {
+        border-color: var(--arvo-color-b-theme-hover);
+      }
+    }
+  }
+
+  &:not(.is-disabled):focus-visible &__check,
+  &:not(.is-disabled).focused &__check {
+    .arvo-cb__box,
+    .arvo-rb__box {
+      border-color: var(--arvo-color-b-theme-hover);
+    }
+  }
+
+  // During drag (sortable ghost OR floating clone) the checkbox border
+  // shifts to the muted hover-2 tone -- the row uses the sortable classes
+  // applied by @arvo/core's createSortableList.
+  &.arvo-sortable--ghost &__check,
+  &.arvo-sortable--dragging &__check {
+    .arvo-cb__box,
+    .arvo-rb__box {
+      border-color: var(--arvo-color-b-theme-hover-2);
+    }
+  }
+}
+
+// list-item-drag-handle
+// Leading 16x16 drag-handle slot (__drag) plus an equally-sized __drag-spacer
+// element used when reorder is globally enabled but the specific row opts out
+// (or is disabled) so the selection-control column stays aligned. The handle
+// is ALWAYS visible per spec section 5.9; during drag pickup the handle gains
+// a muted gray background as a "I'm gripped" affordance.
+@mixin list-item-drag-handle {
+  &__drag,
+  &__drag-spacer {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+  }
+
+  &__drag {
+    cursor: grab;
+    color: var(--arvo-color-i-secondary);
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    border-radius: 2px;
+    // Handle is always visible per spec section 5.9 -- only the bg flips
+    // when the row is being dragged.
+    opacity: 1;
+    visibility: visible;
+    transition: background-color $arvo-duration-fast $arvo-ease-simple;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    .arvo-ico {
+      font-size: $arvo-icon-16;
+    }
+  }
+
+  // Muted background when this row is the active drag pickup (in-list ghost
+  // OR the floating clone). Driven by @arvo/core's createSortableList classes.
+  &.arvo-sortable--dragging &__drag {
+    background-color: var(--arvo-color-s-theme-hover-2);
+  }
+
+  // Disabled rows drop the handle entirely (per spec section 5.3).
+  &.is-disabled &__drag {
+    display: none;
+  }
+}
+
+// list-item-actions
+// Trailing flex action row (__actions). Two visibility modes governed by a
+// data attribute on the host block:
+//   - data-arvo-actions="always" : always visible
+//   - data-arvo-actions="hover"  : revealed on :hover, :focus-within, .active
+// Inner buttons reset their own background so the row's hover bg shows through.
+@mixin list-item-actions {
+  &__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-2;
+    flex: 0 0 auto;
+  }
+}
+
+// list-item-actions-on-hover
+// Applies the hover-reveal behavior. Use INSIDE the host block selector;
+// the &__actions slot is hidden by default and reveals on hover, focus-within,
+// or when the row is selected (.active).
+@mixin list-item-actions-on-hover {
+  &__actions {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity $arvo-duration-fast $arvo-ease-simple,
+      visibility $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  &:not(.is-disabled):focus-visible &__actions,
+  &:not(.is-disabled):focus-within &__actions,
+  &.active:not(.is-disabled) &__actions,
+  &.arvo-sortable--ghost &__actions,
+  &.arvo-sortable--dragging &__actions {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  @include hover {
+    &:not(.is-disabled):hover &__actions {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+  }
+}
+
+// list-item-trailing
+// Trailing-side decoration slots that sit between the label and the actions
+// (or chevron) cluster: badge (__badge), exclude icon (__exclude), inline-nav
+// chevron (__chev). Each slot is shrink-0 so the label always truncates first.
+@mixin list-item-trailing {
+  &__exclude {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    color: var(--arvo-color-i-negative);
+    font-size: $arvo-icon-16;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  &__chev {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    color: var(--arvo-color-i-secondary);
+  }
+}
+
+// list-item-search-highlight
+// Search-match treatment applied inside __lbl. The matched fragment is wrapped
+// in <span class="...__match"> rendered Medium-500 in primary text color; a
+// semi-transparent rectangle sits behind the fragment via ::before so the cue
+// survives low-contrast viewing modes. The label remains a single line.
+@mixin list-item-search-highlight {
+  &__match {
+    position: relative;
+    z-index: 1;
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-t-primary);
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px -1px;
+      background-color: var(--arvo-color-s-theme-hover-2);
+      border-radius: 2px;
+      z-index: -1;
+      pointer-events: none;
+    }
+  }
+}

@@ -1,0 +1,5314 @@
+// Playground Shell v2 -- layout + tokens-only chrome.
+//
+// The mapping doc (CAPTURE-LAYOUT-CONTEXT.md + Arvo Component & Token
+// Mapping) is the source of truth for every surface tier, spacing, radius,
+// and typography choice. Every dynamic colour goes through `--arvo-color-*`
+// CSS custom properties so theme + mode flips recolour the whole shell.
+//
+// Layout grid (Bench):
+//
+//   row 1  : StudioBar          h = $arvo-pg-studio-bar-h
+//   row 2  : ComponentHeader    h = $arvo-pg-component-header-h
+//   row 3  : Workbench (flex, fills remaining space)
+//             Left column (Preview stage + Bottom dock, vertical splitter)
+//            + Inspector (anchored right, full workbench height)
+//
+// Non-Bench views (Gallery / Patterns / Foundations) skip rows 2-3 and
+// render their own root content under the StudioBar.
+
+@use '../../packages/tokens/src/scss/variables' as *;
+
+// =====================================================================
+// 0. Chrome dimensions
+// =====================================================================
+
+$arvo-pg-studio-bar-h: 56px;
+$arvo-pg-component-header-h: 96px;
+$arvo-pg-preview-header-h: 40px;
+$arvo-pg-preview-footer-h: 36px;
+$arvo-pg-dock-default-h: 320px;
+$arvo-pg-dock-min-h: 200px;
+$arvo-pg-dock-max-h: 640px;
+$arvo-pg-inspector-default-w: 320px;
+$arvo-pg-inspector-min-w: 280px;
+$arvo-pg-inspector-max-w: 480px;
+
+// =====================================================================
+// 1. Root container
+// =====================================================================
+
+#arvo-pg-root {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: $arvo-pg-studio-bar-h minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--arvo-color-s-layer-01);
+  color: var(--arvo-color-t-primary);
+  font-family: var(--o9-font-family);
+  font-size: $arvo-font-size-14;
+  z-index: 1;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+}
+
+#arvo-pg-root.arvo-pg--embed {
+  z-index: 10000;
+  box-shadow: $arvo-shadow-center;
+}
+
+.arvo-pg-main {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-version2 {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: $arvo-space-16;
+  padding: $arvo-space-16;
+  background:
+    radial-gradient(circle at top, rgba(0, 0, 0, 0.03), transparent 42%),
+    linear-gradient(180deg, var(--arvo-color-s-layer-01), var(--arvo-color-s-layer-02));
+}
+
+.arvo-pg-version2__sidebar {
+  min-height: 0;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-16;
+  background: var(--arvo-color-s-layer-01);
+  box-shadow: $arvo-shadow-center;
+  padding: $arvo-space-16;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-version2__sidebar-title {
+  font-size: $arvo-font-size-12;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-version2__sidebar-hint {
+  margin: 0;
+  color: var(--arvo-color-t-secondary);
+  font-size: $arvo-font-size-14;
+  line-height: 1.5;
+}
+
+.arvo-pg-version2__list {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  margin-top: $arvo-space-8;
+}
+
+.arvo-pg-version2__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: $arvo-space-12;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-16;
+  background: var(--arvo-color-s-layer-02);
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: not-allowed;
+  opacity: 0.88;
+}
+
+.arvo-pg-version2__item-label {
+  font-size: $arvo-font-size-14;
+  font-weight: 700;
+}
+
+.arvo-pg-version2__item-meta {
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-version2__item--hidden {
+  display: none;
+}
+
+.arvo-pg-version2__workspace {
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+}
+
+.arvo-pg-version2__workspace > .arvo-pg-version2__empty {
+  width: 100%;
+}
+
+.arvo-pg-version2__preview-host {
+  margin-top: $arvo-space-24;
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.arvo-pg-version2__preview-host .arvo-multi-sel {
+  width: min(100%, 1000px);
+}
+
+.arvo-pg-version2__preview-host .arvo-multi-sel__field {
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-filters {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: grid;
+  place-items: start center;
+  padding: $arvo-space-24 $arvo-space-32 $arvo-space-32;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-filters__body {
+  width: min(100%, 980px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-filters__tabstrip,
+.arvo-pg-filters__general-content,
+.arvo-pg-filters__picklist-section {
+  width: 100%;
+}
+
+.arvo-pg-filters__general-content {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-filters__picklist-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $arvo-space-24;
+}
+
+.arvo-pg-filters__picklist-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.arvo-pg-filters__picklist-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-filters__picklist-table th,
+.arvo-pg-filters__picklist-table td {
+  padding: $arvo-space-16;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-filters__picklist-table th {
+  font-weight: 600;
+}
+
+.arvo-pg-filters__picklist-table-empty td {
+  text-align: center;
+}
+
+.arvo-pg-filters__general-content[hidden],
+.arvo-pg-filters__picklist-section[hidden] {
+  display: none !important;
+}
+
+.arvo-pg-filters__header {
+  position: relative;
+  width: 100%;
+  display: grid;
+  justify-items: start;
+  gap: $arvo-space-8;
+  align-self: start;
+}
+
+.arvo-pg-filters__title-wrap {
+  width: 100%;
+  text-align: left;
+}
+
+.arvo-pg-filters__title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  font-weight: $arvo-medium;
+  text-align: left;
+}
+
+.arvo-pg-filters[data-title-font-weight='regular'] .arvo-pg-filters__title,
+.arvo-pg-filters[data-title-font-weight='regular'] .arvo-pg-filters__measure-title {
+  font-weight: $arvo-regular;
+}
+
+.arvo-pg-filters[data-title-font-weight='semibold'] .arvo-pg-filters__title,
+.arvo-pg-filters[data-title-font-weight='semibold'] .arvo-pg-filters__measure-title {
+  font-weight: $arvo-medium;
+}
+
+.arvo-pg-filters[data-title-font-weight='bold'] .arvo-pg-filters__title,
+.arvo-pg-filters[data-title-font-weight='bold'] .arvo-pg-filters__measure-title {
+  font-weight: $arvo-bold;
+}
+
+.arvo-pg-filters__menu-wrap {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  gap: $arvo-space-4;
+}
+
+.arvo-pg-filters__menu-host {
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-filters__readme-host {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: 0;
+  display: inline-flex;
+}
+
+.arvo-pg-filters__warning-reset {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--arvo-color-t-primary);
+  padding: $arvo-space-4 $arvo-space-8;
+  cursor: pointer;
+  font: inherit;
+}
+
+.arvo-pg-filters__warning-reset:hover,
+.arvo-pg-filters__warning-reset:focus-visible {
+  background: var(--arvo-color-s-layer-02);
+}
+
+.arvo-pg-filters__header-actions {
+  position: absolute;
+  inset-inline-end: $arvo-space-40;
+  inset-block-start: 0;
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-filters__body--readme-open {
+  position: relative;
+  width: min(100%, 1400px);
+  display: block !important;
+  padding-inline-end: 456px;
+  min-height: 0;
+}
+
+.arvo-pg-filters__body--readme-open .arvo-pg-filters__header {
+  align-self: start;
+  height: max-content;
+  min-height: 0;
+  margin-block-end: $arvo-space-12;
+}
+
+.arvo-pg-filters__body--readme-open .arvo-pg-filters__tabstrip {
+  margin-block-end: $arvo-space-16;
+}
+
+.arvo-pg-filters__body--readme-open .arvo-pg-filters__measure-section {
+  height: max-content;
+  min-height: 0;
+}
+
+.arvo-pg-filters__body--readme-open .arvo-pg-filters__readme-panel {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: 0;
+  width: 440px;
+  min-height: 0;
+}
+
+.arvo-pg-filters__readme-panel {
+  width: 100%;
+  max-height: 760px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--arvo-color-s-layer-01);
+  border-inline-start: 1px solid var(--arvo-color-s-border-subtle);
+  box-shadow: $arvo-shadow-left;
+}
+
+.arvo-pg-filters__readme-panel[hidden] {
+  display: none !important;
+}
+
+.arvo-pg-filters__readme-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $arvo-space-16;
+  border-block-end: 1px solid var(--arvo-color-s-border-subtle);
+}
+
+.arvo-pg-filters__readme-header h2 {
+  margin: 0;
+  color: var(--arvo-color-t-primary);
+  font-size: 20px;
+}
+
+.arvo-pg-filters__readme-close {
+  border: 0;
+  background: transparent;
+  color: var(--arvo-color-t-primary);
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.arvo-pg-filters__readme-text {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: $arvo-space-16;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  color: var(--arvo-color-t-primary);
+  background: var(--arvo-color-s-layer-01);
+  font-family: monospace;
+  font-size: $arvo-font-size-12;
+  line-height: 1.5;
+}
+
+.arvo-pg-filters__readme-text h2,
+.arvo-pg-filters__readme-text h3,
+.arvo-pg-filters__readme-text h4 {
+  margin: 0 0 $arvo-space-8;
+  font-family: inherit;
+}
+
+.arvo-pg-filters__readme-text p {
+  margin: 0 0 $arvo-space-12;
+}
+
+.arvo-pg-filters__readme-text ul {
+  margin: 0 0 $arvo-space-12;
+  padding-inline-start: $arvo-space-24;
+}
+
+
+.arvo-pg-filters__menu-badge {
+  display: inline-flex;
+  margin-inline-start: $arvo-space-8;
+  padding-inline-start: $arvo-space-4;
+  vertical-align: middle;
+}
+
+.arvo-pg-filters__measure-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-16;
+  align-items: stretch;
+}
+
+.arvo-pg-filters__measure-title {
+  width: 100%;
+  font-size: 20px;
+  line-height: 1.1;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+  text-align: left;
+}
+
+.arvo-pg-filters__measure-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-filters__toast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-filters__warning-toast {
+  width: 420px;
+  max-width: calc(100vw - 32px);
+
+  .arvo-toast__msg {
+    white-space: pre-line;
+  }
+}
+
+.arvo-pg-filters__measure-item {
+  min-width: 0;
+}
+
+.arvo-pg-smart-input {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-smart-input__suggestion-anchor {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.arvo-pg-smart-input__label {
+  width: 100%;
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-regular;
+  text-align: left;
+  color: var(--arvo-color-t-form-label);
+}
+
+.arvo-pg-filters__expression {
+  display: flex;
+  gap: $arvo-space-8;
+  align-items: baseline;
+  min-height: 20px;
+  color: var(--arvo-color-t-form-label);
+}
+
+.arvo-pg-filters__expression-label {
+  font-weight: $arvo-medium;
+}
+
+.arvo-pg-filters__expression-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.arvo-pg-smart-input__field {
+  width: 100%;
+  min-width: 0;
+}
+
+.arvo-pg-smart-input__trigger {
+  width: auto;
+  min-width: 40px;
+}
+
+.arvo-pg-filters__measure-item .arvo-pg-smart-input {
+  max-width: 100%;
+}
+
+.arvo-pg-smart-input__popover-host {
+  position: relative;
+}
+
+.arvo-pg-smart-input__panel {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+.arvo-pg-smart-input__panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-16;
+  overflow-x: hidden;
+  overflow-y: visible;
+  width: 100%;
+  min-width: 0;
+}
+
+.arvo-pg-smart-input__add-value {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--arvo-color-b-theme-primary);
+  cursor: pointer;
+  font: inherit;
+  grid-column: 1;
+  justify-self: start;
+}
+
+.arvo-pg-smart-input__pane > .arvo-pg-smart-input__grid > .arvo-pg-smart-input__add-value {
+  grid-column: 1 !important;
+  justify-self: start;
+}
+
+.arvo-pg-smart-input__or-rows {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-12;
+  margin-top: 0;
+}
+
+.arvo-pg-smart-input__pane--or-active > .arvo-pg-smart-input__grid {
+  grid-template-columns: 24px minmax(0, 140px) minmax(0, 1fr);
+}
+
+.arvo-pg-smart-input__pane--or-active > .arvo-pg-smart-input__grid > :first-child {
+  grid-column: 2;
+}
+
+.arvo-pg-smart-input__pane--or-active > .arvo-pg-smart-input__grid > :last-child {
+  grid-column: 3;
+}
+
+.arvo-pg-smart-input__or-separator {
+  color: var(--arvo-color-t-primary);
+  font-size: $arvo-font-size-12;
+  align-self: center;
+}
+
+.arvo-pg-smart-input__or-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 140px) minmax(0, 1fr);
+  gap: $arvo-space-12;
+  align-items: center;
+}
+
+.arvo-pg-smart-input__or-operator-host,
+.arvo-pg-smart-input__or-value-host {
+  min-width: 0;
+  width: 100%;
+}
+
+.arvo-pg-smart-input__tabstrip {
+  width: 100%;
+
+  .arvo-tabs__list {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .arvo-tabs__tab {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .arvo-tabs__tab-lbl {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.arvo-pg-smart-input__pane {
+  padding-top: $arvo-space-8;
+}
+
+.arvo-pg-smart-input__row2 {
+  margin-top: $arvo-space-12;
+}
+
+.arvo-pg-smart-input__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 140px) minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
+.arvo-pg-smart-input__grid > * {
+  min-width: 0;
+}
+
+.arvo-pg-smart-input__subhead {
+  margin-bottom: $arvo-space-8;
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-regular;
+  color: var(--arvo-color-t-form-label);
+}
+
+.arvo-pg-smart-input__operator-host,
+.arvo-pg-smart-input__value-host {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.arvo-pg-smart-input__operator-host .arvo-sel,
+.arvo-pg-smart-input__value-host .arvo-dp {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.arvo-pg-smart-input__operator-host .arvo-sel__field,
+.arvo-pg-smart-input__value-host .arvo-dp__field {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.arvo-pg-smart-input__placeholder {
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-version2__empty {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-12;
+  padding: clamp($arvo-space-24, 4vw, $arvo-space-40);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-16;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.9)),
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 36%),
+    var(--arvo-color-s-layer-01);
+  box-shadow: $arvo-shadow-center;
+}
+
+.arvo-pg-version2__eyebrow {
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-medium;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-version2__title {
+  margin: 0;
+  font-size: clamp(28px, 3vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.arvo-pg-version2__body {
+  margin: 0;
+  max-width: 58ch;
+  font-size: $arvo-font-size-16;
+  line-height: 1.6;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-version2__notes {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: $arvo-space-8;
+  color: var(--arvo-color-t-primary);
+  font-size: $arvo-font-size-14;
+  line-height: 1.5;
+}
+
+.arvo-pg-version2__notes li::marker {
+  color: var(--arvo-color-b-theme-primary);
+}
+
+.arvo-pg-version2__slot {
+  margin-top: auto;
+  min-height: 180px;
+  border-radius: $arvo-radius-16;
+  border: $arvo-border-1 dashed var(--arvo-color-b-divider);
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.02), rgba(255, 255, 255, 0.6)),
+    repeating-linear-gradient(
+      135deg,
+      rgba(0, 0, 0, 0.02) 0,
+      rgba(0, 0, 0, 0.02) 12px,
+      transparent 12px,
+      transparent 24px
+    );
+}
+
+.arvo-pg-version2__preview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: $arvo-space-20;
+  min-height: calc(100vh - #{$arvo-pg-studio-bar-h} - 80px);
+}
+
+.arvo-pg-version2__preview-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-version2__title--small {
+  font-size: clamp(24px, 2vw, 34px);
+}
+
+.arvo-pg-version2__kbd {
+  padding: $arvo-space-8 $arvo-space-12;
+  border-radius: $arvo-radius-16;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-version2__preview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: $arvo-space-20;
+  min-height: 0;
+}
+
+.arvo-pg-version2__preview-stage {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: $arvo-space-12;
+  min-width: 0;
+}
+
+.arvo-pg-version2__stage-card {
+  min-height: 320px;
+  padding: $arvo-space-24;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-16;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.98)),
+    var(--arvo-color-s-layer-01);
+  box-shadow: $arvo-shadow-center;
+}
+
+.arvo-pg-version2__field {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-version2__field-label {
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-version2__control {
+  min-height: 84px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $arvo-space-8;
+  padding: $arvo-space-10 $arvo-space-12;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-16;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-version2__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $arvo-space-8;
+  align-items: center;
+}
+
+.arvo-pg-version2__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+  padding: $arvo-space-4 $arvo-space-8;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-16;
+  background: var(--arvo-color-s-layer-02);
+  font-size: $arvo-font-size-12;
+}
+
+.arvo-pg-version2__chip-close {
+  font-size: $arvo-font-size-14;
+  line-height: 1;
+}
+
+.arvo-pg-version2__input {
+  min-width: 220px;
+  flex: 1 1 220px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+.arvo-pg-version2__chevron {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--arvo-color-t-secondary);
+  font: inherit;
+}
+
+.arvo-pg-version2__feedback {
+  min-height: 1.25em;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-version2__menu {
+  display: grid;
+  gap: $arvo-space-8;
+  padding: $arvo-space-12;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-16;
+  background: var(--arvo-color-s-layer-01);
+  box-shadow: $arvo-shadow-center;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.arvo-pg-version2__menu-item {
+  width: 100%;
+  text-align: left;
+  padding: $arvo-space-10 $arvo-space-12;
+  border: 0;
+  border-radius: $arvo-radius-16;
+  background: transparent;
+  font: inherit;
+}
+
+.arvo-pg-version2__menu-item.is-selected {
+  background: var(--arvo-color-s-layer-02);
+  font-weight: $arvo-medium;
+}
+
+.arvo-pg-version2__details {
+  padding: $arvo-space-20;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-16;
+  background: var(--arvo-color-s-layer-01);
+  box-shadow: $arvo-shadow-center;
+}
+
+.arvo-pg-version2__details h3 {
+  margin: 0 0 $arvo-space-12;
+  font-size: $arvo-font-size-14;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-version2__details ul {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: $arvo-space-8;
+  font-size: $arvo-font-size-14;
+  line-height: 1.5;
+}
+
+@media (max-width: 960px) {
+  .arvo-pg-version2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+// =====================================================================
+// 2. StudioBar (global top strip)
+// =====================================================================
+
+.arvo-pg-studio-bar {
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-16;
+  padding: 0 $arvo-space-16;
+  height: $arvo-pg-studio-bar-h;
+  background: var(--arvo-color-s-layer-01);
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+  z-index: 5;
+}
+
+.arvo-pg-studio-bar__left {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-24;
+  flex: 0 0 auto;
+}
+
+// Brand block -- mirrors the public Arvo site header (`Layout.jsx`):
+// o9 logo glyph + black/white inverted-bg "arvo. design system" box +
+// ALPHA pill + version label. The logo follows the theme via
+// `--arvo-color-t-primary`. The name box hard-codes its inverted
+// background palette so it reads as a brand token, exactly like the
+// React reference; the `[data-mode='dark']` override on `<html>` flips
+// it for dark mode. All other surfaces continue to ride on Arvo tokens.
+.arvo-pg-studio-bar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+  // Anchor tags inherit color from currentColor by default; keep parity
+  // with the <button> variant.
+  &:hover { opacity: 0.9; }
+  &:focus-visible {
+    outline: $arvo-border-2 solid var(--arvo-color-b-theme-focus);
+    outline-offset: 2px;
+  }
+}
+
+.arvo-pg-studio-bar__brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+// o9 logo glyph -- sized via font-size, theme color follows
+// --arvo-color-t-primary (dark in light mode, white in dark mode) which
+// matches the `text-arvo-light-primary dark:text-white` rule on the site.
+.arvo-pg-studio-bar__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  flex-shrink: 0;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--arvo-color-t-primary);
+}
+
+// "arvo. design system" wordmark box. The colors are intentionally
+// hardcoded brand values (matching `Layout.jsx`) -- not Arvo tokens --
+// because the box is meant to read as a logo lockup.
+.arvo-pg-studio-bar__name {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  min-width: 0;
+  max-width: min(300px, 58vw);
+  padding: 0 $arvo-space-12;
+  background: #000000;
+  border: $arvo-border-1 solid #262626;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  flex-shrink: 1;
+
+  [data-mode='dark'] & {
+    background: #ffffff;
+    border-color: #e5e5e5;
+  }
+
+  @media (min-width: 640px) {
+    padding: 0 $arvo-space-16;
+  }
+}
+
+.arvo-pg-studio-bar__name-text {
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+
+  [data-mode='dark'] & {
+    color: #010101;
+  }
+
+  @media (min-width: 640px) {
+    font-size: 17px;
+  }
+}
+
+// The o9Sans family ships Regular / Medium / Bold (400 / 500 / 700) --
+// the literal 800 / 200 values mirror `font-extrabold` / `font-extralight`
+// from the React reference and fall back to 700 / 400 via the browser's
+// font-weight matching algorithm. Visual parity holds because the same
+// font-weight matching runs on the React side.
+.arvo-pg-studio-bar__name-strong {
+  font-weight: 800;
+}
+
+.arvo-pg-studio-bar__name-light {
+  font-weight: 200;
+}
+
+.arvo-pg-studio-bar__brand-meta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+// ALPHA pill -- brand color (matches `bg-blue-600` on the site), white
+// text, no Arvo token because the pill is a release-stage marker that
+// should NOT recolor with the active theme.
+.arvo-pg-studio-bar__brand-alpha {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 $arvo-space-6;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-medium;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.arvo-pg-studio-bar__brand-ver {
+  font-size: $arvo-font-size-12;
+  line-height: 1;
+  color: #303030;
+
+  [data-mode='dark'] & {
+    color: #a3a3a3;
+  }
+
+  // Hide on narrow viewports (mirrors `hidden sm:block` on the site).
+  @media (max-width: 639px) {
+    display: none;
+  }
+}
+
+.arvo-pg-studio-bar__nav {
+  flex: 0 0 auto;
+  width: max-content;
+  align-items: center;
+
+  .arvo-tabs__list {
+    flex: 0 0 auto;
+  }
+}
+
+.arvo-pg-studio-bar__nav--fallback {
+  display: inline-flex;
+  gap: 2px;
+
+  button {
+    background: none;
+    border: 0;
+    padding: 0 $arvo-space-10;
+    height: 32px;
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-t-secondary);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--arvo-color-t-primary);
+      background: var(--arvo-color-s-hover);
+    }
+  }
+}
+
+// Centered global search trigger -- looks like a search field, behaves
+// like a button (opens the CommandPalette ArvoWindow). The real
+// ArvoSearch lives inside the window body.
+.arvo-pg-studio-bar__search {
+  flex: 1 1 auto;
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  height: 32px;
+  max-width: 480px;
+  min-width: 200px;
+  padding: 0 $arvo-space-6 0 $arvo-space-10;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  color: var(--arvo-color-t-tertiary);
+  font: inherit;
+  font-size: $arvo-font-size-12;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: var(--arvo-color-s-hover);
+    color: var(--arvo-color-t-secondary);
+  }
+
+  &:focus-visible {
+    outline: $arvo-border-2 solid var(--arvo-color-b-theme-focus);
+    outline-offset: 2px;
+  }
+
+  &.is-open {
+    border-color: var(--arvo-color-b-theme);
+    color: var(--arvo-color-t-primary);
+  }
+}
+
+.arvo-pg-studio-bar__search-ico {
+  font-size: $arvo-font-size-14;
+  flex-shrink: 0;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-studio-bar__search-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arvo-pg-studio-bar__search-kbd {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.arvo-pg-studio-bar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.arvo-pg-studio-bar__theme-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-6;
+  margin-right: $arvo-space-6;
+}
+
+// Filters is an intentionally focused workspace: keep only theme switching
+// in the global header while leaving the Filters UI responsible for its own
+// controls.
+#arvo-pg-root.arvo-pg--filters-route {
+  .arvo-pg-studio-bar__left,
+  .arvo-pg-studio-bar__search,
+  .arvo-pg-studio-bar__actions > :not(.arvo-pg-studio-bar__theme-cluster) {
+    display: none;
+  }
+
+  .arvo-pg-studio-bar__actions {
+    margin-left: auto;
+  }
+}
+
+// Brand-theme color swatches (custom -- no Arvo equivalent).
+.arvo-pg-studio-bar__theme-swatch {
+  width: 18px;
+  height: 18px;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  padding: 0;
+  cursor: pointer;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color $arvo-duration-fast $arvo-ease-standard;
+
+  background: var(--arvo-color-s-theme);
+
+  &[data-theme='o9theme'] { background: #303030; }
+  &[data-theme='o9green'] { background: #2E8B57; }
+  &[data-theme='o9default'] { background: #3D6DCC; }
+  &[data-theme='o9black'] { background: #111111; }
+  &[data-theme='o9indigo'] { background: #2A4058; }
+
+  &.is-active {
+    outline-color: var(--arvo-color-b-theme-focus);
+  }
+
+  &:focus-visible {
+    outline-color: var(--arvo-color-b-theme-focus);
+  }
+}
+
+.arvo-pg-studio-bar__divider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: var(--arvo-color-b-divider);
+  margin: 0 $arvo-space-4;
+}
+
+.arvo-pg-studio-bar--embed .arvo-pg-studio-bar__nav {
+  display: none;
+}
+
+// ---------------------------------------------------------------------
+// StudioBar responsive collapse
+// ---------------------------------------------------------------------
+//
+// The StudioBar has three fixed-width clusters (brand + nav on the left,
+// utility icons on the right) fighting for horizontal space with the
+// flex-1 search trigger in the middle. Below ~1280px the utility icons
+// and nav start crowding the search below its 200px min-width; below
+// ~1120px the tabstrip alone eats too much room. To keep the bar
+// usable at any width -- from full-desktop down to phone -- each
+// cluster has a "compact" ArvoDropdownIconButton fallback that lives
+// alongside the full layout in the DOM (see StudioBar.ts). CSS below
+// swaps which is visible.
+//
+//   >= 1361px  full (5 theme swatches, 3-tab nav, 3 utility icons)
+//   <= 1360px  theme cluster -> paint-brush dropdown
+//   <= 1180px  nav tabstrip  -> bars dropdown
+//   <=  960px  search        -> icon-only trigger (no label/kbd)
+//   <=  880px  adv/share/help -> ellipsis dropdown
+//   <=  700px  brand meta (ALPHA + version) hides
+//   <=  540px  wordmark box hides; only the o9 logo remains
+
+.arvo-pg-studio-bar__nav-menu,
+.arvo-pg-studio-bar__theme-menu,
+.arvo-pg-studio-bar__util-overflow {
+  display: none;
+}
+
+@media (max-width: 1360px) {
+  .arvo-pg-studio-bar__theme-cluster {
+    display: none;
+  }
+  .arvo-pg-studio-bar__theme-menu {
+    display: inline-flex;
+  }
+  // Divider between theme cluster and utility icons was visually
+  // paired with the theme cluster + mode toggle; keep it visible when
+  // the theme menu takes over.
+}
+
+@media (max-width: 1180px) {
+  .arvo-pg-studio-bar__nav {
+    display: none;
+  }
+  .arvo-pg-studio-bar__nav-menu {
+    display: inline-flex;
+  }
+  // Tighter left-cluster gap once we're using an icon dropdown.
+  .arvo-pg-studio-bar__left {
+    gap: $arvo-space-12;
+  }
+}
+
+@media (max-width: 960px) {
+  .arvo-pg-studio-bar__search {
+    flex: 0 0 auto;
+    min-width: 32px;
+    max-width: 32px;
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    margin: 0;
+  }
+  // Compound selector (2 classes) so this beats the shared
+  // `.arvo-pg-kbd { display: inline-flex }` base rule, which lives
+  // later in this file and would otherwise win the cascade tie-break.
+  .arvo-pg-studio-bar__search .arvo-pg-studio-bar__search-label,
+  .arvo-pg-studio-bar__search .arvo-pg-studio-bar__search-kbd {
+    display: none;
+  }
+  .arvo-pg-studio-bar__search-ico {
+    margin: 0;
+  }
+  // Bar-wide gap tightens up so the compact chrome doesn't feel airy.
+  .arvo-pg-studio-bar {
+    gap: $arvo-space-8;
+  }
+}
+
+@media (max-width: 880px) {
+  .arvo-pg-studio-bar__actions [data-role='advanced'],
+  .arvo-pg-studio-bar__actions [data-role='share'],
+  .arvo-pg-studio-bar__actions [data-role='help'] {
+    display: none;
+  }
+  // The divider preceded the [advanced / share / help] triad; hide it
+  // now that those buttons have collapsed into the overflow menu.
+  .arvo-pg-studio-bar__actions > .arvo-pg-studio-bar__divider:first-of-type {
+    display: none;
+  }
+  .arvo-pg-studio-bar__util-overflow {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 700px) {
+  .arvo-pg-studio-bar__brand-meta {
+    display: none;
+  }
+  .arvo-pg-studio-bar {
+    padding: 0 $arvo-space-8;
+  }
+}
+
+@media (max-width: 540px) {
+  .arvo-pg-studio-bar__name {
+    display: none;
+  }
+  // With just the o9 logo remaining, the left cluster is essentially
+  // the logo + optional nav dropdown; collapse the internal gap.
+  .arvo-pg-studio-bar__brand {
+    gap: $arvo-space-4;
+  }
+  .arvo-pg-studio-bar__left {
+    gap: $arvo-space-8;
+  }
+}
+
+// =====================================================================
+// 3. Keyboard chip
+// =====================================================================
+
+.arvo-pg-kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 $arvo-space-4;
+  background: var(--arvo-color-s-layer-04);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  color: var(--arvo-color-t-secondary);
+  font-family: var(--o9-font-family);
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-medium;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+// =====================================================================
+// 4. ComponentHeader (Bench-only, below StudioBar)
+// =====================================================================
+
+.arvo-pg-component-header {
+  flex: 0 0 auto;
+  background: var(--arvo-color-s-layer-01);
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+  padding: $arvo-space-12 $arvo-space-24;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-component-header__breadcrumb {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  display: none;
+}
+
+.arvo-pg-component-header__row {
+  display: flex;
+  align-items: flex-start;
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-component-header__identity {
+  display: flex;
+  align-items: flex-start;
+  gap: $arvo-space-12;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// 40x40 icon tile -- s-theme-active-1 background, sharp corners. The
+// glyph rides on `t-inverse` so it stays high-contrast against the
+// theme-active surface (white on dark in light mode, black on the
+// dark-mode active surface) instead of dissolving into the bg the way
+// `t-theme` did (both tokens resolve to the same hue).
+.arvo-pg-component-header__icon-tile {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--arvo-color-s-theme-active-1);
+  color: var(--arvo-color-t-inverse);
+  border-radius: $arvo-radius-none;
+  font-size: $arvo-font-size-20;
+}
+
+.arvo-pg-component-header__title-block {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-2;
+}
+
+.arvo-pg-component-header__title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-component-header__title {
+  margin: 0;
+  font-size: $arvo-font-size-24;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+  line-height: 1.2;
+}
+
+.arvo-pg-component-header__favorite {
+  display: inline-flex;
+  align-items: center;
+  margin-left: $arvo-space-2;
+}
+
+.arvo-pg-component-header__desc {
+  margin: 0;
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-regular;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.arvo-pg-component-header__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+// Deep-link rail hosts. The Figma avatar sits inline as a link-styled
+// avatar; the docs IconButtonLink is a fresh <a> nested inside the outer
+// host span so the ArvoIconButtonLink initializer can own it. Both must
+// vertically center against the neighbouring chips + overflow button.
+.arvo-pg-component-header__figma {
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-component-header__docs {
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-component-header__meta-overflow {
+  display: inline-flex;
+  align-items: center;
+}
+
+// =====================================================================
+// 5. Workbench (3-zone layout below the ComponentHeader)
+// =====================================================================
+
+.arvo-pg-workbench {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-workbench__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arvo-pg-workbench__preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arvo-pg-workbench__dock-splitter {
+  flex: 0 0 auto;
+  height: 6px;
+  position: relative;
+}
+
+// The dock and inspector both slide open/closed with the shared Arvo
+// "pane" motion timing (300ms, standard easing). Height/width are driven
+// by CSS custom properties set inline by `Workbench.ts`; the collapsed
+// state overrides those in a sibling rule so the transition below fires
+// on the property that actually changes. `overflow: hidden` clips the
+// inner content as the surface shrinks so the frame doesn't fight with
+// the content's natural size mid-animation.
+.arvo-pg-workbench__dock {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: var(--arvo-pg-dock-h, 320px);
+  overflow: hidden;
+  transition: height $arvo-duration-slow $arvo-ease-standard;
+}
+
+.arvo-pg-workbench--dock-collapsed .arvo-pg-workbench__dock {
+  height: 40px;
+  min-height: 40px;
+}
+
+.arvo-pg-workbench__inspector-splitter {
+  flex: 0 0 auto;
+  width: 6px;
+  overflow: hidden;
+  position: relative;
+  transition: width $arvo-duration-slow $arvo-ease-standard;
+}
+
+.arvo-pg-workbench__inspector {
+  flex-grow: 0;
+  flex-shrink: 0;
+  flex-basis: var(--arvo-pg-inspector-w, 350px);
+  width: var(--arvo-pg-inspector-w, 350px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--arvo-color-s-layer-01);
+  transition:
+    width $arvo-duration-slow $arvo-ease-standard,
+    flex-basis $arvo-duration-slow $arvo-ease-standard;
+}
+
+// The inspector's inner surface keeps its natural width while the outer
+// aside slides shut, so the accordion content doesn't reflow mid-slide.
+// The parent's `overflow: hidden` clips the excess.
+.arvo-pg-workbench__inspector > .arvo-pg-inspector {
+  min-width: var(--arvo-pg-inspector-w, 350px);
+}
+
+.arvo-pg-workbench--inspector-closed .arvo-pg-workbench__inspector,
+.arvo-pg-workbench--inspector-closed .arvo-pg-workbench__inspector-splitter {
+  flex-basis: 0;
+  width: 0;
+}
+
+// Hide the inner content from screen readers and tab order once the
+// slide-out finishes. The transition-delay is 0 on expand (so the
+// content is focusable while sliding in) and matches the pane duration
+// on collapse (so `visibility: hidden` only lands after the surface is
+// visually gone).
+.arvo-pg-dock__body,
+.arvo-pg-workbench__inspector > .arvo-pg-inspector {
+  transition: visibility 0s linear 0s;
+}
+
+.arvo-pg-workbench--dock-collapsed .arvo-pg-dock__body,
+.arvo-pg-workbench--inspector-closed .arvo-pg-workbench__inspector > .arvo-pg-inspector {
+  visibility: hidden;
+  transition: visibility 0s linear $arvo-duration-slow;
+}
+
+// Splitter drags must feel immediate -- transitions here would replay
+// the animation on every pointermove frame while the user drags. The
+// `.is-resizing` class is toggled on the workbench root by the splitter
+// callbacks (see `Workbench.ts::_buildDockSplitter/_buildInspectorSplitter`).
+.arvo-pg-workbench.is-resizing .arvo-pg-workbench__dock,
+.arvo-pg-workbench.is-resizing .arvo-pg-workbench__inspector,
+.arvo-pg-workbench.is-resizing .arvo-pg-workbench__inspector-splitter {
+  transition: none;
+}
+
+.arvo-pg-workbench.is-resizing {
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-pg-workbench__dock,
+  .arvo-pg-workbench__inspector,
+  .arvo-pg-workbench__inspector-splitter,
+  .arvo-pg-dock__body,
+  .arvo-pg-workbench__inspector > .arvo-pg-inspector {
+    transition: none;
+  }
+}
+
+// =====================================================================
+// 6. PreviewStage (header strip + canvas body + footer strip)
+// =====================================================================
+
+.arvo-pg-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-preview__header {
+  flex: 0 0 auto;
+  height: $arvo-pg-preview-header-h;
+  padding: 0 $arvo-space-12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $arvo-space-12;
+  background: var(--arvo-color-s-layer-01);
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-preview__header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-12;
+  min-width: 0;
+}
+
+.arvo-pg-preview__header-right {
+  display: none !important;
+}
+
+// Inspector toggle -- always-visible panel button on the far right of
+// the preview strip, adjacent to the inspector rail. `margin-left: auto`
+// keeps it pinned right even while the reserved `header-right` toolbar
+// is hidden (`display: none`).
+.arvo-pg-preview__inspector-toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.arvo-pg-preview__scenario {
+  flex: 0 0 auto;
+}
+
+.arvo-pg-preview__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.arvo-pg-preview__summary-seg {
+  white-space: nowrap;
+}
+
+.arvo-pg-preview__summary-sep {
+  color: var(--arvo-color-t-tertiary);
+  line-height: 1;
+}
+
+.arvo-pg-preview__viewport {
+  flex: 0 0 auto;
+}
+
+.arvo-pg-preview__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  background: var(--arvo-color-s-layer-01);
+  overflow: auto;
+  display: flex;
+  // `safe center` keeps the frame centered when it fits, and falls back to
+  // start-alignment when the component is taller / wider than the canvas.
+  // That guarantees the top + left edges of the preview stay reachable so
+  // the user can scroll from the natural start of the frame instead of
+  // losing one side to symmetric overflow.
+  align-items: safe center;
+  justify-content: safe center;
+}
+
+.arvo-pg-preview__body[data-surface='dotted'] {
+  background-image: radial-gradient(
+    circle,
+    var(--arvo-color-b-divider) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+}
+
+.arvo-pg-preview__frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $arvo-space-24;
+  min-width: 120px;
+  min-height: 80px;
+}
+
+.arvo-pg-preview__frame--bounded {
+  width: var(--arvo-pg-canvas-frame-w, 100%);
+  max-width: 100%;
+}
+
+// Full-bleed frame -- toggled on by PreviewStage.setFullBleed(true) whenever
+// the active component declares an `isFullWidth` prop AND that prop is
+// currently truthy in the merged config. The default frame is `inline-flex`
+// so it shrinks around its content, which makes `width: 100%` on the
+// component root read as "100% of my own content width" (no visible change
+// when toggling `isFullWidth`). Switching the frame + mount to `display:
+// flex; width: 100%` gives the component root a definite parent width to
+// resolve `width: 100%` against, so the full-width modifier reads as
+// "stretches to fill the canvas". Bounded viewport presets (tablet, phone)
+// still cap the frame via `--bounded` above; when a bounded preset AND
+// full-bleed are both active, the bounded width wins and full-bleed just
+// stretches the mount inside that width.
+.arvo-pg-preview__frame--full-bleed {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+}
+
+.arvo-pg-preview__mount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arvo-pg-preview__mount--full-bleed {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.arvo-pg-preview__bounds {
+  position: absolute;
+  inset: $arvo-space-12;
+  pointer-events: none;
+  outline: $arvo-border-1 dashed var(--arvo-color-b-theme-focus);
+  outline-offset: 4px;
+}
+
+// ---------------------------------------------------------------------------
+// Panel-stage scaffold
+// ---------------------------------------------------------------------------
+// Rendered by `PanelStageAdapter` for the ArvoPanel / ArvoNavPanel /
+// ArvoFilterPanel previews so the panel sits inside a real workspace layout
+// (header + left nav slot + main content + right rail slot + bottom slot).
+// The stage is the panel's positioned ancestor (`position: relative`) so
+// overlay panels with `container: stageRoot` scope to the stage rather than
+// portaling to `document.body`.
+//
+// Sizing contract:
+//   - The stage inherits its min-height / min-width from the mount host's
+//     inline canvas-frame style (spec.canvas).
+//   - `.arvo-pg-pnl-stage__row` is `flex: 1 1 auto` so the row grows to fill
+//     the stage between the top/bottom slots, giving the docked panel host a
+//     definite height for its own flex chain to resolve against.
+
+.arvo-pg-pnl-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: var(--o9-font-family);
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-pnl-stage__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  height: 40px;
+  padding: 0 $arvo-space-16;
+  background: var(--arvo-color-s-layer-02);
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-pnl-stage__topbar-left {
+  display: flex;
+  align-items: baseline;
+  gap: $arvo-space-8;
+  min-width: 0;
+}
+
+.arvo-pg-pnl-stage__topbar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--arvo-color-t-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.arvo-pg-pnl-stage__topbar-sub {
+  font-size: 11px;
+  color: var(--arvo-color-t-tertiary);
+  text-transform: capitalize;
+}
+
+.arvo-pg-pnl-stage__topbar-right {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-4;
+}
+
+.arvo-pg-pnl-stage__topbar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--arvo-color-s-layer-05);
+}
+
+// Top / bottom docked-panel slots. Collapse to zero height when unused so
+// the row absorbs the entire content area for left/right/overlay cases.
+.arvo-pg-pnl-stage__topslot,
+.arvo-pg-pnl-stage__bottomslot {
+  flex: 0 0 auto;
+  display: flex;
+  min-height: 0;
+  &:empty {
+    display: none;
+  }
+}
+
+.arvo-pg-pnl-stage__row {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+// Left / right rail slots. Same collapse rule -- an unused rail must not
+// steal horizontal space from the main content.
+.arvo-pg-pnl-stage__leftrail,
+.arvo-pg-pnl-stage__rightrail {
+  flex: 0 0 auto;
+  display: flex;
+  min-width: 0;
+  &:empty {
+    display: none;
+  }
+}
+
+.arvo-pg-pnl-stage__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: $arvo-space-16 $arvo-space-16 $arvo-space-8 $arvo-space-16;
+  gap: $arvo-space-12;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.arvo-pg-pnl-stage__main-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-12;
+  min-height: 0;
+}
+
+.arvo-pg-pnl-stage__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--arvo-color-t-tertiary);
+  max-width: 360px;
+}
+
+// Skeleton bars that stand in for real application content. The three
+// widths give the reader a sense of paragraph rhythm without pretending
+// to be a specific screen.
+.arvo-pg-pnl-stage__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  padding: $arvo-space-8 0;
+}
+
+.arvo-pg-pnl-stage__skeleton-row {
+  height: 8px;
+  background: var(--arvo-color-s-layer-03);
+  border-radius: 4px;
+
+  &--wide {
+    width: 100%;
+  }
+  &--med {
+    width: 72%;
+  }
+  &--narrow {
+    width: 48%;
+  }
+}
+
+// "Open panel" trigger. Rendered whenever the panel is in overlay mode
+// (either because displayMode=overlay or because isPinnable + unpinned).
+// Sits at the bottom of the main column so it stays reachable even when
+// the panel is docked full-height alongside.
+.arvo-pg-pnl-stage__trigger {
+  display: none;
+  flex: 0 0 auto;
+  padding-top: $arvo-space-4;
+}
+
+.arvo-pg-pnl-stage__trigger--visible {
+  display: flex;
+}
+
+.arvo-pg-pnl-stage__trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--arvo-color-t-primary);
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color $arvo-duration-fast ease-out;
+
+  &:hover {
+    background: var(--arvo-color-s-theme-hover-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--arvo-color-b-theme-focus);
+    outline-offset: 2px;
+  }
+}
+
+// Ensure the panel host itself inside a rail / top / bottom slot stretches
+// to fill the slot. The panel component owns its own placement modifier
+// classes for internal layout, but the slot needs to be a positive
+// container so `height: 100%` on the panel host resolves cleanly.
+.arvo-pg-pnl-stage__leftrail > .arvo-pnl,
+.arvo-pg-pnl-stage__rightrail > .arvo-pnl,
+.arvo-pg-pnl-stage__topslot > .arvo-pnl,
+.arvo-pg-pnl-stage__bottomslot > .arvo-pnl {
+  flex: 0 0 auto;
+  align-self: stretch;
+  min-height: 0;
+}
+
+// The rail hosts a vertical panel that should stretch to the full row
+// height so its own `height: 100%` chain resolves.
+.arvo-pg-pnl-stage__leftrail,
+.arvo-pg-pnl-stage__rightrail {
+  align-items: stretch;
+}
+
+.arvo-pg-preview__footer {
+  flex: 0 0 auto;
+  padding: 0 $arvo-space-16;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  background: var(--arvo-color-s-layer-01);
+  border-top: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-preview__footer-row {
+  flex: 0 0 auto;
+  height: $arvo-pg-preview-footer-h;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-preview__auto-toast {
+  flex: 0 0 auto;
+  padding: $arvo-space-8 0 0 0;
+
+  &[hidden] {
+    display: none;
+  }
+
+  .arvo-pg-preview__auto-toast-fallback {
+    margin: 0;
+    padding: $arvo-space-8 $arvo-space-12;
+    font-size: $arvo-font-size-12;
+    color: var(--arvo-color-t-info);
+    background: var(--arvo-color-s-layer-02);
+    border: $arvo-border-1 solid var(--arvo-color-b-divider);
+    border-radius: $arvo-radius-none;
+  }
+}
+
+.arvo-pg-preview__attribution {
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-tertiary);
+}
+
+// Flat-prop conditional-hint row: wraps a control whose `spec.props.when`
+// rules are currently unsatisfied. Dims the row visually while keeping
+// the inner control interactive so the current value stays readable.
+.arvo-pg-cond-row {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  width: 100%;
+
+  > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &.is-disabled {
+    opacity: 0.55;
+  }
+}
+
+.arvo-pg-cond-hint {
+  flex: 0 0 auto;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// =====================================================================
+// 7. Inspector (right rail; tokens-only chrome around the Configurator)
+// =====================================================================
+
+.arvo-pg-inspector {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--arvo-color-s-layer-01);
+  overflow: hidden;
+}
+
+.arvo-pg-inspector__header {
+  flex: 0 0 auto;
+  height: 40px;
+  padding: 0 $arvo-space-12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $arvo-space-8;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-inspector__title-block {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  min-width: 0;
+}
+
+.arvo-pg-inspector__title-icon {
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-inspector__title {
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-inspector__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: $arvo-space-4 $arvo-space-2;
+}
+
+// =====================================================================
+// 8. BottomDock (Examples / Code / Events)
+// =====================================================================
+
+.arvo-pg-dock {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-dock__header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $arvo-space-12;
+  padding: 0 $arvo-space-12;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-dock__tabstrip {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  .arvo-tabs__list {
+    border-bottom: 0;
+  }
+}
+
+.arvo-pg-dock__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+  flex: 0 0 auto;
+}
+
+.arvo-pg-dock__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.arvo-pg-dock__pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.arvo-pg-dock__pane[hidden] {
+  display: none;
+}
+
+// Note: the dock body is hidden via `visibility: hidden` (with a
+// transition-delay matching the collapse duration) in section 5 so the
+// slide-down animation on `.arvo-pg-workbench__dock` height finishes
+// before the body disappears from the a11y tree. Using `display: none`
+// here would interrupt the animation.
+
+
+// --- Examples pane ---------------------------------------------------
+//
+// The legacy carryover stylesheet already handles pane visibility via
+// `.arvo-pg-dock__pane:not(.is-active) { display: none; }` and
+// `.arvo-pg-dock__pane.is-active { display: flex; }` (both 0,2,0
+// specificity). We override ONLY the active case for the Examples pane
+// so the rail + cards-grid layout sticks; the inactive rule continues
+// to hide it. Specificity 0,3,0 beats the legacy 0,2,0.
+
+.arvo-pg-dock__pane.arvo-pg-examples.is-active {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.arvo-pg-examples__rail {
+  min-height: 0;
+  overflow: auto;
+  border-right: $arvo-border-1 solid var(--arvo-color-b-divider);
+  padding: $arvo-space-8 $arvo-space-4;
+}
+
+.arvo-pg-examples__rail-empty {
+  margin: 0;
+  padding: $arvo-space-16 $arvo-space-12;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-examples__rail-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $arvo-space-8 $arvo-space-10;
+    background: none;
+    border: 0;
+    color: var(--arvo-color-t-secondary);
+    font: inherit;
+    font-size: $arvo-font-size-12;
+    cursor: pointer;
+    text-align: left;
+
+    &.is-active {
+      background: var(--arvo-color-s-hover);
+      color: var(--arvo-color-t-primary);
+      box-shadow: inset 2px 0 0 var(--arvo-color-s-theme-active-1);
+    }
+  }
+}
+
+.arvo-pg-examples__rail-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-examples__main {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.arvo-pg-examples__empty {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: $arvo-space-16;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-tertiary);
+}
+
+// Flat (non-slot) grid: cards wrap to fill the available width with a
+// consistent card footprint (no horizontal scroll, no per-card stretch).
+.arvo-pg-examples__cards-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: $arvo-space-12;
+  padding: $arvo-space-16;
+}
+
+// Slots layout: a vertical list of sections (Featured + one per slot
+// prop), each containing its own cards-grid. Sections stack and the
+// whole list scrolls.
+.arvo-pg-examples__slots-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: $arvo-space-16;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-examples__slots-list .arvo-pg-examples__cards-grid {
+  // Inside slot sections the grid is a child of the scrolling list, so
+  // it must not introduce its own scroll/padding.
+  flex: 0 0 auto;
+  overflow: visible;
+  padding: 0;
+}
+
+.arvo-pg-examples__section-hdr {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: $arvo-space-6;
+  padding-bottom: $arvo-space-4;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-examples__section-title {
+  margin: 0;
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.arvo-pg-examples__section-help {
+  // ArvoContextHelp draws its own icon; the wrapper stays inline-flex so
+  // it aligns with the title baseline without introducing extra spacing.
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-examples__section-count {
+  margin-left: auto;
+  min-width: 24px;
+  padding: 1px $arvo-space-6;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  font-size: 11px;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-secondary);
+  text-align: center;
+}
+
+// =====================================================================
+// 8.1 Scenario card (Examples pane)
+// =====================================================================
+//
+// Fixed footprint so the grid stays orderly when wrapping: cards never
+// shrink vertically below the standard height even when the description
+// is short.
+.arvo-pg-scenario-card {
+  flex: 0 0 auto;
+  width: 248px;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  padding: $arvo-space-12;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-none;
+  color: var(--arvo-color-t-primary);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background-color 80ms ease-out, border-color 80ms ease-out;
+
+  &:hover {
+    background: var(--arvo-color-s-hover);
+    border-color: var(--arvo-color-b-dark);
+  }
+
+  &.is-active {
+    border-color: var(--arvo-color-b-theme-focus);
+    border-width: $arvo-border-2;
+    padding: calc(#{$arvo-space-12} - 1px);
+  }
+
+  &:focus-visible {
+    outline: $arvo-border-2 solid var(--arvo-color-b-theme-focus);
+    outline-offset: 2px;
+  }
+}
+
+.arvo-pg-scenario-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $arvo-space-8;
+  min-width: 0;
+}
+
+.arvo-pg-scenario-card__title {
+  flex: 1 1 auto;
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.arvo-pg-scenario-card__trailing {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+}
+
+.arvo-pg-scenario-card__hint {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 $arvo-space-6;
+  font-size: 11px;
+  font-weight: $arvo-medium;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: $arvo-border-1 solid currentColor;
+  background: transparent;
+  color: var(--arvo-color-t-tertiary);
+  white-space: nowrap;
+
+  &[data-hint='standard'] {
+    color: var(--arvo-color-t-secondary);
+    border-color: var(--arvo-color-b-divider);
+    background: var(--arvo-color-s-layer-01);
+  }
+
+  &[data-hint='advanced'] {
+    color: var(--arvo-color-t-info-dark);
+    border-color: var(--arvo-color-b-info);
+    background: var(--arvo-color-s-info-subtle);
+  }
+
+  &[data-hint='large-data'] {
+    color: var(--arvo-color-t-warning);
+    border-color: var(--arvo-color-b-warning);
+    background: var(--arvo-color-s-warning-subtle);
+  }
+
+  &[data-hint='edge-case'] {
+    color: var(--arvo-color-t-negative);
+    border-color: var(--arvo-color-b-negative);
+    background: var(--arvo-color-s-negative-subtle);
+  }
+}
+
+.arvo-pg-scenario-card__star {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-scenario-card__desc {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Affects row -- shows which prop keys the scenario changes (component
+// scenarios) or patches (slot scenarios).
+.arvo-pg-scenario-card__affects {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-6;
+  margin-top: auto;
+  padding-top: $arvo-space-6;
+  border-top: $arvo-border-1 dotted var(--arvo-color-b-subtle);
+  min-width: 0;
+}
+
+.arvo-pg-scenario-card__affects-label {
+  flex: 0 0 auto;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-scenario-card__affects-list {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $arvo-space-4;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.arvo-pg-scenario-card__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 $arvo-space-6;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono',
+    'Source Code Pro', 'Menlo', 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--arvo-color-t-secondary);
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--more {
+    color: var(--arvo-color-t-tertiary);
+    font-family: inherit;
+  }
+}
+
+// Slot scenario cards differentiate the "Patches" affordance from the
+// "Affects" version on full-config scenarios with a subtle accent on the
+// border-top -- they're patches, not whole-config swaps.
+.arvo-pg-scenario-card--slot .arvo-pg-scenario-card__affects {
+  border-top-color: var(--arvo-color-b-theme-focus);
+  border-top-style: solid;
+}
+
+// =====================================================================
+// 9. Code blocks (tokens-only -- shared between Examples + Code panes)
+// =====================================================================
+
+.arvo-pg-code-block {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: $arvo-space-16;
+  background: var(--arvo-color-s-layer-04);
+  color: var(--arvo-color-t-primary);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono',
+    'Source Code Pro', 'Menlo', 'Consolas', monospace;
+  font-size: $arvo-font-size-12;
+  line-height: 1.55;
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+
+  &::selection,
+  *::selection {
+    background: color-mix(in srgb, var(--arvo-color-i-info-light) 35%, transparent);
+  }
+}
+
+.arvo-pg-code-block__props {
+  margin-top: $arvo-space-8;
+  display: block;
+}
+
+.arvo-pg-code-block__props[hidden] {
+  display: none;
+}
+
+// --- Syntax-highlight token classes (lightweight, theme-aware) -------
+//
+// Color discipline: we lean on the existing semantic + utility color
+// tokens so dark/light mode and brand-theme switches recolour the
+// editor without any per-token overrides.
+//
+// Token -> token
+//   keyword  -> --arvo-color-t-util-purple   (control flow, true/false/null)
+//   string   -> --arvo-color-t-util-greenish (string literals)
+//   number   -> --arvo-color-t-util-amber    (numeric literals)
+//   comment  -> --arvo-color-t-tertiary      (low-contrast, italic)
+//   tag      -> --arvo-color-t-util-bluish   (JSX/HTML element names)
+//   attr     -> --arvo-color-t-util-pink     (attribute/prop names + JSON keys)
+//   punct    -> --arvo-color-t-secondary     (brackets, equals, slashes)
+
+.arvo-pg-tok {
+  // Inherit font/line settings from the parent .arvo-pg-code-block
+  // so the spans add no layout shift.
+  white-space: inherit;
+}
+
+.arvo-pg-tok--keyword { color: var(--arvo-color-t-util-purple); }
+.arvo-pg-tok--string  { color: var(--arvo-color-t-util-greenish); }
+.arvo-pg-tok--number  { color: var(--arvo-color-t-util-amber); }
+.arvo-pg-tok--comment {
+  color: var(--arvo-color-t-tertiary);
+  font-style: italic;
+}
+.arvo-pg-tok--tag     { color: var(--arvo-color-t-util-bluish); }
+.arvo-pg-tok--attr    { color: var(--arvo-color-t-util-pink); }
+.arvo-pg-tok--punct   { color: var(--arvo-color-t-secondary); }
+
+// --- Code pane -------------------------------------------------------
+
+.arvo-pg-code-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: $arvo-space-12 $arvo-space-16 $arvo-space-16;
+  gap: $arvo-space-12;
+  overflow: hidden;
+}
+
+.arvo-pg-code-pane__top {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-12;
+  flex-wrap: wrap;
+}
+
+.arvo-pg-code-pane__langs {
+  flex: 0 0 auto;
+}
+
+.arvo-pg-code-pane__body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.arvo-pg-code-pane__body .arvo-pg-code-block {
+  // Reserve right-side padding so the floating action cluster never
+  // collides with code content as it wraps.
+  padding-right: $arvo-space-80;
+}
+
+.arvo-pg-code-pane__actions {
+  position: absolute;
+  top: $arvo-space-8;
+  right: $arvo-space-16;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+}
+
+// --- Events pane -----------------------------------------------------
+
+.arvo-pg-events {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: $arvo-space-12 $arvo-space-16 $arvo-space-16;
+  gap: $arvo-space-12;
+  overflow: hidden;
+}
+
+.arvo-pg-events__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-events__header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-events__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-events__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: $arvo-space-12;
+  overflow: hidden;
+}
+
+.arvo-pg-events__names,
+.arvo-pg-events__log {
+  min-height: 0;
+  overflow: auto;
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-radius: $arvo-radius-none;
+  background: var(--arvo-color-s-layer-02);
+}
+
+.arvo-pg-events__names-fallback,
+.arvo-pg-events__log-fallback {
+  list-style: none;
+  margin: 0;
+  padding: $arvo-space-8 0;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-primary);
+
+  li {
+    padding: $arvo-space-4 $arvo-space-12;
+    border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+}
+
+.arvo-pg-events__log-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $arvo-space-8;
+  height: 100%;
+  padding: $arvo-space-24;
+  color: var(--arvo-color-t-tertiary);
+  font-size: $arvo-font-size-12;
+  text-align: center;
+
+  h4 {
+    margin: 0;
+    font-size: $arvo-font-size-14;
+    color: var(--arvo-color-t-secondary);
+  }
+}
+
+.arvo-pg-events__log-item {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: $arvo-space-8;
+  align-items: baseline;
+  padding: $arvo-space-6 $arvo-space-12;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+  font-size: $arvo-font-size-12;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.arvo-pg-events__log-ts {
+  color: var(--arvo-color-t-tertiary);
+  font-family: monospace;
+  font-size: $arvo-font-size-10;
+}
+
+.arvo-pg-events__log-name {
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-events__log-detail {
+  grid-column: 2;
+  color: var(--arvo-color-t-secondary);
+  font-family: monospace;
+  font-size: $arvo-font-size-10;
+  word-break: break-all;
+}
+
+// =====================================================================
+// 10. Configurator inside the Inspector (bodyOnly mode)
+// =====================================================================
+//
+// Inspector v2 owns the panel chrome (header + filter input). The
+// Configurator just renders the accordion body and per-control rows
+// under it. All per-control row + Arvo control host styles live in
+// section 13 below.
+
+.arvo-pg-configurator {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+// The Configurator + panel body are transparent flex pass-throughs so the
+// hosted ArvoAccordion can fill the Inspector body. The expanded item's
+// panel scrolls internally; collapsed item headers stay pinned.
+.arvo-pg-inspector .arvo-pg-configurator {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.arvo-pg-panel__errors {
+  flex: 0 0 auto;
+  margin: $arvo-space-10 $arvo-space-12 0;
+
+  &-fallback {
+    padding: $arvo-space-8 $arvo-space-12;
+    background: var(--arvo-color-s-negative-subtle);
+    border: $arvo-border-1 solid var(--arvo-color-s-negative);
+    color: var(--arvo-color-s-negative-strong);
+    font-size: $arvo-font-size-12;
+
+    ul { margin: $arvo-space-4 0 0; padding-left: $arvo-space-16; }
+  }
+}
+
+.arvo-pg-panel__bdy {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// The accordion is the local scroll container for the inspector. Items
+// keep their natural intrinsic height (header height when collapsed,
+// header + content when expanded) and the user scrolls the whole
+// accordion when total content exceeds the available height.
+//
+// Do not pin the expanded item to `flex: 1 1 auto` to fill remaining
+// space and scroll its panel internally -- that breaks down for
+// components with many slots, where enough collapsed headers
+// accumulate to overflow the inspector on their own and the flex
+// column truncates the trailing headers with no way to reach them.
+// Letting the accordion itself scroll keeps every header reachable and
+// lets long expanded panels overflow into the same scroll.
+.arvo-pg-panel__accordion {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.arvo-pg-panel__accordion .arvo-acc-item__trg {
+  font-weight: $arvo-bold;
+}
+
+.arvo-pg-acc-fallback {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.arvo-pg-panel__empty {
+  margin: $arvo-space-12 0;
+  padding: $arvo-space-12;
+  color: var(--arvo-color-t-tertiary);
+  font-size: $arvo-font-size-12;
+}
+
+// =====================================================================
+// 11. Command palette body (rendered inside an ArvoWindow body)
+// =====================================================================
+
+.arvo-pg-cmd-menu {
+  display: flex;
+  flex-direction: column;
+  min-height: 360px;
+  font-family: var(--o9-font-family);
+}
+
+.arvo-pg-cmd-menu__search {
+  flex-shrink: 0;
+  padding: $arvo-space-12 $arvo-space-12 $arvo-space-8;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-cmd-menu__search-fallback {
+  width: 100%;
+  height: 32px;
+  padding: 0 $arvo-space-8;
+  border: $arvo-border-1 solid var(--arvo-color-b-dark);
+  background: var(--arvo-color-s-layer-01);
+  color: var(--arvo-color-t-primary);
+  font: inherit;
+  font-size: $arvo-font-size-14;
+}
+
+.arvo-pg-cmd-menu__results {
+  flex: 1;
+  min-height: 0;
+  max-height: 56vh;
+  overflow-y: auto;
+  padding: $arvo-space-4 $arvo-space-6;
+}
+
+.arvo-pg-cmd-menu__empty {
+  padding: $arvo-space-32;
+  text-align: center;
+  color: var(--arvo-color-t-tertiary);
+  font-size: $arvo-font-size-14;
+}
+
+.arvo-pg-cmd-menu__group {
+  padding: $arvo-space-10 $arvo-space-10 $arvo-space-4;
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-cmd-menu__row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: $arvo-space-10;
+  padding: $arvo-space-6 $arvo-space-10;
+  background: transparent;
+  border: 0;
+  color: var(--arvo-color-t-secondary);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+
+  &.is-active {
+    background: var(--arvo-color-s-theme-hover-3);
+    color: var(--arvo-color-t-primary);
+  }
+}
+
+.arvo-pg-cmd-menu__row-ico {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-tertiary);
+
+  .arvo-pg-cmd-menu__row.is-active & {
+    color: var(--arvo-color-s-theme-active-5, var(--arvo-color-b-theme));
+  }
+}
+
+.arvo-pg-cmd-menu__row-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-cmd-menu__row-title {
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.arvo-pg-cmd-menu__row-sub {
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.arvo-pg-cmd-menu__row-tag {
+  flex-shrink: 0;
+  font-size: $arvo-font-size-10;
+  padding: 1px $arvo-space-6;
+  background: var(--arvo-color-s-layer-02);
+  color: var(--arvo-color-t-secondary);
+  text-transform: lowercase;
+  font-weight: $arvo-medium;
+
+  &[data-tone='warn'] { background: var(--arvo-color-s-warning-subtle); color: var(--arvo-color-s-warning-strong); }
+  &[data-tone='info'] { background: var(--arvo-color-s-info-subtle); color: var(--arvo-color-s-info-strong); }
+  &[data-tone='accent'] { background: var(--arvo-color-s-theme-hover-3); color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary)); }
+  &[data-tone='positive'] { background: var(--arvo-color-s-positive-subtle); color: var(--arvo-color-s-positive-strong); }
+  &[data-tone='negative'] { background: var(--arvo-color-s-negative-subtle); color: var(--arvo-color-s-negative-strong); }
+}
+
+.arvo-pg-cmd-menu__footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-12;
+  padding: $arvo-space-8 $arvo-space-12;
+  border-top: $arvo-border-1 solid var(--arvo-color-b-divider);
+  background: var(--arvo-color-s-layer-02);
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-cmd-menu__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+
+  &--right { margin-left: auto; }
+}
+
+// =====================================================================
+// 12. Gallery (home) + MiniPreview tiles
+// =====================================================================
+
+.arvo-pg-gallery {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-gallery > * {
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(#{$arvo-space-16}, 4vw, #{$arvo-space-40});
+  padding-right: clamp(#{$arvo-space-16}, 4vw, #{$arvo-space-40});
+}
+
+.arvo-pg-gallery__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $arvo-space-24;
+  padding-top: $arvo-space-32;
+  padding-bottom: $arvo-space-16;
+}
+
+.arvo-pg-gallery__hero-left { min-width: 0; }
+
+.arvo-pg-gallery__title-row {
+  display: flex;
+  align-items: baseline;
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-gallery__title {
+  margin: 0;
+  font-size: $arvo-font-size-32;
+  font-weight: $arvo-bold;
+  letter-spacing: -0.01em;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-gallery__count {
+  font-size: $arvo-font-size-12;
+  padding: 2px $arvo-space-8;
+  border-radius: 999px;
+  background: var(--arvo-color-s-theme-hover-3);
+  color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+  font-weight: $arvo-medium;
+}
+
+.arvo-pg-gallery__intro {
+  margin: $arvo-space-8 0 0;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-secondary);
+  max-width: 640px;
+  line-height: 1.5;
+}
+
+.arvo-pg-gallery__hero-stats {
+  display: inline-flex;
+  align-items: stretch;
+  gap: $arvo-space-10;
+  flex-shrink: 0;
+
+  @media (max-width: 760px) { display: none; }
+}
+
+.arvo-pg-gallery__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  padding: $arvo-space-10 $arvo-space-16;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+}
+
+.arvo-pg-gallery__stat-value {
+  font-size: $arvo-font-size-24;
+  font-weight: $arvo-bold;
+  line-height: 1;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-gallery__stat-label {
+  margin-top: $arvo-space-4;
+  font-size: $arvo-font-size-10;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-gallery__filter {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding-top: $arvo-space-16;
+  padding-bottom: $arvo-space-16;
+  background: linear-gradient(var(--arvo-color-s-layer-01) 72%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-10;
+}
+
+.arvo-pg-gallery__search { width: min(420px, 100%); }
+
+.arvo-pg-gallery__search-fallback {
+  width: 100%;
+  height: 36px;
+  padding: 0 $arvo-space-12;
+  border: $arvo-border-1 solid var(--arvo-color-b-dark);
+  background: var(--arvo-color-s-layer-01);
+  color: var(--arvo-color-t-primary);
+  font: inherit;
+  font-size: $arvo-font-size-14;
+}
+
+.arvo-pg-gallery__chips {
+  display: flex;
+  gap: $arvo-space-6;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar { height: 6px; }
+}
+
+.arvo-pg-gallery__chip { flex-shrink: 0; display: inline-flex; }
+
+.arvo-pg-gallery__chip-fallback {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 $arvo-space-12;
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  background: var(--arvo-color-s-layer-01);
+  color: var(--arvo-color-t-secondary);
+  font: inherit;
+  font-size: $arvo-font-size-12;
+  cursor: pointer;
+
+  &.is-active {
+    background: var(--arvo-color-s-theme);
+    color: var(--arvo-color-t-on-theme, var(--arvo-color-s-direct));
+  }
+}
+
+.arvo-pg-gallery__new {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-12;
+  margin-bottom: $arvo-space-16;
+  padding: $arvo-space-10 0;
+  border-top: $arvo-border-1 solid var(--arvo-color-b-divider);
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-gallery__new-label {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-6;
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-bold;
+  color: var(--arvo-color-t-secondary);
+  flex-shrink: 0;
+
+  i { color: var(--arvo-color-s-warning-strong); }
+}
+
+.arvo-pg-gallery__new-chips {
+  display: flex;
+  gap: $arvo-space-6;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  flex: 1;
+  min-width: 0;
+  scrollbar-width: thin;
+
+  > * { flex-shrink: 0; }
+}
+
+.arvo-pg-gallery__new-pill-fallback {
+  flex-shrink: 0;
+  padding: 2px $arvo-space-8;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  font: inherit;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-primary);
+  cursor: pointer;
+}
+
+.arvo-pg-gallery__wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(224px, 1fr));
+  grid-auto-rows: 188px;
+  gap: $arvo-space-16;
+  padding-bottom: $arvo-space-48;
+}
+
+.arvo-pg-gallery__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  transition: transform $arvo-duration-fast $arvo-ease-standard,
+    box-shadow $arvo-duration-fast $arvo-ease-standard,
+    border-color $arvo-duration-fast $arvo-ease-standard;
+
+  &:hover,
+  &:focus-within {
+    transform: translateY(-2px);
+    box-shadow: $arvo-shadow-low;
+    border-color: var(--arvo-color-b-theme);
+  }
+}
+
+.arvo-pg-gallery__tile-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(var(--arvo-color-b-subtle) 1px, transparent 0)
+    0 0 / 16px 16px;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  overflow: hidden;
+}
+
+.arvo-pg-gallery__tile-meta {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  padding: $arvo-space-8 $arvo-space-12;
+}
+
+.arvo-pg-gallery__tile-meta-left {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.arvo-pg-gallery__tile-name {
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arvo-pg-gallery__tile-cat {
+  font-size: $arvo-font-size-10;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-gallery__tile-tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-weight: $arvo-bold;
+
+  &[data-tone='warn']   { background: var(--arvo-color-s-warning-subtle);  color: var(--arvo-color-s-warning-strong); }
+  &[data-tone='info']   { background: var(--arvo-color-s-info-subtle);     color: var(--arvo-color-s-info-strong); }
+  &[data-tone='accent'] { background: var(--arvo-color-s-theme);           color: var(--arvo-color-t-on-theme, var(--arvo-color-s-direct)); }
+}
+
+.arvo-pg-gallery__tile-desc { display: none; }
+
+.arvo-pg-gallery__tile-click {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+
+  &:focus-visible {
+    outline: $arvo-border-2 solid var(--arvo-color-b-theme-focus);
+    outline-offset: -2px;
+  }
+}
+
+.arvo-pg-gallery__empty {
+  padding: $arvo-space-48 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arvo-pg-gallery__empty-inner {
+  text-align: center;
+  max-width: 360px;
+
+  h2 { margin: 0; font-size: $arvo-font-size-16; font-weight: $arvo-medium; color: var(--arvo-color-t-primary); }
+  p  { margin: $arvo-space-6 0 $arvo-space-12; font-size: $arvo-font-size-12; color: var(--arvo-color-t-secondary); }
+}
+
+.arvo-pg-gallery__empty-action {
+  padding: $arvo-space-6 $arvo-space-16;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-dark);
+  color: var(--arvo-color-t-primary);
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-medium;
+  cursor: pointer;
+
+  &:hover { background: var(--arvo-color-s-hover); }
+}
+
+.arvo-pg-mini {
+  --arvo-pg-mini-scale: 0.7;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.arvo-pg-mini__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(var(--arvo-pg-mini-scale));
+  transform-origin: center;
+  width: 100%;
+  height: 100%;
+}
+
+.arvo-pg-mini__mount { pointer-events: none; }
+.arvo-pg-mini--fallback { background: transparent; }
+
+.arvo-pg-mini__icon {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--arvo-color-s-theme-hover-3);
+  color: var(--arvo-color-t-primary);
+  font-size: $arvo-font-size-24;
+}
+
+// =====================================================================
+// 13. Inspector body: rows, control hosts, slots, presets, refs, notes
+// =====================================================================
+
+// -- Accordion body containers -----------------------------------------
+
+.arvo-pg-acc-body {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-16;
+  padding: $arvo-space-8 0 $arvo-space-12;
+}
+
+.arvo-pg-flat-section {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+}
+
+.arvo-pg-flat-section__hdr {
+  margin: 0 0 $arvo-space-2;
+  padding-bottom: $arvo-space-4;
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-secondary));
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+// -- Slot accordion header actions + scope button ----------------------
+
+.arvo-acc-itm[aria-disabled='true'].is-disabled,
+.arvo-pg-acc-fallback details[aria-disabled='true'] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.arvo-pg-slot-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+  margin-left: auto;
+  padding-right: $arvo-space-8;
+}
+
+.arvo-pg-slot-scope-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--arvo-color-t-secondary);
+}
+
+// -- Slot scenarios "Presets" surface (Arvo card with FormLabel header
+//    + counter Badge + chip row of ArvoChips) --------------------------
+
+.arvo-pg-slot-scenarios {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  margin-bottom: $arvo-space-12;
+  padding: $arvo-space-8;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-divider);
+}
+
+.arvo-pg-slot-scenarios__hdr {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  padding: 0 0 $arvo-space-4;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-divider);
+  margin: 0;
+}
+
+.arvo-pg-slot-scenarios__label {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-6;
+  flex: 1;
+  min-width: 0;
+
+  // Keep the FormLabel readout compact + uppercase to match the section
+  // hierarchy of the surrounding accordion body. The inner label class
+  // (`arvo-form-label__text`) is what we restyle; the icon already
+  // honors color tokens via the FormLabel default styles.
+  .arvo-form-label__text {
+    font-size: $arvo-font-size-10;
+    font-weight: $arvo-bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--arvo-color-t-secondary);
+  }
+  .arvo-form-label__icon {
+    color: var(--arvo-color-s-theme-active-5, var(--arvo-color-b-theme));
+  }
+}
+
+.arvo-pg-slot-scenarios__count {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.arvo-pg-slot-scenarios__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $arvo-space-4;
+  padding: 0;
+
+  .arvo-chip {
+    cursor: pointer;
+  }
+}
+
+.arvo-pg-slot-scenarios__chip {
+  display: inline-flex;
+}
+
+.arvo-pg-slot-scenarios__chip-fallback {
+  padding: $arvo-space-2 $arvo-space-8;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  color: var(--arvo-color-t-primary);
+  font: inherit;
+  font-size: $arvo-font-size-12;
+  cursor: pointer;
+
+  &:hover { background: var(--arvo-color-s-hover); }
+}
+
+// -- Accordion fallback (when ArvoAccordion is unavailable) -----------
+
+.arvo-pg-acc-fallback details {
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  padding: $arvo-space-8 0;
+
+  summary {
+    cursor: pointer;
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-t-primary);
+    padding: $arvo-space-4 0;
+  }
+}
+
+// -- Events / methods reference rows ----------------------------------
+
+.arvo-pg-ref-list {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-6;
+  padding: $arvo-space-4 0;
+}
+
+.arvo-pg-ref-row {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+  padding: $arvo-space-8 $arvo-space-10;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+}
+
+.arvo-pg-ref-row__top {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  min-width: 0;
+}
+
+.arvo-pg-ref-row__ico {
+  flex-shrink: 0;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-s-theme-active-5, var(--arvo-color-b-theme));
+}
+
+.arvo-pg-ref-row__name {
+  font-family: $mono-font, monospace;
+  font-size: 11px;
+  color: var(--arvo-color-b-theme);
+  font-weight: $arvo-medium;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arvo-pg-ref-row__meta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-ref-row__body {
+  margin: 0;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.45;
+}
+
+.arvo-pg-ref-row__payload {
+  font-family: $mono-font, monospace;
+  font-size: 10px;
+  color: var(--arvo-color-t-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: $arvo-space-4 $arvo-space-6;
+  background: var(--arvo-color-s-layer-02);
+}
+
+// -- Notes ------------------------------------------------------------
+
+.arvo-pg-note {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+  padding: $arvo-space-10 $arvo-space-12;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  margin-bottom: $arvo-space-8;
+
+  &[data-tone='warning'] {
+    border-color: var(--arvo-color-s-warning);
+    background: var(--arvo-color-s-warning-subtle);
+  }
+  &[data-tone='info'] {
+    border-color: var(--arvo-color-s-info);
+    background: var(--arvo-color-s-info-subtle);
+  }
+}
+
+.arvo-pg-note__hdr {
+  margin: 0;
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-bold;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-note__body {
+  margin: 0;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.5;
+}
+
+// -- Per-control rows (Row.ts) ----------------------------------------
+
+.arvo-pg-row {
+  display: flex;
+  gap: $arvo-space-10;
+  align-items: center;
+  justify-content: space-between;
+  padding: $arvo-space-4 $arvo-space-6;
+  margin: 0 (-$arvo-space-6);
+  min-height: 32px;
+
+  &--inline {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    align-items: center;
+  }
+  &--stack {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: $arvo-space-6;
+  }
+
+  // Textarea-backed rows omit the Row's own label column. A manual
+  // label row is rendered inside the field instead, so the textarea
+  // spans the full content width.
+  &--no-label .arvo-pg-row__field {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  &[data-required='true'] {
+    box-shadow: inset 2px 0 0 var(--arvo-color-b-theme);
+  }
+}
+
+.arvo-pg-row__label {
+  display: flex;
+  align-items: baseline;
+  gap: $arvo-space-4;
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+  min-width: 0;
+  flex-grow: 1;
+  max-width: 50%;
+
+  .arvo-pg-row--inline & {
+    align-self: center;
+  }
+}
+
+.arvo-pg-row__req {
+  color: var(--arvo-color-b-theme);
+  font-weight: $arvo-bold;
+}
+
+.arvo-pg-row__hint {
+  margin-left: $arvo-space-4;
+  font-size: $arvo-font-size-10;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--arvo-color-t-tertiary);
+  font-weight: $arvo-regular;
+}
+
+.arvo-pg-row__field {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  gap: $arvo-space-6;
+
+  // Inline rows: field fills all remaining row space (label is at left,
+  // content right-aligned within field). `flex: 1 1 0` is critical -- it
+  // gives the field a content-INDEPENDENT width, which keeps the
+  // ButtonGroup's `hasOverflow` boundary stable. Without this the
+  // boundary (the field-scoped host) would shrink/grow as the manager
+  // hides/reveals items, creating a measurement feedback loop.
+  .arvo-pg-row--inline & {
+    flex: 2 1 0;
+    justify-content: flex-end;
+    max-width: 200px;
+  }
+
+  > * { min-width: 0; }
+}
+
+// -- Per-control hosts (controls.ts) ----------------------------------
+
+.arvo-pg-ctrl__switch {
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-ctrl__textbox-host,
+.arvo-pg-ctrl__textarea-host,
+.arvo-pg-ctrl__select-host,
+.arvo-pg-ctrl__btngroup-host,
+.arvo-pg-ctrl__numberinput-host {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  // The field column is `flex: 1 1 0` for inline rows, so hosts fill
+  // the full available width. Right-align inner content so fixed-width
+  // controls (textbox / select / number input default to 300px) sit
+  // against the field's right edge.
+  justify-content: flex-end;
+}
+
+.arvo-pg-ctrl__btngroup-host {
+  // Visual safety net: the ButtonGroup root is `inline-flex` and
+  // momentarily renders at its natural content width before the overflow
+  // manager's first measurement pass clips it. `overflow: hidden` keeps
+  // any such transient overflow from pushing the panel wider.
+  overflow: hidden;
+}
+
+// Graceful overflow fallback for inspector button groups.
+//
+// The ButtonGroup's `hasOverflow` option uses @arvo/core's overflow
+// manager to push items into a "more" menu when they don't fit. But
+// the manager reserves trigger space using a fixed estimate (32px)
+// on the first measurement pass -- if the trigger's actual rendered
+// width differs from the estimate (focus rings, slight padding
+// differences, etc.), the last visible item + trigger can still
+// exceed the container and get visually clipped by the button
+// group's `overflow: hidden`.
+//
+// As a safety net, we relax the design-system rule that segments in
+// a button group never shrink (`.arvo-btn-grp .arvo-btn { flex-shrink: 0 }`)
+// for inspector rows only. The manager still does the primary work
+// of routing items into the overflow menu; if anything still doesn't
+// fit afterwards, the remaining segments shrink and their labels
+// truncate via the existing `.arvo-btn__lbl` text-overflow ellipsis
+// instead of being hard-clipped. The trigger keeps its own
+// `flex-shrink: 0` from `.arvo-btn-grp__overflow` so it's always
+// fully visible.
+.arvo-pg-row__field > .arvo-btn-grp {
+  > .arvo-btn,
+  > .arvo-icon-btn {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+}
+
+.arvo-pg-ctrl__textbox-fallback,
+.arvo-pg-ctrl__textarea-fallback,
+.arvo-pg-ctrl__select-fallback,
+.arvo-pg-ctrl__numberinput-fallback {
+  width: 100%;
+  padding: $arvo-space-4 $arvo-space-8;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-dark);
+  color: var(--arvo-color-t-primary);
+  font: inherit;
+  font-size: $arvo-font-size-12;
+}
+
+.arvo-pg-ctrl__textarea-fallback {
+  min-height: 80px;
+  font-family: $mono-font, monospace;
+
+  &[data-invalid='true'] { border-color: var(--arvo-color-s-negative); }
+}
+
+.arvo-pg-ctrl__btngroup-fallback {
+  display: inline-flex;
+  gap: 2px;
+  flex-wrap: wrap;
+
+  button {
+    height: 24px;
+    padding: 0 $arvo-space-8;
+    background: var(--arvo-color-s-layer-01);
+    border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+    color: var(--arvo-color-t-secondary);
+    cursor: pointer;
+    font: inherit;
+    font-size: $arvo-font-size-12;
+
+    &.is-active {
+      background: var(--arvo-color-s-theme-hover-3);
+      color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+      border-color: var(--arvo-color-b-theme);
+    }
+  }
+}
+
+.arvo-pg-ctrl__label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $arvo-space-8;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.arvo-pg-ctrl__hint {
+  margin: 0;
+  font-size: $arvo-font-size-10;
+  font-family: $mono-font, monospace;
+  color: var(--arvo-color-t-tertiary);
+  text-overflow: ellipsis;
+  white-space: break-spaces;
+  min-width: 0;
+}
+
+// JSON-backed control: ArvoTextarea host + ArvoButton action row +
+// inline ArvoMessageAlert for parse errors.
+.arvo-pg-ctrl__textarea-host--json {
+  // The inner ArvoTextarea owns its own monospaced font (we set
+  // `data-monospace` on the native textarea so the playground knows
+  // this slot is for JSON content). Override the font there.
+  textarea[data-monospace='true'] {
+    font-family: $mono-font, monospace;
+    font-size: $arvo-font-size-12;
+    line-height: 1.5;
+    tab-size: 2;
+  }
+}
+
+.arvo-pg-ctrl__json-actions {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-4;
+  margin-top: $arvo-space-6;
+  justify-content: flex-end;
+}
+
+.arvo-pg-ctrl__json-action {
+  display: inline-flex;
+}
+
+.arvo-pg-ctrl__error {
+  margin: $arvo-space-6 0 0;
+
+  &[hidden] { display: none; }
+
+  &-text {
+    margin: 0;
+    font-size: $arvo-font-size-10;
+    color: var(--arvo-color-s-negative-strong);
+  }
+}
+
+.arvo-pg-ctrl__callback {
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-ctrl__callback-fallback {
+  display: inline-flex;
+  align-items: center;
+  padding: $arvo-space-2 $arvo-space-8;
+  background: var(--arvo-color-s-theme-hover-3);
+  color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-medium;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: $arvo-radius-circle;
+}
+
+// -- Icon / logo dropdown (icon-prop / logo-prop picker) --------------
+// The trigger is an ArvoDropdownIconButton, fully styled by arvo-btn /
+// arvo-dd-icon-btn classes. In logos mode an absolutely-positioned
+// background-image span replaces the o9con placeholder in the trigger.
+
+.arvo-pg-asset-trigger {
+  // Both flavors are positioning anchors for the logo overlay below.
+  position: relative;
+}
+
+.arvo-pg-asset-trigger--logos.arvo-pg-asset-trigger--has-logo {
+  // Hide the placeholder o9con beneath the logo overlay so only the
+  // brand mark + the trailing caret are visible.
+  .arvo-dd-icon-btn__icon { visibility: hidden; }
+}
+
+.arvo-pg-asset-trigger__logo {
+  // Layered directly over the trigger's icon slot. The caret is left
+  // alone (it lives in a different element of arvo-dd-icon-btn).
+  position: absolute;
+  left: $arvo-space-4;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  pointer-events: none;
+}
+
+.arvo-pg-asset-trigger__logo--empty {
+  // No logo selected -- the placeholder o9con underneath stays visible.
+  background-image: none !important;
+}
+
+.arvo-pg-icon-pop {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  width: 340px;
+  max-width: 80vw;
+}
+
+.arvo-pg-icon-pop--logos {
+  // Logos read better in a wider, single-column-ish layout because each
+  // entry carries a name label alongside the thumbnail.
+  width: 360px;
+}
+
+.arvo-pg-icon-pop--fallback {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 12;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-dark);
+  box-shadow: $arvo-shadow-low;
+  margin-top: $arvo-space-4;
+}
+
+.arvo-pg-icon-pop__filter { flex-shrink: 0; }
+
+.arvo-pg-icon-pop__filter-fallback {
+  width: 100%;
+  height: 28px;
+  padding: 0 $arvo-space-8;
+  border: $arvo-border-1 solid var(--arvo-color-b-dark);
+  background: var(--arvo-color-s-layer-01);
+  color: var(--arvo-color-t-primary);
+  font: inherit;
+  font-size: $arvo-font-size-12;
+}
+
+.arvo-pg-icon-pop__clear {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+}
+
+.arvo-pg-icon-pop__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+  gap: $arvo-space-2;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: $arvo-space-4;
+}
+
+.arvo-pg-icon-pop__cell {
+  width: 100%;
+  aspect-ratio: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: $arvo-border-1 solid transparent;
+  color: var(--arvo-color-t-secondary);
+  cursor: pointer;
+  font-size: $arvo-font-size-16;
+
+  &:hover {
+    background: var(--arvo-color-s-hover);
+    color: var(--arvo-color-t-primary);
+  }
+  &.is-active {
+    background: var(--arvo-color-s-theme-hover-3);
+    color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+    border-color: var(--arvo-color-b-theme);
+  }
+}
+
+// -- Logo cells (mode='logos') ----------------------------------------
+// Logo cells abandon the square aspect ratio because each one carries an
+// asset-name label below the thumbnail. The grid switches to a wider
+// auto-fill so cells get enough room for the label.
+
+.arvo-pg-icon-pop__grid--logos {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: $arvo-space-4;
+}
+
+.arvo-pg-icon-pop__cell--logo {
+  // Override the square aspect ratio + center alignment from the base.
+  aspect-ratio: auto;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: $arvo-space-4;
+  padding: $arvo-space-8 $arvo-space-4;
+  min-height: 76px;
+}
+
+.arvo-pg-icon-pop__cell-logo {
+  width: 100%;
+  height: 32px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  flex-shrink: 0;
+}
+
+.arvo-pg-icon-pop__cell-label {
+  display: block;
+  width: 100%;
+  font-size: $arvo-font-size-10;
+  line-height: 1.2;
+  color: var(--arvo-color-t-tertiary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arvo-pg-icon-pop__cell--logo.is-active .arvo-pg-icon-pop__cell-label {
+  color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+}
+
+.arvo-pg-icon-pop__empty {
+  grid-column: 1 / -1;
+  padding: $arvo-space-16;
+  text-align: center;
+  color: var(--arvo-color-t-tertiary);
+  font-size: $arvo-font-size-12;
+}
+
+// =====================================================================
+// 14. Patterns view
+// =====================================================================
+
+.arvo-pg-patterns {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  background: var(--arvo-color-s-layer-01);
+  overflow: hidden;
+}
+
+.arvo-pg-patterns__rail {
+  background: var(--arvo-color-s-layer-02);
+  border-right: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  padding: $arvo-space-16 $arvo-space-8;
+  overflow-y: auto;
+}
+
+.arvo-pg-patterns__rail-hdr {
+  display: block;
+  padding: 0 $arvo-space-8 $arvo-space-8;
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-patterns__rail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arvo-pg-patterns__rail-link {
+  background: transparent;
+  border: 0;
+  padding: $arvo-space-6 $arvo-space-8;
+  border-left: $arvo-border-2 solid transparent;
+  color: var(--arvo-color-t-secondary);
+  font: inherit;
+  font-size: $arvo-font-size-12;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { color: var(--arvo-color-t-primary); background: var(--arvo-color-s-hover); }
+  &.is-active {
+    color: var(--arvo-color-t-primary);
+    background: var(--arvo-color-s-theme-hover-3);
+    border-left-color: var(--arvo-color-b-theme);
+    font-weight: $arvo-medium;
+  }
+}
+
+.arvo-pg-patterns__body {
+  overflow-y: auto;
+  padding: 0;
+}
+
+.arvo-pg-patterns__inner {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: $arvo-space-32 $arvo-space-40 $arvo-space-80;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-48;
+}
+
+.arvo-pg-patterns__header h1 {
+  margin: 0 0 $arvo-space-8;
+  font-size: $arvo-font-size-24;
+  font-weight: $arvo-bold;
+  color: var(--arvo-color-t-primary);
+}
+.arvo-pg-patterns__header p {
+  margin: 0;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.5;
+}
+
+.arvo-pg-patterns__section h2 {
+  margin: 0 0 $arvo-space-8;
+  font-size: $arvo-font-size-20;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-patterns__section p {
+  margin: 0 0 $arvo-space-12;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.55;
+}
+
+.arvo-pg-patterns__bullets {
+  margin: 0 0 $arvo-space-12;
+  padding-left: $arvo-space-20;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.55;
+
+  li { margin-bottom: $arvo-space-6; }
+}
+
+.arvo-pg-patterns__pill {
+  display: inline-block;
+  padding: 1px $arvo-space-6;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  font-family: $mono-font, monospace;
+  font-size: 11px;
+  color: var(--arvo-color-t-primary);
+
+  &[data-tone='accent'] {
+    background: var(--arvo-color-s-theme-hover-3);
+    border-color: transparent;
+    color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+  }
+  &[data-tone='info'] {
+    background: var(--arvo-color-s-info-subtle);
+    border-color: transparent;
+    color: var(--arvo-color-s-info-strong);
+  }
+}
+
+.arvo-pg-patterns__code {
+  margin: 0;
+  padding: $arvo-space-12 $arvo-space-16;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  font-family: $mono-font, monospace;
+  font-size: $arvo-font-size-12;
+  line-height: 1.6;
+  overflow-x: auto;
+  color: var(--arvo-color-t-primary);
+
+  code { font: inherit; }
+}
+
+.arvo-pg-patterns__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $arvo-space-12;
+  margin-bottom: $arvo-space-12;
+}
+
+.arvo-pg-patterns__grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.arvo-pg-patterns__card {
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  padding: $arvo-space-12;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-6;
+}
+
+.arvo-pg-patterns__card-head {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-patterns__card-title {
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-medium;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-patterns__tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--arvo-color-s-layer-01);
+  color: var(--arvo-color-t-secondary);
+  font-weight: $arvo-bold;
+
+  &--pos { background: var(--arvo-color-s-positive-subtle); color: var(--arvo-color-s-positive-strong); }
+  &--neg { background: var(--arvo-color-s-negative-subtle); color: var(--arvo-color-s-negative-strong); }
+}
+
+.arvo-pg-patterns__mono  { font-family: $mono-font, monospace; font-size: $arvo-font-size-12; }
+.arvo-pg-patterns__muted { color: var(--arvo-color-t-tertiary); }
+
+.arvo-pg-patterns__table {
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  overflow: hidden;
+}
+
+.arvo-pg-patterns__table-row {
+  display: grid;
+  // Individual tables can override the layout by setting
+  // --arvo-pg-patterns-table-cols on `.arvo-pg-patterns__table`.
+  grid-template-columns: var(--arvo-pg-patterns-table-cols, 1.2fr 1.6fr 0.8fr 2.4fr);
+  align-items: center;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-subtle);
+
+  &:last-child { border-bottom: 0; }
+
+  > span {
+    padding: $arvo-space-6 $arvo-space-12;
+    font-size: $arvo-font-size-12;
+    color: var(--arvo-color-t-secondary);
+    min-width: 0;
+  }
+}
+
+.arvo-pg-patterns__table-row--head {
+  background: var(--arvo-color-s-layer-02);
+  > span {
+    font-size: $arvo-font-size-10;
+    font-weight: $arvo-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--arvo-color-t-tertiary);
+  }
+}
+
+// =====================================================================
+// 15. Foundations view
+// =====================================================================
+
+.arvo-pg-foundations {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-foundations > * {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(#{$arvo-space-16}, 4vw, #{$arvo-space-40});
+  padding-right: clamp(#{$arvo-space-16}, 4vw, #{$arvo-space-40});
+}
+
+.arvo-pg-foundations__header {
+  padding-top: $arvo-space-32;
+  padding-bottom: $arvo-space-16;
+
+  h1 {
+    margin: 0 0 $arvo-space-8;
+    font-size: $arvo-font-size-24;
+    font-weight: $arvo-bold;
+    color: var(--arvo-color-t-primary);
+  }
+  p {
+    margin: 0;
+    font-size: $arvo-font-size-14;
+    color: var(--arvo-color-t-secondary);
+    line-height: 1.55;
+    max-width: 720px;
+  }
+}
+
+// -- Category tabstrip ------------------------------------------------------
+
+.arvo-pg-foundations__tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  // `ArvoTabstrip` with `hasOverflow: true` renders as `inline-flex` and
+  // sizes to its content. Center that inline-flex child inside the
+  // 1280px max-width container so the strip appears in the middle of the
+  // page instead of pinned to the left edge.
+  display: flex;
+  justify-content: center;
+  padding-top: $arvo-space-4;
+  padding-bottom: $arvo-space-4;
+  background: var(--arvo-color-s-layer-01);
+  // Visually anchor the strip to the page; the indicator's bottom border
+  // sits on top of this so the seam reads as one continuous rule.
+}
+
+.arvo-pg-foundations__tabs--fallback {
+  display: flex;
+  gap: $arvo-space-8;
+  flex-wrap: wrap;
+  padding-top: $arvo-space-12;
+  padding-bottom: $arvo-space-12;
+
+  button {
+    padding: $arvo-space-6 $arvo-space-12;
+    background: var(--arvo-color-s-layer-02);
+    border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+    border-radius: 999px;
+    color: var(--arvo-color-t-secondary);
+    font: inherit;
+    font-size: $arvo-font-size-12;
+    cursor: pointer;
+
+    &[aria-pressed="true"] {
+      background: var(--arvo-color-s-theme-hover-3);
+      color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+      border-color: var(--arvo-color-b-theme);
+    }
+  }
+}
+
+.arvo-pg-foundations__subhead {
+  padding-top: $arvo-space-12;
+  padding-bottom: $arvo-space-16;
+}
+
+.arvo-pg-foundations__subhead-text {
+  margin: 0;
+  max-width: 720px;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.55;
+}
+
+.arvo-pg-foundations__panel-host {
+  padding-bottom: $arvo-space-48;
+}
+
+.arvo-pg-foundations__category[hidden] {
+  display: none;
+}
+
+// -- Shared panel + grid ---------------------------------------------------
+
+.arvo-pg-foundations__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-foundations__panel {
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  padding: $arvo-space-16;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-12;
+  min-width: 0;
+}
+
+.arvo-pg-foundations__panel--wide {
+  grid-column: 1 / -1;
+}
+
+.arvo-pg-foundations__panel-hdr {
+  display: block;
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-foundations__panel-desc {
+  margin: 0 0 $arvo-space-4;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1.5;
+}
+
+.arvo-pg-foundations__row {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  padding: $arvo-space-4 0;
+}
+
+// -- Colors ----------------------------------------------------------------
+
+.arvo-pg-foundations__color-list {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-6;
+}
+
+.arvo-pg-foundations__color-list--dense {
+  gap: $arvo-space-4;
+}
+
+.arvo-pg-foundations__color-row {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-10;
+  padding: $arvo-space-6 $arvo-space-8;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  min-width: 0;
+}
+
+.arvo-pg-foundations__color-swatch {
+  width: 32px;
+  height: 32px;
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--arvo-color-s-layer-02);
+}
+
+.arvo-pg-foundations__color-swatch--border {
+  background: transparent;
+  border-width: 3px;
+  border-style: solid;
+}
+
+.arvo-pg-foundations__color-swatch--text,
+.arvo-pg-foundations__color-swatch--icon {
+  background: var(--arvo-color-s-layer-02);
+  font-weight: $arvo-bold;
+  font-size: $arvo-font-size-12;
+}
+
+.arvo-pg-foundations__color-swatch-letter {
+  font-size: $arvo-font-size-14;
+  font-weight: $arvo-bold;
+  line-height: 1;
+}
+
+.arvo-pg-foundations__color-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+
+  code {
+    font-size: $arvo-font-size-12;
+    color: var(--arvo-color-t-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.arvo-pg-foundations__color-note {
+  font-size: $arvo-font-size-10;
+  color: var(--arvo-color-t-tertiary);
+  line-height: 1.4;
+}
+
+// Semantic cards
+.arvo-pg-foundations__semantic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-foundations__semantic-card {
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  padding: $arvo-space-12;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-foundations__semantic-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-8;
+  padding: $arvo-space-6 $arvo-space-12;
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  font-size: $arvo-font-size-14;
+}
+
+.arvo-pg-foundations__semantic-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+// Utility palettes
+.arvo-pg-foundations__util-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-foundations__util-card {
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  padding: $arvo-space-12;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-foundations__util-head {
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-foundations__util-swatches {
+  display: flex;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-foundations__util-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-4;
+
+  code {
+    font-size: $arvo-font-size-10;
+    color: var(--arvo-color-t-tertiary);
+  }
+}
+
+.arvo-pg-foundations__util-swatch {
+  width: 100%;
+  height: 32px;
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+}
+
+.arvo-pg-foundations__util-family {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-2;
+  padding-top: $arvo-space-6;
+  border-top: $arvo-border-1 dashed var(--arvo-color-b-subtle);
+
+  code {
+    font-size: $arvo-font-size-10;
+    color: var(--arvo-color-t-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// Brand themes
+.arvo-pg-foundations__brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-foundations__brand-card {
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  color: inherit;
+  transition: border-color $arvo-duration-fast $arvo-ease-simple,
+              box-shadow $arvo-duration-fast $arvo-ease-simple,
+              transform $arvo-duration-fast $arvo-ease-simple;
+
+  &:hover {
+    border-color: var(--arvo-color-b-hover);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: $arvo-border-2 solid var(--arvo-color-b-theme-focus);
+    outline-offset: 2px;
+  }
+}
+
+.arvo-pg-foundations__brand-card--active {
+  border-color: var(--arvo-color-b-theme);
+  box-shadow: 0 0 0 1px var(--arvo-color-b-theme);
+}
+
+.arvo-pg-foundations__brand-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  height: 64px;
+}
+
+.arvo-pg-foundations__brand-cell {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.arvo-pg-foundations__brand-meta {
+  padding: $arvo-space-12;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+
+  code {
+    font-size: $arvo-font-size-10;
+    color: var(--arvo-color-t-tertiary);
+  }
+}
+
+.arvo-pg-foundations__brand-tag {
+  align-self: flex-start;
+  padding: 0 $arvo-space-6;
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--arvo-color-s-theme-hover-3);
+  color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+  border-radius: 999px;
+  margin-top: $arvo-space-4;
+}
+
+// -- Typography ------------------------------------------------------------
+
+.arvo-pg-foundations__type-scale {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-foundations__type-row {
+  display: flex;
+  align-items: baseline;
+  gap: $arvo-space-16;
+  padding: $arvo-space-8 0;
+  border-bottom: $arvo-border-1 dashed var(--arvo-color-b-subtle);
+
+  &:last-child { border-bottom: 0; }
+}
+
+.arvo-pg-foundations__type-sample {
+  color: var(--arvo-color-t-primary);
+  line-height: 1.15;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arvo-pg-foundations__type-meta {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-2;
+  text-align: right;
+  flex-shrink: 0;
+
+  code { font-size: $arvo-font-size-12; color: var(--arvo-color-t-secondary); }
+}
+
+.arvo-pg-foundations__type-px {
+  font-size: $arvo-font-size-10;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-foundations__weight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-foundations__weight-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-4;
+  padding: $arvo-space-12;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+
+  code { font-size: $arvo-font-size-10; color: var(--arvo-color-t-secondary); }
+}
+
+.arvo-pg-foundations__weight-glyph {
+  font-size: 40px;
+  line-height: 1;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-pg-foundations__family-list {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-foundations__family-card {
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  padding: $arvo-space-16;
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-foundations__family-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $arvo-space-12;
+
+  strong {
+    font-size: $arvo-font-size-18;
+    color: var(--arvo-color-t-primary);
+  }
+}
+
+.arvo-pg-foundations__family-sample {
+  font-size: $arvo-font-size-20;
+  line-height: 1.35;
+  color: var(--arvo-color-t-secondary);
+  word-break: break-word;
+}
+
+// -- Spacing + sizing ------------------------------------------------------
+
+.arvo-pg-foundations__spacing {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-2;
+}
+
+.arvo-pg-foundations__spacing-token {
+  display: inline-block;
+  min-width: 140px;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-foundations__spacing-bar {
+  display: inline-block;
+  height: 12px;
+  background: var(--arvo-color-s-theme-hover-3);
+  border: $arvo-border-1 solid var(--arvo-color-b-theme);
+}
+
+.arvo-pg-foundations__icon-size-row,
+.arvo-pg-foundations__illus-size-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-foundations__icon-size-cell,
+.arvo-pg-foundations__illus-size-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-4;
+  min-width: 56px;
+}
+
+.arvo-pg-foundations__icon-size-cell i {
+  color: var(--arvo-color-i-secondary);
+}
+
+.arvo-pg-foundations__illus-size-box {
+  background: linear-gradient(135deg, var(--arvo-color-s-theme-hover-3), var(--arvo-color-s-theme-hover-2));
+  border: $arvo-border-1 solid var(--arvo-color-b-theme);
+}
+
+// -- Borders + shadows -----------------------------------------------------
+
+.arvo-pg-foundations__border-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-foundations__border-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-4;
+  min-width: 80px;
+}
+
+.arvo-pg-foundations__border-sample {
+  width: 64px;
+  height: 32px;
+  border-style: solid;
+  border-color: var(--arvo-color-b-theme);
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-foundations__radius-row,
+.arvo-pg-foundations__elev-row,
+.arvo-pg-foundations__opacity-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $arvo-space-16;
+}
+
+.arvo-pg-foundations__radius-cell,
+.arvo-pg-foundations__elev-cell,
+.arvo-pg-foundations__opacity-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-4;
+  min-width: 80px;
+}
+
+.arvo-pg-foundations__radius-box {
+  width: 56px;
+  height: 56px;
+  background: var(--arvo-color-s-theme-hover-3);
+  border: $arvo-border-2 solid var(--arvo-color-b-theme);
+}
+
+.arvo-pg-foundations__elev-box {
+  width: 80px;
+  height: 56px;
+  background: var(--arvo-color-s-layer-01);
+}
+
+.arvo-pg-foundations__opacity-box {
+  width: 56px;
+  height: 56px;
+  background: var(--arvo-color-s-theme);
+}
+
+// -- Iconography -----------------------------------------------------------
+
+.arvo-pg-foundations__icon-toolbar {
+  display: flex;
+  align-items: center;
+  gap: $arvo-space-12;
+  padding-bottom: $arvo-space-12;
+}
+
+.arvo-pg-foundations__icon-search {
+  flex: 1;
+  min-width: 0;
+  max-width: 480px;
+  padding: $arvo-space-8 $arvo-space-12;
+  font: inherit;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-primary);
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+
+  &:focus {
+    outline: none;
+    border-color: var(--arvo-color-b-theme);
+    box-shadow: 0 0 0 2px var(--arvo-color-s-theme-hover-3);
+  }
+}
+
+.arvo-pg-foundations__icon-total {
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-tertiary);
+}
+
+.arvo-pg-foundations__icon-sections {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-24;
+}
+
+.arvo-pg-foundations__icon-section[hidden] {
+  display: none;
+}
+
+.arvo-pg-foundations__icon-section-hdr {
+  display: flex;
+  align-items: baseline;
+  gap: $arvo-space-8;
+  padding-bottom: $arvo-space-8;
+  margin-bottom: $arvo-space-8;
+  border-bottom: $arvo-border-1 solid var(--arvo-color-b-subtle);
+
+  h3 {
+    margin: 0;
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-bold;
+    color: var(--arvo-color-t-primary);
+  }
+}
+
+.arvo-pg-foundations__icon-section-count {
+  padding: 0 $arvo-space-6;
+  background: var(--arvo-color-s-layer-02);
+  border-radius: 999px;
+  font-size: $arvo-font-size-10;
+  font-weight: $arvo-bold;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-foundations__icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: $arvo-space-6;
+}
+
+.arvo-pg-foundations__icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-4;
+  padding: $arvo-space-10 $arvo-space-4;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid transparent;
+  border-radius: 8px;
+  color: var(--arvo-color-t-primary);
+  cursor: pointer;
+  font: inherit;
+  transition: background-color $arvo-duration-fast $arvo-ease-simple,
+              border-color $arvo-duration-fast $arvo-ease-simple,
+              color $arvo-duration-fast $arvo-ease-simple;
+
+  i    { font-size: $arvo-font-size-20; color: var(--arvo-color-i-secondary); }
+  code {
+    font-size: 10px;
+    color: var(--arvo-color-t-tertiary);
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  &:hover {
+    background: var(--arvo-color-s-hover);
+    border-color: var(--arvo-color-b-subtle);
+  }
+
+  &:focus-visible {
+    outline: $arvo-border-2 solid var(--arvo-color-b-theme-focus);
+    outline-offset: 2px;
+  }
+
+  &[hidden] { display: none; }
+}
+
+.arvo-pg-foundations__icon--copied {
+  background: var(--arvo-color-s-theme-hover-3) !important;
+  border-color: var(--arvo-color-b-theme) !important;
+  color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary)) !important;
+
+  i { color: var(--arvo-color-i-theme); }
+}
+
+.arvo-pg-foundations__icon-empty {
+  padding: $arvo-space-24;
+  text-align: center;
+  font-size: $arvo-font-size-14;
+  color: var(--arvo-color-t-secondary);
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 dashed var(--arvo-color-b-subtle);
+  border-radius: 12px;
+  margin-top: $arvo-space-16;
+}
+
+// -- Illustrations + symbols + logos --------------------------------------
+
+.arvo-pg-foundations__illus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: $arvo-space-12;
+}
+
+.arvo-pg-foundations__illus-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-6;
+  padding: $arvo-space-12;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  border-radius: 12px;
+
+  code {
+    font-size: $arvo-font-size-10;
+    color: var(--arvo-color-t-tertiary);
+    text-align: center;
+    word-break: break-word;
+  }
+}
+
+.arvo-pg-foundations__symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-foundations__symbol-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $arvo-space-4;
+  padding: $arvo-space-8;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  border-radius: 8px;
+
+  img { width: 40px; height: 40px; }
+  code { font-size: $arvo-font-size-10; color: var(--arvo-color-t-tertiary); }
+}
+
+.arvo-pg-foundations__logo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-foundations__logo-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: $arvo-space-6;
+  padding: $arvo-space-12 $arvo-space-8;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  border-radius: 8px;
+  min-height: 96px;
+
+  img {
+    width: auto;
+    height: 32px;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  code {
+    font-size: $arvo-font-size-10;
+    color: var(--arvo-color-t-tertiary);
+    text-align: center;
+    word-break: break-word;
+  }
+}
+
+// -- Motion ----------------------------------------------------------------
+
+.arvo-pg-foundations__duration-list {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+}
+
+.arvo-pg-foundations__motion-token {
+  display: inline-block;
+  min-width: 200px;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-t-secondary);
+}
+
+.arvo-pg-foundations__motion-indicator {
+  --arvo-pg-motion-duration: 200ms;
+  padding: $arvo-space-4 $arvo-space-12;
+  background: var(--arvo-color-s-theme-hover-3);
+  border-radius: 999px;
+  font-size: $arvo-font-size-12;
+  color: var(--arvo-color-s-theme-active-5, var(--arvo-color-t-primary));
+  transition: transform var(--arvo-pg-motion-duration) ease;
+  cursor: default;
+
+  &:hover { transform: translateX(12px); }
+}
+
+.arvo-pg-foundations__easing-list {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+}
+
+.arvo-pg-foundations__easing-row {
+  display: grid;
+  grid-template-columns: minmax(180px, max-content) minmax(0, 1fr) 80px minmax(0, 1fr);
+  align-items: center;
+  gap: $arvo-space-12;
+  padding: $arvo-space-6 $arvo-space-8;
+  background: var(--arvo-color-s-layer-01);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  border-radius: 8px;
+}
+
+.arvo-pg-foundations__easing-value {
+  font-family: monospace;
+  font-size: $arvo-font-size-10;
+  color: var(--arvo-color-t-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arvo-pg-foundations__easing-ball {
+  position: relative;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  overflow: hidden;
+}
+
+// A single `from` -> `to` keyframe with `alternate` direction is the
+// only way the easing curve actually drives the whole traversal. A
+// three-step keyframe (0/50/100) would apply the timing function to
+// each half independently, making every symmetric-ish curve (ease,
+// ease-in-out, standard) look nearly identical. This way each dot
+// travels the same track in 1.6s and the rhythm reflects the real
+// curve.
+.arvo-pg-foundations__easing-dot {
+  --arvo-pg-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--arvo-color-s-theme);
+  border-radius: 999px;
+  transform: translate(0, -50%);
+  animation: arvo-pg-easing-dot 1600ms infinite alternate;
+  animation-timing-function: var(--arvo-pg-easing);
+}
+
+@keyframes arvo-pg-easing-dot {
+  from { left: 2px; }
+  to   { left: calc(100% - 14px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-pg-foundations__easing-dot { animation: none; }
+}
+
+.arvo-pg-foundations__motion-patterns {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+}
+
+.arvo-pg-foundations__motion-pattern-row {
+  display: grid;
+  grid-template-columns: minmax(220px, max-content) minmax(0, 1fr);
+  align-items: center;
+  gap: $arvo-space-12;
+  padding: $arvo-space-6 $arvo-space-8;
+  border-radius: 6px;
+
+  &:nth-child(odd) {
+    background: var(--arvo-color-s-layer-01);
+  }
+
+  code {
+    font-size: $arvo-font-size-12;
+    color: var(--arvo-color-t-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// =====================================================================
+// 16. Empty state + plain trigger button (used by adapters)
+// =====================================================================
+
+.arvo-pg-empty {
+  margin: $arvo-space-24 auto;
+  max-width: 520px;
+  padding: $arvo-space-24;
+  background: var(--arvo-color-s-layer-02);
+  border: $arvo-border-1 solid var(--arvo-color-b-subtle);
+  border-radius: 6px;
+  text-align: center;
+
+  h2 {
+    margin: 0;
+    font-size: $arvo-font-size-16;
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-t-primary);
+  }
+  p {
+    margin: $arvo-space-8 0 0;
+    font-size: $arvo-font-size-14;
+    color: var(--arvo-color-t-secondary);
+  }
+  ul {
+    margin: $arvo-space-12 0 0;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+    li {
+      padding: $arvo-space-6 0;
+      font-size: $arvo-font-size-12;
+      color: var(--arvo-color-t-secondary);
+    }
+  }
+}
+
+.arvo-pg-trigger-btn {
+  padding: $arvo-space-6 $arvo-space-12;
+  border: $arvo-border-1 solid var(--arvo-color-b-dark);
+  background: var(--arvo-color-s-layer-01);
+  color: var(--arvo-color-t-primary);
+  font: inherit;
+  font-size: $arvo-font-size-12;
+  cursor: pointer;
+  border-radius: 4px;
+
+  &:hover { background: var(--arvo-color-s-hover); }
+}
+
+// =====================================================================
+// 17. Mount animation for top-level view containers
+// =====================================================================
+
+@keyframes arvo-pg-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.arvo-pg-gallery,
+.arvo-pg-patterns,
+.arvo-pg-foundations {
+  animation: arvo-pg-slide-up $arvo-duration-base $arvo-ease-standard;
+}
+
+// =====================================================================
+// 18. Embedded mode (Kibo host)
+// =====================================================================
+
+#arvo-pg-root.arvo-pg--embed {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+// =====================================================================
+// 19. Canvas mode (`?canvas=1`)
+// =====================================================================
+//
+// Chrome-less rendering used by external `<iframe>` embeds on the docs
+// site. Hides the StudioBar, ComponentHeader, Inspector, BottomDock,
+// dock/inspector splitters, and preview header + footer so only the
+// preview canvas body is visible. The root grid collapses to a single
+// row so the canvas fills the frame.
+#arvo-pg-root.arvo-pg--canvas {
+  grid-template-rows: minmax(0, 1fr);
+
+  .arvo-pg-studio-bar,
+  .arvo-pg-component-header,
+  .arvo-pg-workbench__dock,
+  .arvo-pg-workbench__dock-splitter,
+  .arvo-pg-workbench__inspector,
+  .arvo-pg-workbench__inspector-splitter,
+  .arvo-pg-preview__header,
+  .arvo-pg-preview__footer {
+    display: none !important;
+  }
+}

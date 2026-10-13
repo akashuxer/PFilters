@@ -1,0 +1,124 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/loading' as *;
+@use '../../mixins/hover' as *;
+
+// ArvoContextHelp component styles.
+// BEM Block: .arvo-ctx-help
+// Abbreviation: ctx-help
+// Category: Feedback
+//
+// Small icon-only trigger (<button>) that exposes contextual help for a nearby
+// UI element via ArvoTooltip on hover/focus. No padding, no background, no
+// border -- the bounding box equals the icon size (14px sm / 16px lg).
+//
+// Variant strategy:
+//   --info:     glyph color shifts to --arvo-color-i-theme-hover on hover/focus.
+//               Filled-glyph swap (o9con-info-circle -> o9con-info-circle-filled)
+//               is driven at the React/JS layer.
+//   --question: hover/focus synthesizes a filled disc by applying a circular
+//               --arvo-color-i-theme-hover background with the bare o9con-question
+//               glyph in --arvo-color-i-inverse. o9con does not ship a
+//               question-circle-filled glyph, hence this CSS-driven workaround.
+// Loading uses Pattern A shimmer overlay; border-radius: inherit keeps it round.
+
+.arvo-ctx-help {
+  // -- Base layout ----------------------------------------------------------
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-sizing: border-box;
+  color: var(--arvo-color-i-tertiary);
+  transition: color $arvo-duration-fast $arvo-ease-simple, background-color $arvo-duration-fast $arvo-ease-simple;
+
+  // -- Icon element ---------------------------------------------------------
+
+  &__ico {
+    font-family: $o9con;
+    font-size: inherit;
+    line-height: 1;
+    color: inherit;
+    display: inline-block;
+  }
+
+  // -- Size modifiers -------------------------------------------------------
+
+  &--sm {
+    width: $arvo-icon-14;
+    height: $arvo-icon-14;
+    font-size: $arvo-icon-14;
+  }
+
+  &--lg {
+    width: $arvo-icon-16;
+    height: $arvo-icon-16;
+    font-size: $arvo-icon-16;
+  }
+
+  // -- Base interactive states ----------------------------------------------
+  // Placed before variant modifiers so that same-specificity variant rules
+  // (declared after) win the cascade when both selectors match.
+
+  @include hover {
+    &:not(:disabled):not(.is-disabled):not(.loading):hover {
+      color: var(--arvo-color-i-theme-hover);
+    }
+  }
+
+  &:not(:disabled):not(.is-disabled):not(.loading):focus-visible {
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: 0;
+    color: var(--arvo-color-i-theme-hover);
+  }
+
+  // -- Variant modifiers ----------------------------------------------------
+
+  &--info {
+    // No extra rules: glyph color handled by base state rules above.
+    // JS swaps o9con-info-circle -> o9con-info-circle-filled on hover/focus.
+  }
+
+  &--question {
+    // Synthesizes a filled disc on hover/focus because o9con does not ship
+    // a question-circle-filled glyph. Overrides base color (same specificity,
+    // later source order wins) and adds a circular background.
+
+    @include hover {
+      &:not(:disabled):not(.is-disabled):not(.loading):hover {
+        background-color: var(--arvo-color-i-theme-hover);
+        color: var(--arvo-color-i-inverse);
+      }
+    }
+
+    // Focus: disc treatment + outline from base focus-visible rule is preserved
+    // (not overridden here, so it cascades through from the base declaration).
+    &:not(:disabled):not(.is-disabled):not(.loading):focus-visible {
+      background-color: var(--arvo-color-i-theme-hover);
+      color: var(--arvo-color-i-inverse);
+    }
+  }
+
+  // -- Disabled state -------------------------------------------------------
+  // pointer-events: auto so the tooltip system still fires on disabled triggers
+  // per Arvo's tooltip standard (tooltipDisabledByDefault).
+
+  &:disabled,
+  &.is-disabled {
+    opacity: $arvo-opacity-40;
+    cursor: not-allowed;
+    pointer-events: auto;
+  }
+
+  // -- Loading state (Pattern A shimmer overlay) ----------------------------
+  @include loading-overlay-a;
+
+  // -- Parent loading propagation -------------------------------------------
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @extend .arvo-ctx-help, .loading;
+  }
+}

@@ -1,0 +1,234 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/typography' as *;
+
+// ArvoAvatarGroup component styles.
+// BEM Block: .arvo-avt-grp
+// Abbreviation: avt-grp
+// Category: Feedback
+//
+// Composite parent that stacks multiple ArvoAvatar instances in a compact
+// horizontal row with a 1px background-ring separator and per-size negative
+// margin overlap. When the total avatar count exceeds `maxCount`, the last
+// visible position becomes a `+N` overflow tile that opens an ArvoPopover
+// hosting an Avatar Item Container (a vertical list of avatar + label rows).
+//
+// Loading uses Pattern C: the root sets pointer-events: none + aria-busy +
+// data-arvo-loading='true'. The existing cascade in _arvo-avt.scss handles
+// applying the Pattern A shimmer to each child Avatar. The overflow tile
+// opts out via data-arvo-loading-ignore='true' so the `+N` stays legible.
+
+.arvo-avt-grp {
+  // -- Per-size dynamic vars (defaults = md) -------------------------------
+  --arvo-avt-grp-size: #{$arvo-image-32};
+  --arvo-avt-grp-overlap: -#{$arvo-space-6};
+
+  // -- Ring wrapper (consumer-overridable) ---------------------------------
+  --arvo-avt-grp-ring-pad: #{$arvo-space-1};
+  --arvo-avt-grp-ring-color: var(--arvo-color-s-base);
+
+  // -- Overflow tile chrome (state-driven) ---------------------------------
+  --arvo-avt-grp-overflow-bg: var(--arvo-color-s-layer-07);
+  --arvo-avt-grp-overflow-fg: var(--arvo-color-t-primary);
+
+  // -- Base layout ---------------------------------------------------------
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+
+  // -- Elements ------------------------------------------------------------
+
+  // Wrapper ring around each visible avatar (and the overflow tile).
+  //
+  // Uplift on hover / focus-within (interactive avatars) -- the wrapper
+  // scales up and gains a soft shadow ring, lifting the item above its
+  // neighbours via z-index so the full avatar is visible (not clipped by
+  // the overlap of the next item). The overflow tile opts out of the
+  // uplift; it has its own hover/open chrome.
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--arvo-avt-grp-ring-pad);
+    background-color: var(--arvo-avt-grp-ring-color);
+    box-sizing: content-box;
+    flex: 0 0 auto;
+    position: relative;
+    transform: $arvo-transform-avatar-uplift-rest;
+    transform-origin: center;
+    box-shadow: $arvo-shadow-avatar-uplift-rest;
+    transition: $arvo-motion-avatar-uplift;
+
+    &:not(:last-child) {
+      margin-right: var(--arvo-avt-grp-overlap);
+    }
+  }
+
+  // Scoped uplift: only when the group is not disabled / loading, and only
+  // for non-overflow tiles. `:has(:focus-visible)` catches keyboard focus on
+  // the inner button/anchor; we ALSO fall back to plain `:focus-within` for
+  // browsers without `:has()` so the lift still triggers on focus (mouse).
+  &:not([aria-disabled='true']):not(.loading) &__item:not(&__item--overflow) {
+    @include hover {
+      &:hover {
+        z-index: 1;
+        transform: $arvo-transform-avatar-uplift-hover;
+        box-shadow: $arvo-shadow-avatar-uplift-hover;
+      }
+    }
+
+    &:focus-within {
+      z-index: 1;
+      transform: $arvo-transform-avatar-uplift-hover;
+      box-shadow: $arvo-shadow-avatar-uplift-hover;
+    }
+    
+  }
+
+  // The +N overflow tile -- a native <button>. Matches the avatar square
+  // dimensions exactly so the `+N` label is naturally centered.
+  &__overflow {
+    width: var(--arvo-avt-grp-size);
+    height: var(--arvo-avt-grp-size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    background: var(--arvo-avt-grp-overflow-bg);
+    color: var(--arvo-avt-grp-overflow-fg);
+    border: 0;
+    border-radius: 0;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-family: var(--o9-font-family);
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: nowrap;
+    user-select: none;
+    position: relative;
+    @include arvo-font-l12-r;
+
+    @include hover {
+      &:not([aria-disabled='true']):not(.is-open):hover {
+        --arvo-avt-grp-overflow-bg: var(--arvo-color-s-theme-hover-2);
+        --arvo-avt-grp-overflow-fg: var(--arvo-color-t-theme-hover);
+      }
+    }
+
+    &:focus-visible {
+      outline: none;
+
+      // Square focus ring 1.5px outside the surface (matches ArvoAvatar).
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -1.5px;
+        border: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+        pointer-events: none;
+      }
+    }
+
+    &.is-open {
+      --arvo-avt-grp-overflow-bg: var(--arvo-color-s-theme-active-1);
+      --arvo-avt-grp-overflow-fg: var(--arvo-color-t-inverse);
+    }
+
+    &[aria-disabled='true'] {
+      opacity: $arvo-opacity-40;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  // Avatar Item Container rendered inside the overflow ArvoPopover body.
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__list-item {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-6;
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__list-lbl {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--arvo-color-t-secondary);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    @include arvo-font-p14-r;
+  }
+
+  // -- Size modifiers ------------------------------------------------------
+  // Tile dimensions + per-size overflow typography. The ring padding stays
+  // 1px across sizes (intentional -- thinner ring on xs/sm would be too
+  // subtle; thicker on lg/xl would dominate the avatar).
+
+  &--xs {
+    --arvo-avt-grp-size: #{$arvo-image-16};
+    --arvo-avt-grp-overlap: -#{$arvo-space-4};
+
+    .arvo-avt-grp__overflow { @include arvo-font-l10-r; }
+  }
+
+  &--sm {
+    --arvo-avt-grp-size: #{$arvo-image-24}; // 1.5rem = 24px (token name predates value)
+    --arvo-avt-grp-overlap: -#{$arvo-space-4};
+
+    .arvo-avt-grp__overflow { @include arvo-font-l12-r; }
+  }
+
+  &--md {
+    --arvo-avt-grp-size: #{$arvo-image-32};
+    --arvo-avt-grp-overlap: -#{$arvo-space-6};
+    // l12-r is the base default; no override needed.
+  }
+
+  &--lg {
+    --arvo-avt-grp-size: #{$arvo-image-40};
+    --arvo-avt-grp-overlap: -#{$arvo-space-8};
+
+    .arvo-avt-grp__overflow { @include arvo-font-l14-r; }
+  }
+
+  &--xl {
+    --arvo-avt-grp-size: #{$arvo-image-60};
+    --arvo-avt-grp-overlap: -#{$arvo-space-10};
+
+    .arvo-avt-grp__overflow { @include arvo-font-l16-r; }
+  }
+
+  // -- Disabled state -------------------------------------------------------
+  &[aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  // -- Loading state (Pattern C) -------------------------------------------
+  // The parent blocks interaction; the existing [data-arvo-loading='true']
+  // cascade in _arvo-avt.scss applies the Pattern A shimmer to each child
+  // ArvoAvatar that does not carry data-arvo-loading-ignore='true'. The
+  // overflow tile is exempted so the `+N` stays legible.
+  &.loading {
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+// -- Reduced motion safety --------------------------------------------------
+// Honor prefers-reduced-motion -- preserve the visual uplift but disable
+// the transition so users with motion sensitivity don't see the lift glide.
+@media (prefers-reduced-motion: reduce) {
+  .arvo-avt-grp__item { transition: none; }
+}

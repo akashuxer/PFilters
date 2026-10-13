@@ -1,0 +1,816 @@
+// Component: TreeView
+// BEM Block: arvo-tree
+// Loading Pattern: B (structured skeleton)
+//
+// Implements the WAI-ARIA Tree View visual pattern, including drag/drop
+// reordering and the hover-revealed inline action row.
+
+@use '../../mixins/hover' as *;
+@use '../../mixins/list-item' as *;
+@use '../../mixins/loading' as *;
+@use '../../mixins/typography' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// ---------------------------------------------------------------------------
+// Tree container
+// ---------------------------------------------------------------------------
+
+.arvo-tree {
+  // CSS variables only for values that flex per size / state / parent override.
+  --arvo-tree-row-height: 30px;
+  --arvo-tree-row-px: #{$arvo-space-6};
+  --arvo-tree-row-py: #{$arvo-space-6};
+  // Outer row gap between major slots (indent / drag / chevron / check /
+  // __content / badge). Stays 8px across sizes per spec section 2.
+  --arvo-tree-row-gap: #{$arvo-space-8};
+  // Inner gap between children of __content (icon / label / meta / actions).
+  // 6px in sm, 8px in lg per spec section 3. Defaults to sm; --lg overrides.
+  --arvo-tree-content-gap: #{$arvo-space-6};
+  --arvo-tree-connector-size: 16px;
+  --arvo-tree-rail-color: var(--arvo-color-b-divider);
+  --arvo-tree-search-highlight-bg: var(--arvo-color-s-theme-hover-2);
+  --arvo-tree-search-highlight-height: 20px;
+  --arvo-tree-skeleton-rows: 5;
+  --arvo-tree-selected-border-width: #{$arvo-border-3};
+  --arvo-tree-selected-border-color: var(--arvo-color-b-theme-active);
+  // Meta cluster tokens.
+  --arvo-tree-meta-ico-size: 12px;
+  --arvo-tree-meta-color: var(--arvo-color-t-tertiary);
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $arvo-space-2;
+  min-width: 0;
+  font-family: var(--arvo-font-family);
+  color: var(--arvo-color-t-secondary);
+  box-sizing: border-box;
+
+  // ---- Size modifiers --------------------------------------------------
+  &--sm {
+    --arvo-tree-row-height: 30px;
+    --arvo-tree-content-gap: #{$arvo-space-6};
+    @include arvo-font-l12-r;
+  }
+
+  &--lg {
+    --arvo-tree-row-height: 40px;
+    --arvo-tree-content-gap: #{$arvo-space-8};
+    @include arvo-font-l14-r;
+  }
+
+  // ---- Tree-level disabled --------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+    opacity: var(--arvo-opacity-disabled, 1);
+  }
+
+  // ---- Tree-level read-only (spec A14) --------------------------------
+  // Selection and expansion still work; mutating affordances (drag
+  // handles, actions, overflow, context menu) are suppressed in code.
+  // The modifier exists primarily as a hook for downstream consumers
+  // (and to mark `aria-readonly='true'` semantics in the DOM).
+  &--readonly {
+    // No visual changes by default -- the disabled affordances are
+    // simply absent from the DOM.
+  }
+
+  // ---- Tree-level skeleton --------------------------------------------
+  &.loading {
+    .arvo-tree__group {
+      display: none;
+    }
+  }
+
+  // -- Parent loading propagation -------------------------------------------
+  // Mirrors the cross-component contract: when a parent surface flips into
+  // its loading state (`data-arvo-loading="true"`), every descendant Arvo
+  // component cascades into its own loading visuals unless explicitly
+  // opted out via `data-arvo-loading-ignore="true"`.
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @extend .arvo-tree, .loading;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Group (role='group')
+// ---------------------------------------------------------------------------
+
+.arvo-tree__group {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-2;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Row (role='treeitem')
+// ---------------------------------------------------------------------------
+
+.arvo-tree__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--arvo-tree-row-gap);
+  height: var(--arvo-tree-row-height);
+  min-height: var(--arvo-tree-row-height);
+  padding-inline: var(--arvo-tree-row-px);
+  padding-block: var(--arvo-tree-row-py);
+  background-color: transparent;
+  color: var(--arvo-color-t-secondary);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  box-sizing: border-box;
+  // Reserve space for the 1.5px active left border so width does not jump.
+  border-inline-start: var(--arvo-tree-selected-border-width) solid transparent;
+
+  // ---- Hover (hover-capable devices only) ------------------------------
+  @include hover {
+    &:not(.is-disabled):not(.loading):hover {
+      background-color: var(--arvo-color-s-theme-hover-3);
+      color: var(--arvo-color-t-primary);
+    }
+  }
+
+  // ---- Focus visible ---------------------------------------------------
+  &:focus-visible {
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: -1px;
+    color: var(--arvo-color-t-primary);
+  }
+
+  // ---- Selected / Active ----------------------------------------------
+  // `.selected` carries the selection chrome; `--active` carries the
+  // navigation "currently open destination" chrome. The two render
+  // identical visuals (active-3 bg, 1.5px left active border, medium
+  // label). They diverge only in multi-select mode (see further below):
+  // selection chrome is suppressed when the checkbox carries the
+  // selection signal; active chrome is preserved because navigation is
+  // independent of selection.
+  &.selected,
+  &--active {
+    background-color: var(--arvo-color-s-theme-active-3);
+    border-inline-start-color: var(--arvo-tree-selected-border-color);
+    color: var(--arvo-color-t-primary);
+
+    .arvo-tree__label {
+      font-style: var(--arvo-medium);
+      font-weight: 500;
+    }
+  }
+
+  // Hover keeps the active border but flips bg to hover-3.
+  @include hover {
+    &.selected:not(.is-disabled):not(.loading):hover,
+    &--active:not(.is-disabled):not(.loading):hover {
+      background-color: var(--arvo-color-s-theme-hover-3);
+    }
+  }
+
+  // ---- Emphasized (highlight without selection) ------------------------
+  &--emphasized {
+    color: var(--arvo-color-t-primary);
+
+    .arvo-tree__label {
+      font-style: var(--arvo-medium);
+      font-weight: 500;
+    }
+  }
+
+  // ---- Highlighted (per-spec section 33: bold italic, decoupled
+  //      from any specific reason). Stacks freely with selected /
+  //      active / emphasized / search-highlight without losing the
+  //      focus ring.
+  &--highlighted {
+    .arvo-tree__label {
+      font-style: italic;
+      font-weight: 600;
+    }
+  }
+
+  // ---- Search highlight ------------------------------------------------
+  &--search-highlight {
+    .arvo-tree__label-match {
+      position: relative;
+      font-style: var(--arvo-medium);
+      font-weight: 500;
+      color: var(--arvo-color-t-primary);
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset-inline-start: -2px;
+        inset-inline-end: -2px;
+        top: 50%;
+        height: var(--arvo-tree-search-highlight-height);
+        background-color: var(--arvo-tree-search-highlight-bg);
+        transform: translateY(-50%);
+        z-index: -1;
+        border-radius: 2px;
+      }
+    }
+  }
+
+  // ---- Disabled (per row) ---------------------------------------------
+  &.is-disabled {
+    color: var(--arvo-color-t-disabled);
+    cursor: default;
+    pointer-events: none;
+
+    .arvo-tree__icon,
+    .arvo-tree__chevron,
+    .arvo-tree__drag {
+      opacity: var(--arvo-opacity-40);
+    }
+
+    .arvo-tree__badge {
+      opacity: var(--arvo-opacity-40);
+    }
+
+    // Selected / Active + disabled keeps the active chrome but with
+    // disabled label color.
+    &.selected,
+    &--active {
+      color: var(--arvo-color-t-disabled);
+      .arvo-tree__label {
+        color: var(--arvo-color-t-disabled);
+      }
+    }
+  }
+
+  // ---- In-place skeleton (per row) ------------------------------------
+  &.loading {
+    pointer-events: none;
+    cursor: default;
+    background-color: transparent !important;
+    color: transparent;
+
+    .arvo-tree__connector,
+    .arvo-tree__chevron,
+    .arvo-tree__drag,
+    .arvo-tree__check,
+    .arvo-tree__icon,
+    .arvo-tree__meta,
+    .arvo-tree__actions,
+    .arvo-tree__badge {
+      visibility: hidden;
+    }
+
+    .arvo-tree__skeleton-row {
+      display: flex;
+    }
+  }
+
+  // ---- Async-loading + empty (composite header rows) ------------------
+  &--async-loading,
+  &--empty {
+    background-color: var(--arvo-color-s-theme-active-3);
+    color: var(--arvo-color-t-primary);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Composite parent bodies (loader / empty), siblings of the parent row
+// inside `__group`. Identified by data-arvo-loader-for / data-arvo-empty-for
+// attributes so JS surgical helpers and the React reconciler can locate
+// them in O(1) without unmounting the parent row.
+// ---------------------------------------------------------------------------
+
+.arvo-tree__loader,
+.arvo-tree__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $arvo-space-8;
+  box-sizing: border-box;
+  // The tree loader slot is a layout-only wrapper -- the visual + a11y
+  // (role=status, aria-live, the animated shape, the visible label) come
+  // from ArvoLoader.
+}
+
+.arvo-tree__empty {
+  padding-block: $arvo-space-12 $arvo-space-8;
+}
+
+// ---------------------------------------------------------------------------
+// Connectors / indent rails
+// ---------------------------------------------------------------------------
+
+.arvo-tree__connector {
+  flex: 0 0 var(--arvo-tree-connector-size);
+  width: var(--arvo-tree-connector-size);
+  height: var(--arvo-tree-connector-size);
+  position: relative;
+  pointer-events: none;
+}
+
+// Hierarchy line paint is OPT-IN (spec section 13: default `false`).
+// Connector slots always render to preserve indentation; only the rail
+// strokes appear when `arvo-tree--lines` is set on the tree root.
+.arvo-tree--lines {
+  .arvo-tree__connector {
+    // Pass-through: vertical line through the slot.
+    &::before {
+      content: '';
+      position: absolute;
+      inset-inline-start: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background-color: var(--arvo-tree-rail-color);
+      transform: translateX(-50%);
+    }
+
+    // Elbow: vertical line down to row center, then a horizontal
+    // segment to the right indicating "this is the connection point".
+    &--elbow {
+      &::after {
+        content: '';
+        position: absolute;
+        inset-inline-start: 50%;
+        top: 50%;
+        width: 50%;
+        height: 1px;
+        background-color: var(--arvo-tree-rail-color);
+      }
+    }
+
+    // End-elbow: same horizontal but the vertical line stops at row center.
+    &--end {
+      &::before {
+        bottom: 50%;
+      }
+      &::after {
+        content: '';
+        position: absolute;
+        inset-inline-start: 50%;
+        top: 50%;
+        width: 50%;
+        height: 1px;
+        background-color: var(--arvo-tree-rail-color);
+      }
+    }
+
+    // Empty: ancestor at this depth was the last sibling, so the rail
+    // must NOT continue below it. Suppress the vertical pass-through.
+    &--empty {
+      &::before {
+        display: none;
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inner controls (drag, chevron, checkbox)
+// ---------------------------------------------------------------------------
+
+.arvo-tree__drag,
+.arvo-tree__chevron {
+  flex: 0 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Chevron rotation animation -- the chevron is rendered as a single
+// angle-right icon and rotated 90deg when the row is expanded. Both the
+// chevron host and the inner ArvoIconButton transition so the icon glyph
+// rotates smoothly between the collapsed (0deg) and expanded (90deg)
+// states. Honors `prefers-reduced-motion` by reducing to an instant
+// state flip (no transition).
+.arvo-tree__chevron .arvo-icon-btn,
+.arvo-tree__chevron .arvo-icon-btn [class*='o9con-'] {
+  transition: transform $arvo-duration-slow $arvo-ease-standard;
+}
+
+.arvo-tree__item[aria-expanded='true'] > .arvo-tree__chevron .arvo-icon-btn [class*='o9con-'] {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-tree__chevron .arvo-icon-btn,
+  .arvo-tree__chevron .arvo-icon-btn [class*='o9con-'] {
+    transition: none;
+  }
+}
+
+// Row + body expand/collapse animation.
+//
+// PERFORMANCE: only `opacity` and `transform` are animated. Both are
+// compositor-only properties -- the browser promotes them to the GPU
+// and the transition happens entirely on the compositor thread with
+// zero layout reflow and zero paint per frame. This means:
+//   * collapsing 1000 rows costs O(1) main-thread work (one batched
+//     class write + one timer), and the GPU animates every row in
+//     parallel without main-thread cost;
+//   * neighbouring rows never re-flow during the animation -- the
+//     final layout snap (when DOM nodes are physically removed)
+//     happens once, on the same frame, after the fade completes.
+//
+// Enter is driven entirely by CSS `@starting-style` -- the JS twin
+// just inserts the node and the browser handles the transition. No JS
+// animation work is required for inserts. Exit is class-driven: the
+// JS twin adds `is-leaving` and removes the node after a fixed
+// timeout matching the transition duration.
+.arvo-tree__item,
+.arvo-tree__loader,
+.arvo-tree__empty {
+  opacity: 1;
+  transform: translateZ(0); // promote to its own GPU layer for free
+  transition:
+    opacity $arvo-duration-base $arvo-ease-standard,
+    transform $arvo-duration-base $arvo-ease-standard;
+}
+
+// CSS-only enter: newly-attached rows / bodies fade up into place. No
+// JS work needed -- the browser interpolates from these starting
+// values to the natural state above. Requires `@starting-style`
+// (Chrome 117+, Firefox 129+, Safari 17.5+).
+@starting-style {
+  .arvo-tree__item,
+  .arvo-tree__loader,
+  .arvo-tree__empty {
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+// Exit: JS adds `is-leaving` (and `data-arvo-leaving="true"`) when an
+// element should fade out. The CSS transition carries opacity to 0
+// and the element a few pixels up, then JS removes the node once the
+// transition is complete. `pointer-events: none` keeps the dying row
+// from intercepting clicks during the fade. `will-change` hints the
+// compositor to keep the layer hot for the duration.
+.arvo-tree__item.is-leaving,
+.arvo-tree__loader.is-leaving,
+.arvo-tree__empty.is-leaving {
+  opacity: 0;
+  transform: translate3d(0, -4px, 0);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-tree__item,
+  .arvo-tree__loader,
+  .arvo-tree__empty {
+    transition: none !important;
+  }
+  @starting-style {
+    .arvo-tree__item,
+    .arvo-tree__loader,
+    .arvo-tree__empty {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+// Force inner ArvoIconButton to compact tertiary inside the row.
+.arvo-tree__item .arvo-icon-btn {
+  --arvo-icon-btn-size: 24px;
+  --arvo-icon-btn-padding: 4px;
+}
+
+.arvo-tree__check {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+// Multi-select hides the left-border indicator and background for SELECTION
+// rows only (the checkbox carries the selection signal in advanced mode).
+// Active rows keep their chrome because navigation is independent of
+// selection and may coexist with multi-select on the same row.
+.arvo-tree--multiple
+  .arvo-tree__item.selected:not(.arvo-tree__item--active) {
+  border-inline-start-color: transparent;
+  background-color: transparent;
+}
+
+// ---------------------------------------------------------------------------
+// Inner content cluster (icon + label + meta + actions)
+// ---------------------------------------------------------------------------
+
+// Holds the row's primary text + supporting slots so the label truncates
+// against meta/actions without disturbing the trailing badge (which sits
+// outside __content at the row level). gap = --arvo-tree-content-gap so
+// the inner cluster can be denser than the outer slot gap.
+.arvo-tree__content {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  gap: var(--arvo-tree-content-gap);
+}
+
+.arvo-tree__icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  line-height: 1;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arvo-tree__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.arvo-tree__label-match {
+  position: relative;
+  z-index: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Meta (trailing supporting indicator -- icon and/or 1-3 char text)
+// ---------------------------------------------------------------------------
+
+.arvo-tree__meta {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: $arvo-space-2;
+  color: var(--arvo-tree-meta-color);
+  // Decorative: pointer events flow through to the row so meta does not
+  // intercept the row's primary action.
+  pointer-events: none;
+}
+
+.arvo-tree__meta-icon {
+  flex: 0 0 var(--arvo-tree-meta-ico-size);
+  width: var(--arvo-tree-meta-ico-size);
+  height: var(--arvo-tree-meta-ico-size);
+  font-size: var(--arvo-tree-meta-ico-size);
+  line-height: 1;
+  color: var(--arvo-color-i-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arvo-tree__meta-text {
+  @include arvo-font-p10-r;
+  color: inherit;
+  white-space: nowrap;
+}
+
+// Strong appearance bumps the label one step (spec section 11).
+// Applies at the tree level (`.arvo-tree--strong` -- every row) AND at
+// the per-row level (`.arvo-tree__item--strong` -- one row). The
+// per-row modifier is the more specific selector (item-level) so it
+// wins inside a default tree; in a strong tree, an item without the
+// per-row modifier still inherits via the tree-level selector. To
+// demote a single row from strong inside a strong tree, set
+// `item.appearance = 'default'` -- the absence of the per-row modifier
+// keeps the tree-level rule from matching when paired with a more
+// specific override (consumers can add their own `:not(...)` if needed).
+.arvo-tree--sm .arvo-tree__item--strong .arvo-tree__label,
+.arvo-tree--strong.arvo-tree--sm .arvo-tree__item .arvo-tree__label {
+  @include arvo-font-l14-m;
+}
+.arvo-tree--lg .arvo-tree__item--strong .arvo-tree__label,
+.arvo-tree--strong.arvo-tree--lg .arvo-tree__item .arvo-tree__label {
+  @include arvo-font-l16-r;
+  font-weight: $arvo-medium;
+}
+
+// Selected / Active (default appearance) bumps weight to medium per the spec.
+.arvo-tree:not(.arvo-tree--strong).arvo-tree--lg
+  .arvo-tree__item.selected
+  .arvo-tree__label,
+.arvo-tree:not(.arvo-tree--strong).arvo-tree--lg
+  .arvo-tree__item--active
+  .arvo-tree__label {
+  @include arvo-font-l14-m;
+}
+
+// ---------------------------------------------------------------------------
+// Trailing badge
+// ---------------------------------------------------------------------------
+
+.arvo-tree__badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+
+  // Auto-invert badge to dark on hover/focus/selected/active.
+  .arvo-tree__item:focus-visible & .arvo-bdg,
+  .arvo-tree__item.selected & .arvo-bdg,
+  .arvo-tree__item--active & .arvo-bdg {
+    background-color: var(--arvo-color-s-neutral-strong);
+    color: var(--arvo-color-t-inverse);
+  }
+}
+
+@include hover {
+  .arvo-tree__item:not(.is-disabled):not(.loading):hover .arvo-tree__badge .arvo-bdg {
+    background-color: var(--arvo-color-s-neutral-strong);
+    color: var(--arvo-color-t-inverse);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Loading skeletons
+// ---------------------------------------------------------------------------
+
+.arvo-tree__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-2;
+  width: 100%;
+}
+
+.arvo-tree__skeleton-row {
+  display: none; // toggled to flex by .arvo-tree.loading or .arvo-tree__item.loading
+  align-items: center;
+  gap: var(--arvo-tree-row-gap);
+  height: var(--arvo-tree-row-height);
+  padding-inline: var(--arvo-tree-row-px);
+}
+
+.arvo-tree.loading .arvo-tree__skeleton-row {
+  display: flex;
+}
+
+.arvo-tree__skeleton-icon,
+.arvo-tree__skeleton-text {
+  background-color: var(--arvo-color-s-pulse-dark);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.arvo-tree__skeleton-icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.arvo-tree__skeleton-text {
+  flex: 1 1 auto;
+  height: 16px;
+  max-width: 60%;
+}
+
+// Shimmer animation on skeleton placeholders.
+.arvo-tree__skeleton-icon::after,
+.arvo-tree__skeleton-text::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--arvo-color-s-pulse-light) 50%,
+    transparent 100%
+  );
+  animation: arvo-tree-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes arvo-tree-skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-tree__skeleton-icon::after,
+  .arvo-tree__skeleton-text::after {
+    animation: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Drag / drop / reorder
+// ---------------------------------------------------------------------------
+
+// Row currently being dragged (pointer or keyboard reorder mode active).
+.arvo-tree__item.is-dragging {
+  background-color: var(--arvo-color-s-layer-05);
+  box-shadow: var(--arvo-shadow-down);
+  color: var(--arvo-color-t-secondary);
+  z-index: 1;
+  position: relative;
+}
+
+// Drop target indicator -- a 1px line above the row to show where the
+// dragged row will land. The row's own background also flips to layer-03.
+.arvo-tree__item.is-drop-target {
+  background-color: var(--arvo-color-s-layer-03);
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background-color: var(--arvo-color-b-theme-active);
+    z-index: 1;
+  }
+}
+
+// Keyboard reorder mode: highlight the drag-handle button so the user
+// understands which row is "picked up".
+.arvo-tree__item.is-grab-active {
+  background-color: var(--arvo-color-s-layer-05);
+  box-shadow: var(--arvo-shadow-down);
+
+  .arvo-tree__drag {
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: 0;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inline action row
+// ---------------------------------------------------------------------------
+
+.arvo-tree__actions {
+  // Lives inside __content (after icon, label, meta) -- the label's
+  // flex: 1 1 auto already pushes actions to the trailing edge of
+  // __content, so no margin-inline-start: auto is needed here.
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-4;
+}
+
+// `actionsVisibility='hover'` (default): hide actions until the row is
+// hovered, focused, or has :focus-within on the actions cluster. Touch
+// devices treat (hover: none) as "always visible" so actions stay reachable.
+.arvo-tree--actions-on-hover .arvo-tree__actions {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity $arvo-duration-fast $arvo-ease-simple,
+    visibility $arvo-duration-fast $arvo-ease-simple;
+}
+
+@include hover {
+  .arvo-tree--actions-on-hover .arvo-tree__item:not(.is-disabled):hover .arvo-tree__actions {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.arvo-tree--actions-on-hover .arvo-tree__item:focus-visible .arvo-tree__actions,
+.arvo-tree--actions-on-hover .arvo-tree__item .arvo-tree__actions:focus-within {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (hover: none) {
+  .arvo-tree--actions-on-hover .arvo-tree__actions {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Visually-hidden aria-live region (reorder announcer)
+// ---------------------------------------------------------------------------
+
+.arvo-tree__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Forced-colors mode (Windows High Contrast)
+// ---------------------------------------------------------------------------
+
+@media (forced-colors: active) {
+  .arvo-tree__item:focus-visible {
+    outline: 2px solid Highlight;
+  }
+
+  .arvo-tree__item.selected {
+    background-color: Highlight;
+    color: HighlightText;
+    border-inline-start-color: HighlightText;
+  }
+}

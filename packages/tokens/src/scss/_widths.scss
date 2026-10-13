@@ -1,0 +1,103 @@
+// -- Buttons --------------------------------------------------------------------
+$arvo-btn-wmax: 10.25rem; // 164px
+$arvo-window-btn-wmin: 7rem; // 112px -- footer buttons in windows/dialogs/popovers
+
+// -- Tooltips -------------------------------------------------------------------
+$arvo-tooltip-wmax: 20rem; // 320px
+
+// -- Windows (dialog / modal) ---------------------------------------------------
+$arvo-window-sm-wmax: 27.5rem; // 440px
+$arvo-window-sm-hmax: 52%; // Approx. 560px @1080p
+$arvo-window-md-wmax: 43.75rem; // 700px
+$arvo-window-md-hmax: 70%; // Approx. 760px @1080p
+$arvo-window-lg-wmax: 60rem; // 960px
+$arvo-window-lg-hmax: 84%; // Approx. 840px @1080p
+$arvo-window-xl-wmax: 71.25rem; // 1140px
+$arvo-window-xl-hmax: 96%; // Approx. 960px @1080p
+
+// -- Scrollbar ------------------------------------------------------------------
+$arvo-scroll-width: 0.5rem; // 8px
+
+// -- Popover / hybrid popover ---------------------------------------------------
+$arvo-popover-wmin: 16.875rem; // 270px
+$arvo-popover-wmax: 43.75rem; // 700px
+$arvo-popover-hmax: 43.75rem; // 700px
+
+// -- Filter popover (e.g. column filter) -- deprecated, use popover tokens ------
+$arvo-filter-popover-wmin: 20rem; // 320px
+$arvo-filter-popover-wmax: 31.25rem; // 500px
+
+// -- Action menu (filter-menu) --------------------------------------------------
+$arvo-filter-menu-wmin: 10rem; // 160px
+$arvo-filter-menu-wmax: 25rem; // 400px
+
+// -- Option list (Select/MultiSelect/Combobox floating overlay) ----------------
+$arvo-opt-list-hmax: 20rem; // 320px
+
+// -- Alert dialog ---------------------------------------------------------------
+$arvo-alertdialog-wmin: 27.5rem; // 440px
+$arvo-alertdialog-wmax: 31.25rem; // 500px
+$arvo-alertdialog-hmin: 12.5rem; // 200px
+$arvo-alertdialog-hmax: 31.25rem; // 500px
+
+// -- Side panel -----------------------------------------------------------------
+$arvo-sidepanel-wmin: 20rem; // 320px
+$arvo-sidepanel-wmax: 30.875rem; // 494px
+$arvo-sidepanel-height: 100vh;
+
+// -- Panel (ArvoPanel -- supersedes SidePanel + Drawer) -------------------------
+// Default size for left/right placements (width) and top/bottom (height).
+$arvo-panel-default-w: 25rem; // 400px
+$arvo-panel-default-h: 25rem; // 400px
+// Floor and ceiling bounds; viewport caps are applied per-instance via 80vw/80vh
+// CSS expressions in the component SCSS, NOT as a token (see _arvo-pnl.scss).
+$arvo-panel-wmin: 10rem; // 160px
+$arvo-panel-hmin: 15rem; // 240px
+$arvo-panel-wmax-px: 50rem; // 800px hard cap (combined with 80vw via min())
+$arvo-panel-hmax-px: 50rem; // 800px hard cap (combined with 80vh via min())
+// Header chrome and splitter rail thickness.
+$arvo-panel-header-h: 2.5rem; // 40px
+$arvo-panel-splitter-thickness: 0.25rem; // 4px
+
+// -- Tabs -----------------------------------------------------------------------
+$arvo-tab-wmax: 18.125rem; // 290px
+$arvo-tab-wmin: 4.5rem; // 72px
+
+// -- Selection controls ---------------------------------------------------------
+$arvo-checkbox-small: 1rem; // 16px
+$arvo-checkbox-large: 1.125rem; // 18px
+$arvo-radio-small: 1rem; // 16px
+$arvo-radio-large: 1.125rem; // 18px
+// Switch geometry. The slide distance equals the thumb size (track width =
+// thumb-size + 2 * 2px padding + thumb-size on each side), so each pair must
+// keep that proportion or the checked-state translation breaks.
+// Unsuffixed tokens are the canonical `lg` (default) size; `-sm` tokens
+// drive the `--sm` modifier.
+$arvo-switch-track-width: 1.75rem; // 28px (lg)
+$arvo-switch-track-height: 1rem; // 16px (lg)
+$arvo-switch-thumb-size: 0.75rem; // 12px (lg)
+$arvo-switch-track-width-sm: 1.5rem; // 24px
+$arvo-switch-track-height-sm: 0.875rem; // 14px
+$arvo-switch-thumb-size-sm: 0.625rem; // 10px
+
+// -- Feedback / status ----------------------------------------------------------
+$arvo-toast-width: 18.75rem; // 300px
+$arvo-badge-small: 1rem; // 16px
+$arvo-badge-medium: 1.25rem; // 24px
+$arvo-badge-large: 1.5rem; // 32px
+
+// -- Chip -----------------------------------------------------------------------
+$arvo-chip-wmin: 1.75rem; // 28px
+$arvo-chip-wmax: 13.75rem; // 220px
+
+// -- Image -----------------------------------------------------------------------
+$arvo-image-14: 0.875rem; // 14px
+$arvo-image-16: 1rem; // 24px
+$arvo-image-20: 1.25rem; // 20px
+$arvo-image-24: 1.5rem; // 24px
+$arvo-image-32: 2rem; // 32px
+$arvo-image-40: 2.5rem; // 40px
+$arvo-image-60: 3.75rem; // 60px
+
+$arvo-symbol-size-24: 1.5rem; // 24px
+$arvo-symbol-size-32: 2rem; // 32px

@@ -1,0 +1,188 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/list-item' as li;
+@use '../../mixins/list-group' as lg;
+@use '../../mixins/hover' as *;
+
+// TimeDropdown component styles
+// BEM Block: .arvo-tdrop
+// Abbreviation: tdrop
+// Category: DateTime
+// Descriptor: descriptors/time-dropdown.json
+// Loading Pattern: none (internal component -- no loading state)
+//
+// Internal scrollable time list with optional AM/PM ArvoButtonGroup in
+// 12-hour mode. Consumed by ArvoTimePicker and ArvoDateTimePicker.
+//
+// Shared patterns consumed:
+//   list-item  -- item layout (height, padding, hover/focus/active/disabled states).
+//   list-group -- reserved for future grouped time presets (header + divider hooks).
+//
+// Hard constraints (DO NOT VIOLATE):
+//   - 12h vs 24h is DERIVED from format/locale via shouldUse12Hour().
+//     NEVER add a use12Hour modifier driven by a runtime boolean prop.
+//   - Options outside [minTime, maxTime] are HIDDEN (not disabled) by the JS layer.
+//     The .is-disabled class on __item is reserved for a parent disabling a
+//     single in-range option -- the list-item-states mixin handles its appearance.
+//   - The AM/PM toggle is rendered as an ArvoButtonGroup (primary variant)
+//     ONLY in 12-hour mode. NEVER hand-roll the tabs.
+//   - Horizontal overflow is FORBIDDEN -- items are hidden, never overflow.
+//
+// BEM elements:
+//   __tabs   -- AM/PM toggle wrapper (12-hour mode only) hosting ArvoButtonGroup
+//   __list   -- scrollable listbox of time options (<ul>)
+//   __item   -- individual time option row 136x32 (role=option)
+//   __label  -- item text content
+//
+// BEM modifiers on root:
+//   --12hour  -- 12-hour layout with AM/PM toggle (max-h: 224px)
+//   --24hour  -- 24-hour plain list (max-h: 224px)
+//
+// State classes:
+//   .is-disabled        -- whole component disabled (root)
+//   .active             -- selected option (__item)
+
+// --- .arvo-tdrop -------------------------------------------------------------
+
+.arvo-tdrop {
+
+  // -- CSS variable defaults --------------------------------------------------
+  --arvo-tdrop-w: 144px;
+  --arvo-tdrop-max-h: 224px;
+  --arvo-tdrop-item-h: 32px;
+  --arvo-tdrop-item-px: 12px;
+
+  // Wire tdrop item variables into the list-item mixin contract so the mixin
+  // picks up our dimensions without needing per-site overrides.
+  --arvo-list-item-height-single: var(--arvo-tdrop-item-h);
+  --arvo-list-item-padding-inline: var(--arvo-tdrop-item-px);
+
+  // -- Root layout ------------------------------------------------------------
+  // Standalone: an inline-flex column that stacks the optional AM/PM toggle
+  // above the scrollable option list. Parents that need the dropdown to
+  // fill a flex column (e.g. the DateTimePicker time column) set
+  // `flex: 1 1 auto; min-height: 0` on the .arvo-tdrop root via their own
+  // SCSS so the option list can grow naturally and the tabs stay pinned.
+  display: inline-flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: var(--arvo-tdrop-w);
+  // Hard guarantee: horizontal scroll is never appropriate for the time
+  // dropdown -- option labels are guaranteed to fit at the panel width.
+  overflow-x: hidden;
+  min-height: 0;
+
+  // -- Format-mode modifiers --------------------------------------------------
+  // Both modes share the same standalone body height; the AM/PM toggle sits
+  // ABOVE the list (sticky) so the scrollable area stays the same 224px tall.
+  // Parents that host the dropdown in a flex-grow context (e.g. the
+  // DateTimePicker) override --arvo-tdrop-max-h to remove the cap so the
+  // list expands to fill the available vertical space.
+
+  &--12hour,
+  &--24hour {
+    --arvo-tdrop-max-h: 224px;
+  }
+
+  // -- State: whole component disabled ----------------------------------------
+  // Blankets all interactive children -- individual item .is-disabled states
+  // remain available for fine-grained parent control.
+  &.is-disabled {
+    .arvo-tdrop__item {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+  }
+
+  // -- Elements ---------------------------------------------------------------
+
+  // AM/PM toggle wrapper (12-hour mode only). Hosts an ArvoButtonGroup with
+  // primary variant. The wrapper just provides the padding around the group
+  // so the group's edges align with the time list below.
+  &__tabs {
+    display: flex;
+    flex-shrink: 0;
+    padding: $arvo-space-4 $arvo-space-4 0;
+    box-sizing: border-box;
+
+    // Stretch the inner button group to fill the toggle wrapper. The group's
+    // own width contract assumes intrinsic content width, so we explicitly
+    // make it grow + apply equal-width children below.
+    > .arvo-btn-grp {
+      flex: 1 1 auto;
+      width: 100%;
+
+      .arvo-btn {
+        flex: 1 1 0;
+      }
+    }
+  }
+
+  // Scrollable list ------------------------------------------------------------
+  // <ul> reset: the global reset (base/_reset.scss) zeroes the user-agent
+  // margins and list-style for elements inside an arvo-* component, so this
+  // selector only has to declare the scroll surface dimensions.
+  //
+  // Standalone: the list claims its content height (capped by --arvo-tdrop-max-h
+  // = 224px) and scrolls when items overflow. Parents that want the list to
+  // fill a flex-stretched column (e.g. the DateTimePicker time column) flip
+  // the flex contract via their own SCSS so the list grows to the column's
+  // remaining height instead.
+  &__list {
+    max-height: var(--arvo-tdrop-max-h);
+    overflow-y: auto;
+    overflow-x: hidden;
+    // 4px inline padding keeps item content at 136px (144 - 2*4) while the
+    // __item width rule (calc(var(--arvo-tdrop-w) - 8px)) makes this explicit.
+    padding-block: #{$arvo-space-4};
+    box-sizing: border-box;
+  }
+
+  // Individual time option row -------------------------------------------------
+  // Dimensions: 136 x 32px. list-item-base provides flex layout, padding, border,
+  // and transition. list-item-single-line provides fixed height and overflow.
+  // list-item-states provides hover/focus/active/disabled visual states whose
+  // tokens already match the time-menu-item Figma node (30597:69695):
+  //   hover  bg = --arvo-color-s-theme-hover-4, text = --arvo-color-t-primary
+  //   active bg = --arvo-color-s-theme-active-4, border-start = --arvo-color-b-theme-active,
+  //          text = --arvo-color-t-primary
+  //   focus  outline = --arvo-color-b-theme-focus
+  &__item {
+    @include li.list-item-base;
+    @include li.list-item-single-line;
+    @include li.list-item-states;
+    // Explicit item width = panel width minus list padding-inline on both sides.
+    width: 100%;
+    min-width: calc(var(--arvo-tdrop-w) - 8px);
+    // Base text color; state overrides (hover/active -> primary) propagate to
+    // __label via color: inherit.
+    color: var(--arvo-color-t-secondary);
+
+    // .active appearance comes from list-item-states (active-4 bg, theme-active
+    // start-border, t-primary text) -- no override here. Out-of-range items
+    // are HIDDEN by the JS layer (not via a CSS rule) so the disabled selector
+    // remains available for a parent to suppress a single in-range option
+    // without hiding it.
+  }
+
+  // Item text content ----------------------------------------------------------
+  &__label {
+    // Inherit color so hover / active state changes on __item propagate here.
+    color: inherit;
+    font-size: #{$arvo-font-size-14};
+    font-weight: $arvo-regular;
+    // Truncation guards for locales that produce longer time strings.
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
+    // pointer-events on the label are intentionally left as default (auto) so
+    // title attribute tooltips (wired by the tooltip module) remain functional.
+  }
+
+  // -- Loading ----------------------------------------------------------------
+  // loadingPattern: null -- no loading state for this component.
+
+  // -- Parent overrides -------------------------------------------------------
+  // parentOverrides: [] -- no parent-context overrides defined in descriptor.
+}

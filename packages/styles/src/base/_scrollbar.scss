@@ -1,0 +1,81 @@
+// Global scrollbar styling
+// Supports three scroll-visibility preferences via body[data-scroll-pref]:
+//   "always"   - thumb and track always visible
+//   "onScroll"  - thumb appears only while actively scrolling
+//   "onHover"   - thumb appears on hover over the scrollable area
+
+@use '../../../tokens/src/scss/all' as *;
+
+// Standard scrollbar properties (Firefox + modern browsers). Apply globally so
+// all scrollable elements share the same thin appearance whether or not the
+// browser supports the ::-webkit-scrollbar pseudo-elements.
+* {
+}
+
+::-webkit-scrollbar {
+  width: $arvo-scroll-width;
+  height: $arvo-scroll-width;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-track:hover {
+  background-color: var(--arvo-color-s-layer-04);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--arvo-color-s-layer-07);
+  border-radius: $arvo-radius-16;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--arvo-color-s-hover);
+}
+
+body[data-scroll-pref="onScroll"] {
+  ::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
+
+  .is-active-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--arvo-color-s-layer-07);
+
+    &:hover {
+      background-color: var(--arvo-color-s-hover);
+    }
+  }
+}
+
+body[data-scroll-pref="onHover"] {
+  ::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
+
+  .is-active-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--arvo-color-s-layer-07);
+
+    &:hover {
+      background-color: var(--arvo-color-s-hover);
+    }
+  }
+
+  .is-active-scrollbar::-webkit-scrollbar-track:hover {
+    background-color: var(--arvo-color-s-layer-04);
+  }
+}
+
+body[data-scroll-pref="always"] {
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--arvo-color-s-layer-07);
+
+    &:hover {
+      background-color: var(--arvo-color-s-hover);
+    }
+  }
+
+  ::-webkit-scrollbar-track:hover {
+    background-color: var(--arvo-color-s-layer-04);
+  }
+}

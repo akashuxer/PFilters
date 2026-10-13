@@ -1,0 +1,539 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/typography' as *;
+
+// =============================================================================
+// Arvo Accordion Item  (_arvo-acc-item.scss)
+// Block: .arvo-acc-item (composable child, public)
+// Sizes: --sm (32px collapsed), --lg (40px collapsed, default)
+// Align: --align-start, --align-end (default)
+// State: .expanded, .is-disabled, .loading, .is-empty, .is-searching, .no-divider
+//
+// Companion file: _arvo-acc.scss owns the container block (.arvo-acc).
+// Token usage per arvo-accordion-spec.md:
+//   - Spacing uses $arvo-space-* SCSS tokens (NOT var(--arvo-space-*); spacing
+//     is not exposed as CSS custom properties per tokens/_root.scss).
+//   - Icon sizes use $arvo-icon-* (NOT --o9con-*).
+//   - Border / radius widths use $arvo-border-* / $arvo-radius-* tokens.
+//   - Typography uses @include arvo-font-* mixins (NOT o9ds-font-* aliases).
+//   - Semantic colors keep their CSS variables (var(--arvo-color-*)).
+// =============================================================================
+
+// =============================================================================
+// Block
+// =============================================================================
+
+.arvo-acc-item {
+  // Cascaded from .arvo-acc when nested; fall back to lg defaults standalone.
+  --arvo-acc-item-h: 40px;
+  --arvo-acc-item-py-collapsed: #{$arvo-space-4};
+  --arvo-acc-item-py-expanded: #{$arvo-space-8};
+  // Panel padding defaults (panelPadding='md' per spec section 16.11).
+  --arvo-acc-item-panel-px: #{$arvo-space-12};
+  --arvo-acc-item-panel-pt: #{$arvo-space-4};
+  --arvo-acc-item-panel-pb: #{$arvo-space-12};
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  // -- Bottom divider (item owns its own per spec 16.4) ---------------------
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: $arvo-border-1;
+    background-color: var(--arvo-color-b-divider);
+    pointer-events: none;
+  }
+
+  &.no-divider::after {
+    display: none;
+  }
+
+  // -- Sizes ---------------------------------------------------------------
+  &--sm {
+    --arvo-acc-item-h: 32px;
+    --arvo-acc-item-py-collapsed: #{$arvo-space-4};
+    --arvo-acc-item-py-expanded: #{$arvo-space-4};
+  }
+
+  &--lg {
+    --arvo-acc-item-h: 40px;
+    --arvo-acc-item-py-collapsed: #{$arvo-space-4};
+    --arvo-acc-item-py-expanded: #{$arvo-space-8};
+  }
+
+  // =========================================================================
+  // Trigger (the clickable header row)
+  // =========================================================================
+
+  &__trg {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-8;
+    width: 100%;
+    min-width: 0;
+    height: var(--arvo-acc-item-h);
+    padding-block: var(--arvo-acc-item-py-collapsed);
+    padding-inline: $arvo-space-12;
+
+    // <button> resets
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: var(--arvo-color-t-primary);
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: var(--o9-font-family);
+    appearance: none;
+    outline: none;
+    box-sizing: border-box;
+    transition:
+      background-color $arvo-duration-fast $arvo-ease-simple,
+      color $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  // =========================================================================
+  // Header inner flex row (sibling of __chev when align='start')
+  // =========================================================================
+
+  &__hdr {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-8;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  // =========================================================================
+  // Chevron
+  // =========================================================================
+
+  &__chev {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: $arvo-icon-16;
+    height: $arvo-icon-16;
+    font-family: $o9con;
+    font-size: $arvo-icon-16;
+    line-height: 1;
+    color: var(--arvo-color-i-primary);
+    // The chevron always renders the `angle-right` glyph and rotates 90deg
+    // when the item is expanded so the open/close reads as a smooth rotation
+    // rather than a glyph swap. Color stays on the fast fade.
+    transition:
+      color $arvo-duration-fast $arvo-ease-simple,
+      transform $arvo-duration-slow $arvo-ease-standard;
+    transform-origin: center;
+  }
+
+  // =========================================================================
+  // Title cluster (icon + title + status)
+  // =========================================================================
+
+  &__lft {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &__ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: $o9con;
+    font-size: $arvo-icon-16;
+    line-height: 1;
+    color: var(--arvo-color-i-primary);
+    transition: color $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  &__title {
+    @include arvo-font-l14-m;
+
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--arvo-color-t-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  &__sts {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  // =========================================================================
+  // Description (inline)
+  // =========================================================================
+
+  &__desc {
+    @include arvo-font-p12-r;
+
+    flex: 0 1 auto;
+    min-width: 0;
+    color: var(--arvo-color-t-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    // Description does NOT recolor on hover/focus per spec 16.3.
+  }
+
+  // =========================================================================
+  // Trailing slots
+  // =========================================================================
+
+  &__bdg,
+  &__actions,
+  &__act,
+  &__menu,
+  &__switch,
+  &__search {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  &__actions {
+    gap: $arvo-space-2;
+  }
+
+  // =========================================================================
+  // Panel (expandable content body)
+  // =========================================================================
+  //
+  // Height animation uses the grid-template-rows 0fr -> 1fr trick: the
+  // `__panel` element is a CSS grid with a single row that transitions
+  // between 0fr (collapsed) and 1fr (expanded). The DOM is three layers
+  // deep so we can keep padding off the row-tracked element:
+  //
+  //   __panel        -- grid container (animated 0fr <-> 1fr)
+  //   __panel-inner  -- grid ITEM (min-height: 0; overflow: hidden;) -- no padding
+  //   __panel-pad    -- intrinsic content wrapper that owns the padding
+  //
+  // Padding on `__panel-inner` itself would survive the 0fr collapse because
+  // padding is part of the box's height regardless of `min-height: 0`. The
+  // dedicated `__panel-pad` carries the padding so the entire padded box
+  // gets clipped by `__panel-inner`'s overflow when the row is 0fr.
+  //
+  // The browser-native `[hidden]` attribute is intentionally NOT used here
+  // because it sets `display: none` which kills any in-flight transition.
+  // Accessibility for collapsed panels comes from the trigger's
+  // `aria-expanded` (and `aria-controls` -> panel id) plus the `inert`
+  // attribute on the panel itself (applied by the component).
+
+  &__panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    transition: grid-template-rows $arvo-duration-slow $arvo-ease-standard;
+  }
+
+  &__panel-inner {
+    min-height: 0;
+  }
+
+  &__panel-pad {
+    padding-block:
+      var(--arvo-acc-item-panel-pt) var(--arvo-acc-item-panel-pb);
+    padding-inline: var(--arvo-acc-item-panel-px);
+  }
+
+  // Expanded state -- the panel row track grows to fit its intrinsic
+  // content, which (combined with the transition above) animates the
+  // height from 0 to natural.
+  &.expanded > &__panel {
+    grid-template-rows: 1fr;
+  }
+
+  // Defensive: a legacy consumer setting [hidden] on __panel should still
+  // make the panel disappear without breaking the animation contract.
+  // Hide via the standard `[hidden]` UA selector behavior.
+  &__panel[hidden] {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__panel {
+      transition: none;
+    }
+  }
+
+  // panelPadding modifiers (cascade onto __panel via item modifier class)
+  &--pad-none {
+    --arvo-acc-item-panel-px: 0;
+    --arvo-acc-item-panel-pt: 0;
+    --arvo-acc-item-panel-pb: 0;
+  }
+
+  &--pad-sm {
+    --arvo-acc-item-panel-px: #{$arvo-space-8};
+    --arvo-acc-item-panel-pt: #{$arvo-space-4};
+    --arvo-acc-item-panel-pb: #{$arvo-space-8};
+  }
+
+  &--pad-md {
+    --arvo-acc-item-panel-px: #{$arvo-space-12};
+    --arvo-acc-item-panel-pt: #{$arvo-space-4};
+    --arvo-acc-item-panel-pb: #{$arvo-space-12};
+  }
+
+  &--pad-lg {
+    --arvo-acc-item-panel-px: #{$arvo-space-16};
+    --arvo-acc-item-panel-pt: #{$arvo-space-8};
+    --arvo-acc-item-panel-pb: #{$arvo-space-16};
+  }
+
+  // =========================================================================
+  // Empty body inside the panel
+  // =========================================================================
+
+  &__empty {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-24;
+    padding-block: $arvo-space-12 $arvo-space-8;
+  }
+
+  // =========================================================================
+  // Hover (default, not disabled, not loading) -- color + bg only
+  // =========================================================================
+
+  @include hover {
+    &:not(.is-disabled):not(.loading) > &__trg:hover {
+      background-color: var(--arvo-color-s-theme-hover-4);
+      color: var(--arvo-color-t-theme-hover);
+    }
+
+    &:not(.is-disabled):not(.loading) > &__trg:hover &__title,
+    &:not(.is-disabled):not(.loading) > &__trg:hover &__ico,
+    &:not(.is-disabled):not(.loading) > &__trg:hover &__chev {
+      color: var(--arvo-color-t-theme-hover);
+    }
+
+    // Description does NOT recolor on hover (spec 16.3).
+  }
+
+  // =========================================================================
+  // Focus-visible (1px theme-focus outline; no layout shift)
+  // =========================================================================
+
+  &:not(.is-disabled):not(.loading) > &__trg:focus-visible {
+    color: var(--arvo-color-t-theme-hover);
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: -#{$arvo-border-1};
+    z-index: 1;
+  }
+
+  &:not(.is-disabled):not(.loading) > &__trg:focus-visible &__title,
+  &:not(.is-disabled):not(.loading) > &__trg:focus-visible &__ico,
+  &:not(.is-disabled):not(.loading) > &__trg:focus-visible &__chev {
+    color: var(--arvo-color-t-theme-hover);
+  }
+
+  // =========================================================================
+  // Expanded
+  // =========================================================================
+
+  &.expanded > &__trg {
+    padding-block: var(--arvo-acc-item-py-expanded);
+  }
+
+  // Expanded -- rotate the chevron glyph 90deg clockwise so the
+  // `angle-right` arrow points down. Combined with the `transform`
+  // transition declared on `__chev`, the chevron animates smoothly on
+  // every expand/collapse.
+  &.expanded > &__trg &__chev {
+    transform: rotate(90deg);
+  }
+
+  // Title returns to primary when expanded + default state (spec 7.4).
+  &.expanded:not(:hover):not(:focus-within) > &__trg &__title,
+  &.expanded:not(:hover):not(:focus-within) > &__trg &__ico,
+  &.expanded:not(:hover):not(:focus-within) > &__trg &__chev {
+    color: var(--arvo-color-t-primary);
+  }
+
+  // =========================================================================
+  // Disabled
+  // =========================================================================
+
+  &.is-disabled {
+    cursor: not-allowed;
+  }
+
+  &.is-disabled > &__trg {
+    pointer-events: none;
+    color: var(--arvo-color-t-disabled);
+  }
+
+  &.is-disabled > &__trg &__title,
+  &.is-disabled > &__trg &__desc,
+  &.is-disabled > &__trg &__ico,
+  &.is-disabled > &__trg &__chev {
+    color: var(--arvo-color-t-disabled);
+  }
+
+  &.is-disabled > &__trg &__ico,
+  &.is-disabled > &__trg &__chev {
+    color: var(--arvo-color-i-disabled);
+  }
+
+  // =========================================================================
+  // isSearching -- hide description / badge / actions / menu so the search
+  // field can take the trailing slot.
+  // =========================================================================
+
+  &.is-searching > &__trg &__desc,
+  &.is-searching > &__trg &__bdg,
+  &.is-searching > &__trg &__actions,
+  &.is-searching > &__trg &__menu {
+    display: none;
+  }
+
+  // =========================================================================
+  // Loading (item-level, Pattern B header skeleton)
+  // =========================================================================
+
+  &__skel {
+    display: none;
+  }
+
+  &.loading {
+    pointer-events: none;
+  }
+
+  &.loading > &__trg {
+    // Hide the real header content while loading; preserve trigger height.
+    cursor: default;
+  }
+
+  &.loading > &__trg &__hdr,
+  &.loading > &__trg &__chev {
+    visibility: hidden;
+  }
+
+  &.loading > &__trg &__skel {
+    display: flex;
+    position: absolute;
+    inset: var(--arvo-acc-item-py-collapsed) $arvo-space-12;
+    align-items: center;
+    gap: $arvo-space-8;
+    pointer-events: none;
+  }
+
+  &__skel-bar {
+    position: relative;
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: $arvo-space-16;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-color: var(--arvo-color-s-pulse-dark);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-light) 50%,
+        transparent 100%
+      );
+      animation: arvo-shimmer 1.5s infinite linear;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::after {
+        animation: none;
+      }
+    }
+  }
+
+  &__skel-trail {
+    position: relative;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-color: var(--arvo-color-s-pulse-dark);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-light) 50%,
+        transparent 100%
+      );
+      animation: arvo-shimmer 1.5s infinite linear;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::after {
+        animation: none;
+      }
+    }
+  }
+
+  // =========================================================================
+  // Container-level loading cascade (parent .arvo-acc.loading puts every
+  // item in loading state).
+  // =========================================================================
+}
+
+// Container-level cascade: ensure every nested item inherits the loading
+// treatment when the container has .loading.
+.arvo-acc.loading .arvo-acc-item {
+  pointer-events: none;
+}
+
+.arvo-acc.is-disabled .arvo-acc-item {
+  pointer-events: none;
+}

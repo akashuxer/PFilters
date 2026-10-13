@@ -1,0 +1,255 @@
+// Textarea component styles
+// BEM Block: .arvo-textarea
+// Abbreviation: textarea
+// Loading Pattern: A (overlay shimmer)
+// Sizes: sm (default), lg -- size controls label only, field is identical
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-input' as *;
+@use '../../mixins/form-char-counter' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// --- .arvo-textarea ----------------------------------------------------------
+
+.arvo-textarea {
+  // Field dimensions -- constant across both sizes (only the label changes)
+  --arvo-form-input-font-size: #{$arvo-font-size-14};
+  --arvo-form-input-padding-block: #{$arvo-space-4};
+  --arvo-form-input-padding-inline: #{$arvo-space-8};
+
+  // 300px default width via the shared form-input mixin; the React/JS layer
+  // sets --arvo-form-input-width inline when `width` or `isFullWidth` is set.
+  @include form-input-default-width;
+
+  // -- Root layout ---------------------------------------------------------
+  display: inline-flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  position: relative;
+
+  // Full-width modifier
+  &--full-width {
+    width: 100%;
+
+    .arvo-textarea__field {
+      width: 100%;
+    }
+  }
+
+  // Surface modifiers -- swap the at-rest field background between
+  // tinted (filled, default) and host surface (base) via the shared
+  // form-input-surface pattern. Every other state color is unchanged.
+  &--surface-filled { @include form-input-surface-filled; }
+  &--surface-base { @include form-input-surface-base; }
+
+  // -- __lbl (form label) --------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS).
+
+  // -- __field (container wrapping the native textarea) ---------------------
+  //
+  // Right + bottom padding live INSIDE __input rather than on the field so
+  // the textarea's native browser resize handle sits flush with the field's
+  // bottom-right corner. Left + top padding stay on the field so the
+  // optional leading icon can dock against the same corner pair without
+  // overlapping text.
+  &__field {
+    @include form-input-base;
+    @include form-input-hover-bg;
+    @include form-input-disabled-bg;
+
+    display: flex;
+    align-items: flex-start;
+    gap: $arvo-space-4;
+    height: auto;
+    min-height: 32px;
+    width: 100%;
+    padding: var(--arvo-form-input-padding-block) 0 0 var(--arvo-form-input-padding-inline);
+    position: relative;
+  }
+
+  // -- __ico (leading icon, aligned to first line of text) ----------------
+  // Wired through the shared `form-input-affix-ico` mixin; the textarea-only
+  // top alignment override stays here because the icon docks to the FIRST
+  // line of the field, not the vertical center.
+  &__ico {
+    @include form-input-affix-ico;
+    align-self: flex-start;
+  }
+
+  // -- __input (native <textarea>) -----------------------------------------
+  // Internal padding on the bottom + right keeps text from touching the
+  // field edges while the textarea's outer box reaches the field's
+  // bottom-right corner so the resize handle is flush with the corner.
+  //
+  // The right padding expands dynamically when the actions overlay
+  // (clear button, in-field error icon) is visible: the ResizeObserver
+  // wired by the React + JS wrappers writes the measured cluster width
+  // back to --arvo-form-input-pad-r on __field, and this rule adds it on
+  // top of the standard inline padding. When the cluster is empty the
+  // variable resets to 0 and the input reclaims its full width with no
+  // layout shift (form-input-actions-overlay shared pattern).
+  &__input {
+    @include form-input-text-colors;
+
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    padding: 0
+      calc(var(--arvo-form-input-padding-inline) + var(--arvo-form-input-pad-r, 0px))
+      var(--arvo-form-input-padding-block)
+      0;
+    border: 0;
+    background: transparent;
+    outline: 0;
+    font: inherit;
+    font-weight: $arvo-regular;
+    line-height: normal;
+    box-sizing: border-box;
+    resize: none;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &[readonly] {
+      cursor: not-allowed;
+    }
+  }
+
+  // Allow vertical resize when auto-resize is off. The min-height set
+  // inline by the React + JS wrappers (`--arvo-textarea-min-height`)
+  // prevents the user from dragging the handle above the initial
+  // rows-derived height.
+  &:not(&--auto-resize) &__input {
+    resize: vertical;
+    min-height: var(--arvo-textarea-min-height, auto);
+  }
+
+  // -- __border (animated bottom border, inside __field) -------------------
+  // Uses the default variant (visible 1px base line, animated hover reveal
+  // in --arvo-color-b-theme-hover-2, thicker 1.5px focus reveal in
+  // --arvo-color-b-theme-focus). Only Search uses the focus-only variant.
+  &__border {
+    @include form-input-animated-border-base;
+  }
+
+  // -- __actions (trailing absolute overlay, top-right of __field) ----------
+  // Holds the clear button and the in-field error tooltip icon. Unlike the
+  // single-line textbox overlay (centered vertically), the textarea overlay
+  // is anchored to the TOP so:
+  //   1. The native textarea's bottom-right resize handle stays flush with
+  //      __field's bottom-right corner, never pushed off by the overlay.
+  //   2. The overlay aligns with the first line of text via the field's
+  //      `padding-block` top value, matching the Figma `py-4` placement.
+  // The cluster never participates in the textarea's text flow; the input
+  // reserves space for it via `--arvo-form-input-pad-r` (see __input).
+  &__actions {
+    position: absolute;
+    top: var(--arvo-form-input-padding-block, #{$arvo-space-4});
+    right: var(--arvo-form-input-padding-inline, #{$arvo-space-8});
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    pointer-events: auto;
+    z-index: 1;
+  }
+
+  // -- __clear (clear button, ArvoIconButton instance) ----------------------
+  // The JS twin always renders the button into __actions when isClearable
+  // is set, so visibility is controlled here via the `has-value` class on
+  // the root (toggled by React + JS whenever the textarea value changes).
+  // The clear is also suppressed when:
+  //   - the textarea is disabled / readonly / loading
+  //   - the error tooltip icon is occupying the actions slot
+  //     (`has-error.error-tooltip` -- the two never coexist)
+  &__clear {
+    display: none;
+  }
+
+  &.has-value:not(.is-disabled):not(.is-readonly):not(.loading):not(.has-error.error-tooltip) {
+    .arvo-textarea__clear {
+      display: inline-flex;
+    }
+  }
+
+  // -- __err-ico (slot for in-field <ArvoMessageAlert isInline /> child) ----
+  // Icon glyph + color come from the child .arvo-msg-alert; this slot only
+  // controls visibility based on the parent's .has-error.error-tooltip state.
+  &__err-ico {
+    display: none;
+    flex: 0 0 auto;
+  }
+
+  // -- __counter (character counter, below field) --------------------------
+  &__counter {
+    @include form-char-counter-base;
+
+    .is-disabled & {
+      @include form-char-counter-disabled;
+    }
+
+    .has-error:not(.error-tooltip) & {
+      display: none;
+    }
+  }
+
+  // -- Size: sm (default) --------------------------------------------------
+  // Per project conventions, textarea labels are always 12px regardless of
+  // field size; the shared .arvo-form-lbl primitive supplies the typography.
+  // The block size modifiers are no-ops on the label (kept as selectors so
+  // consumers can scope per-size overrides if ever needed).
+  &--sm {}
+  &--lg {}
+
+  // -- Auto-resize modifier -----------------------------------------------
+  &--auto-resize &__input {
+    overflow: hidden;
+    resize: none;
+  }
+
+  // -- State: disabled (cursor only -- border handled by mixin) ------------
+  &.is-disabled {
+    cursor: not-allowed;
+
+    .arvo-textarea__field {
+      cursor: not-allowed;
+    }
+  }
+
+  // -- State: readonly (shared readonly treatment) --------------------------
+  // Dashed border via form-input-readonly-border; field/input use
+  // form-input-readonly-field (cursor: not-allowed while allowing text
+  // highlight). The clear button is already suppressed by the has-value
+  // rule above whose selector excludes readonly, so no extra rule needed.
+  &.is-readonly {
+    .arvo-textarea__field {
+      @include form-input-readonly-field;
+    }
+
+    .arvo-textarea__border {
+      @include form-input-readonly-border;
+    }
+  }
+
+  &.has-error.error-tooltip {
+    .arvo-textarea__err-ico {
+      display: inline-flex;
+    }
+  }
+
+  // -- Loading state (per-element shimmer on field + label) ----------------
+  &.loading,
+  [data-arvo-loading="true"] &:not([data-arvo-loading-ignore="true"]) {
+    pointer-events: none;
+
+    .arvo-textarea__field {
+      @include loading-element-shimmer;
+    }
+
+    .arvo-textarea__lbl {
+      @include loading-element-shimmer;
+    }
+  }
+}

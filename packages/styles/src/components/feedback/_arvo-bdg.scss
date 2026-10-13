@@ -1,0 +1,295 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/corner-host' as *;
+
+// ArvoBadge component styles.
+// BEM Block: .arvo-bdg
+// Abbreviation: bdg
+// Category: Feedback
+//
+// Compact, non-interactive visual indicator. Two variants (label / counter),
+// three sizes (sm / md / lg), three appearances (primary / outline / filled),
+// two color groups (semantic types / custom util colors). Sharp corners.
+//
+// The `placement` prop is a single-axis layout selector. The React / JS
+// layers always emit an `arvo-bdg--{placement}` modifier:
+//   - `arvo-bdg--inline` (default): the badge participates in normal
+//     document flow.
+//   - `arvo-bdg--top-right`: the badge is absolutely positioned at the
+//     top-right corner of a `corner-host` parent (typically the
+//     consuming component's BEM root). The host must have
+//     `position: relative` (typically via the shared `corner-host`
+//     SCSS mixin) for the offsets to take effect. (Bottom-right is
+//     intentionally unsupported -- Status remains the bottom-anchored
+//     overlay primitive.)
+//
+// Color cascade strategy: each color modifier class sets four hue vars
+// (--arvo-bdg-bg, --arvo-bdg-bg-strong, --arvo-bdg-text-color,
+// --arvo-bdg-icon-color). Appearance modifiers are placed AFTER all color
+// modifiers in source order so they win the cascade when both classes are
+// present. --outline overrides --arvo-bdg-bg to layer-01 and enables the
+// border. --filled swaps --arvo-bdg-bg to --arvo-bdg-bg-strong and sets
+// text/icon to inverse, without needing to know which color class is active.
+
+.arvo-bdg {
+  // -- Size tokens (defaults = md) -----------------------------------------
+  --arvo-bdg-height: #{$arvo-badge-medium};
+  --arvo-bdg-font-size: #{$arvo-font-size-12};
+  --arvo-bdg-icon-size: #{$arvo-icon-16};
+  --arvo-bdg-pad-inline: #{$arvo-space-4};
+
+  // -- Color tokens (defaults = primary appearance, positive semantic type) -
+  --arvo-bdg-bg: var(--arvo-color-s-layer-04);
+  --arvo-bdg-bg-strong: var(--arvo-color-s-neutral-strong);
+  --arvo-bdg-text-color: var(--arvo-color-t-neutral);
+  --arvo-bdg-icon-color: var(--arvo-color-i-neutral);
+  --arvo-bdg-border-color: transparent;
+  --arvo-bdg-border-width: 0px;
+
+  // -- Overlay positioning offsets (only applied when the
+  //    --top-right placement modifier is set on the root) --
+  --arvo-bdg-offset-right: calc(var(--arvo-bdg-height) * -0.5);
+  --arvo-bdg-offset-top: calc(var(--arvo-bdg-height) * -0.5);
+
+  // -- Base layout ----------------------------------------------------------
+  @include corner-host; // position: relative so embedded ArvoStatus anchors
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  gap: $arvo-space-4;
+  height: var(--arvo-bdg-height);
+  padding-inline: var(--arvo-bdg-pad-inline);
+  box-sizing: border-box;
+  border-radius: 0;
+  white-space: nowrap;
+  user-select: none;
+  font-size: var(--arvo-bdg-font-size);
+  background: var(--arvo-bdg-bg);
+  border: var(--arvo-bdg-border-width) solid var(--arvo-bdg-border-color);
+
+  // -- Elements -------------------------------------------------------------
+
+  &__ico {
+    font-family: $o9con;
+    font-size: var(--arvo-bdg-icon-size);
+    color: var(--arvo-bdg-icon-color);
+    flex: 0 0 auto;
+  }
+
+  &__msg {
+    color: var(--arvo-bdg-text-color);
+    font-size: var(--arvo-bdg-font-size);
+  }
+
+  &__count {
+    display: inline-block; // transform animations require a block formatting context
+    color: var(--arvo-bdg-text-color);
+    font-size: var(--arvo-bdg-font-size);
+
+    &.is-increasing { animation: arvo-bdg-count-up $arvo-motion-counter; }
+    &.is-decreasing { animation: arvo-bdg-count-down $arvo-motion-counter; }
+  }
+
+  &__sep {
+    // Ratio "/" separator. Flex gap on the parent handles surrounding spacing.
+    color: var(--arvo-bdg-text-color);
+    font-size: var(--arvo-bdg-font-size);
+  }
+
+  &__total {
+    color: var(--arvo-bdg-text-color);
+    font-size: var(--arvo-bdg-font-size);
+  }
+
+  // -- Size modifiers -------------------------------------------------------
+
+  &--sm {
+    --arvo-bdg-height: #{$arvo-badge-small};
+    --arvo-bdg-font-size: #{$arvo-font-size-12};
+    --arvo-bdg-icon-size: #{$arvo-icon-14};
+    --arvo-bdg-pad-inline: #{$arvo-space-4};
+  }
+
+  &--md {
+    --arvo-bdg-height: #{$arvo-badge-medium};
+    --arvo-bdg-font-size: #{$arvo-font-size-12};
+    --arvo-bdg-icon-size: #{$arvo-icon-16};
+    --arvo-bdg-pad-inline: #{$arvo-space-6};
+  }
+
+  &--lg {
+    --arvo-bdg-height: #{$arvo-badge-large};
+    --arvo-bdg-font-size: #{$arvo-font-size-14};
+    --arvo-bdg-icon-size: #{$arvo-icon-20};
+    --arvo-bdg-pad-inline: #{$arvo-space-6};
+  }
+
+  // Label variant with a leading icon: tighten the inline-start padding so
+  // the icon sits closer to the edge while the trailing text keeps its
+  // normal padding. Without an icon the label uses the symmetric size
+  // defaults above. Counter variant overrides padding to a flat value
+  // below and is unaffected by this rule.
+  &--label:has(.arvo-bdg__ico) {
+    &.arvo-bdg--sm { --arvo-bdg-pad-inline: #{$arvo-space-2} #{$arvo-space-4}; }
+    &.arvo-bdg--md { --arvo-bdg-pad-inline: #{$arvo-space-4} #{$arvo-space-6}; }
+    &.arvo-bdg--lg { --arvo-bdg-pad-inline: #{$arvo-space-4} #{$arvo-space-6}; }
+  }
+
+  &--counter {
+    --arvo-bdg-pad-inline: #{$arvo-space-4};
+  }
+
+  // -- Semantic color modifiers ---------------------------------------------
+  // IMPORTANT: all color modifiers must appear BEFORE appearance modifiers
+  // in this source file so that appearance overrides win the CSS cascade
+  // when both a color class and an appearance class are present.
+
+  &--positive {
+    --arvo-bdg-bg: var(--arvo-color-s-positive-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-positive-strong);
+    --arvo-bdg-text-color: var(--arvo-color-t-positive);
+    --arvo-bdg-icon-color: var(--arvo-color-i-positive);
+  }
+
+  &--info {
+    // info uses the -dark variant for text/icon per the color registry
+    --arvo-bdg-bg: var(--arvo-color-s-info-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-info-strong);
+    --arvo-bdg-text-color: var(--arvo-color-t-info-dark);
+    --arvo-bdg-icon-color: var(--arvo-color-i-info-dark);
+  }
+
+  &--neutral {
+    // no --arvo-color-s-neutral-subtle token; primary bg falls back to layer-04
+    --arvo-bdg-bg: var(--arvo-color-s-layer-04);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-neutral-strong);
+    --arvo-bdg-text-color: var(--arvo-color-t-neutral);
+    --arvo-bdg-icon-color: var(--arvo-color-i-neutral);
+  }
+
+  &--warning {
+    --arvo-bdg-bg: var(--arvo-color-s-warning-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-warning-strong);
+    --arvo-bdg-text-color: var(--arvo-color-t-warning);
+    --arvo-bdg-icon-color: var(--arvo-color-i-warning);
+  }
+
+  &--negative {
+    --arvo-bdg-bg: var(--arvo-color-s-negative-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-negative-strong);
+    --arvo-bdg-text-color: var(--arvo-color-t-negative);
+    --arvo-bdg-icon-color: var(--arvo-color-i-negative);
+  }
+
+  &--block {
+    // block maps to the negative token family
+    --arvo-bdg-bg: var(--arvo-color-s-negative-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-negative-strong);
+    --arvo-bdg-text-color: var(--arvo-color-t-negative);
+    --arvo-bdg-icon-color: var(--arvo-color-i-negative);
+  }
+
+  // -- Custom color modifiers -----------------------------------------------
+
+  &--purple {
+    --arvo-bdg-bg: var(--arvo-color-s-util-purple-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-util-purple-dark);
+    --arvo-bdg-text-color: var(--arvo-color-t-util-purple);
+    --arvo-bdg-icon-color: var(--arvo-color-i-util-purple);
+  }
+
+  &--pink {
+    --arvo-bdg-bg: var(--arvo-color-s-util-pink-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-util-pink-dark);
+    --arvo-bdg-text-color: var(--arvo-color-t-util-pink);
+    --arvo-bdg-icon-color: var(--arvo-color-i-util-pink);
+  }
+
+  &--glacier {
+    --arvo-bdg-bg: var(--arvo-color-s-util-glacier-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-util-glacier-dark);
+    --arvo-bdg-text-color: var(--arvo-color-t-util-glacier);
+    --arvo-bdg-icon-color: var(--arvo-color-i-util-glacier);
+  }
+
+  &--amber {
+    --arvo-bdg-bg: var(--arvo-color-s-util-amber-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-util-amber-dark);
+    --arvo-bdg-text-color: var(--arvo-color-t-util-amber);
+    --arvo-bdg-icon-color: var(--arvo-color-i-util-amber);
+  }
+
+  &--greenish {
+    --arvo-bdg-bg: var(--arvo-color-s-util-greenish-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-util-greenish-dark);
+    --arvo-bdg-text-color: var(--arvo-color-t-util-greenish);
+    --arvo-bdg-icon-color: var(--arvo-color-i-util-greenish);
+  }
+
+  &--bluish {
+    --arvo-bdg-bg: var(--arvo-color-s-util-bluish-subtle);
+    --arvo-bdg-bg-strong: var(--arvo-color-s-util-bluish-dark);
+    --arvo-bdg-text-color: var(--arvo-color-t-util-bluish);
+    --arvo-bdg-icon-color: var(--arvo-color-i-util-bluish);
+  }
+
+  // -- Appearance modifiers (AFTER color modifiers to win the cascade) ------
+
+  &--primary {
+    // Explicit primary class re-asserts the default border state.
+    --arvo-bdg-border-width: 0px;
+    --arvo-bdg-border-color: transparent;
+  }
+
+  &--outline {
+    // Overrides --arvo-bdg-bg from the color class; text/icon stay per-color.
+    --arvo-bdg-bg: var(--arvo-color-s-layer-01);
+    --arvo-bdg-border-width: 1px;
+    --arvo-bdg-border-color: var(--arvo-color-b-divider);
+  }
+
+  &--filled {
+    // Swaps background to the strong variant and inverts text/icon.
+    // --arvo-bdg-bg-strong was set by the active color modifier.
+    --arvo-bdg-bg: var(--arvo-bdg-bg-strong);
+    --arvo-bdg-text-color: var(--arvo-color-t-inverse);
+    --arvo-bdg-icon-color: var(--arvo-color-i-inverse);
+  }
+
+  // -- Placement modifiers -------------------------------------------------
+  // `--inline` is the default flow rendering -- no extra rules needed
+  // (the React / JS layers still emit the class for symmetry with the
+  // overlay placements so consumers can disambiguate when reading the
+  // DOM). The overlay placements absolutely position the badge in the
+  // matching corner of a `corner-host` parent and half-overhang the
+  // host edges so the badge visually intrudes into the host content
+  // area (matching the Figma overlap).
+
+  &--inline {
+    // explicit no-op: declared so the modifier is documented and
+    // consumers can target it without falling back to :not() chains.
+    position: static;
+  }
+
+  &--top-right {
+    position: absolute;
+    top: var(--arvo-bdg-offset-top);
+    right: var(--arvo-bdg-offset-right);
+    z-index: 1;
+  }
+}
+
+// -- Counter animation keyframes ------------------------------------------
+
+@keyframes arvo-bdg-count-up {
+  0%   { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes arvo-bdg-count-down {
+  0%   { transform: translateY(-8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-bdg__count { animation: none !important; }
+}

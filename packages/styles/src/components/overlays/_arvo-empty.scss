@@ -1,0 +1,12 @@
+@use '../../mixins/empty-state' as *;
+
+// Internal shared empty-state primitive (.arvo-empty).
+//
+// NOT a public component surface -- consumed directly by application code
+// where appropriate, and via the `emptyConfig` prop on action-menu, popover,
+// hybrid-popover, listbox, drawer, side-panel, dropdown-button, split-button,
+// select, combobox, and any future overlay/list surface. Overlay consumers
+// pass a restricted subset (illustration, title, message, secondaryAction)
+// and the wiring layer always renders size=sm + orientation=vertical.
+
+@include empty-state('arvo-empty');

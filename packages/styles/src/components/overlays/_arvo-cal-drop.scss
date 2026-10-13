@@ -1,0 +1,47 @@
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// CalendarDropdown component styles
+// BEM Block: .arvo-cal-drop
+// Abbreviation: cal-drop
+// Category: DateTime
+// Descriptor: descriptors/calendar-dropdown.json
+//
+// Public Layer 4 floating calendar dropdown. Bring-your-own-trigger wrapper
+// around the internal ArvoCalendar grid + CalendarNav header. Rendered into
+// a portal driven by the OverlaySurface engine
+// (architecture/18-OVERLAY-SURFACE-ENGINE.md).
+
+.arvo-cal-drop {
+  --arvo-cal-drop-w: 304px;
+  --arvo-cal-drop-padding: 12px;
+
+  // Display is gated on the engine-managed `.open` class so the panel is
+  // `display: none` (invisible AND inert) after the OverlaySurface engine
+  // removes `.open` once the exit transition completes. Required for the JS
+  // twin, where the popover element is created once and reused across opens
+  // rather than removed from the DOM.
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  width: var(--arvo-cal-drop-w, 304px);
+  padding: var(--arvo-cal-drop-padding, 12px);
+  box-sizing: border-box;
+  background-color: var(--arvo-color-s-layer-03);
+  box-shadow: $arvo-shadow-down;
+  z-index: var(--arvo-z-popover, 1000);
+  font-family: var(--o9-font-family);
+
+  &.open { display: flex; }
+
+  // Direction-aware popup enter / exit animation. See `popup-animation`.
+  @include popup-animation;
+
+  &--show-weeks { --arvo-cal-drop-w: 344px; }
+
+  &__header { width: 100%; }
+  &__body   { width: 100%; display: flex; justify-content: center; }
+}

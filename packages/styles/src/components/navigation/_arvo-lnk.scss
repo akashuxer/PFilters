@@ -1,0 +1,245 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+
+// Link component styles
+// BEM Block: .arvo-lnk
+// Abbreviation: lnk
+// Loading Pattern: A (simple overlay shimmer)
+
+.arvo-lnk {
+  // -- CSS custom properties -------------------------------------------------
+  --arvo-lnk-font-size: #{$arvo-font-size-14};
+  --arvo-lnk-text-color: var(--arvo-color-t-info-dark);
+  --arvo-lnk-icon-color: var(--arvo-color-t-info-dark);
+
+  // -- Layout ----------------------------------------------------------------
+  display: inline-flex;
+  align-items: center;
+  gap: $arvo-space-2;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  vertical-align: baseline;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  // -- Typography ------------------------------------------------------------
+  font-family: var(--o9-font-family);
+  font-size: var(--arvo-lnk-font-size);
+  font-weight: $arvo-regular;
+  line-height: normal;
+  color: var(--arvo-lnk-text-color);
+  text-decoration: none;
+  transition: $arvo-motion-link;
+
+  // -- Icon elements ---------------------------------------------------------
+  &__ico,
+  &__ext {
+    font-size: $arvo-icon-16;
+    color: var(--arvo-lnk-icon-color);
+    flex-shrink: 0;
+    line-height: normal;
+    text-decoration: none;
+    transition: $arvo-motion-link;
+  }
+
+  // External-link icon sits 6px from the label (4px more than the base 2px
+  // flex gap shared with the leading icon).
+  &__ext {
+    margin-inline-start: calc(#{$arvo-space-6} - #{$arvo-space-2});
+  }
+
+  // -- Label element ---------------------------------------------------------
+  // The underline is rendered as a 1px ::after pseudo-element so it can be
+  // animated with transform: scaleX.
+  &__lbl {
+    color: var(--arvo-lnk-text-color);
+    position: relative;
+    text-decoration: none;
+    transition: $arvo-motion-link;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: currentColor;
+      transition: transform $arvo-duration-fast $arvo-ease-standard;
+    }
+  }
+
+  // -- Size: Small -----------------------------------------------------------
+  &--sm {
+    --arvo-lnk-font-size: #{$arvo-font-size-12};
+  }
+
+  // -- Size: Large (default) -------------------------------------------------
+  &--lg {
+    --arvo-lnk-font-size: #{$arvo-font-size-14};
+  }
+
+  // -- Variant: Primary (default) --------------------------------------------
+  &--primary {
+    --arvo-lnk-text-color: var(--arvo-color-t-info-dark);
+    --arvo-lnk-icon-color: var(--arvo-color-t-info-dark);
+
+    .arvo-lnk__lbl::after {
+      transform: scaleX(1);
+      transform-origin: right center;
+    }
+  }
+
+  // -- Variant: Secondary ----------------------------------------------------
+  &--secondary {
+    --arvo-lnk-text-color: var(--arvo-color-t-secondary);
+    --arvo-lnk-icon-color: var(--arvo-color-t-secondary);
+
+    .arvo-lnk__lbl::after {
+      transform: scaleX(1);
+      transform-origin: right center;
+    }
+  }
+
+  // -- Variant: Tertiary -----------------------------------------------------
+  &--tertiary {
+    --arvo-lnk-text-color: var(--arvo-color-t-info-dark);
+    --arvo-lnk-icon-color: var(--arvo-color-t-info-dark);
+
+    .arvo-lnk__lbl::after {
+      transform: scaleX(0);
+      transform-origin: left center;
+    }
+  }
+
+  // -- Hover (hover-capable devices only) ------------------------------------
+  @include hover {
+    &:not(.is-disabled):hover {
+      --arvo-lnk-text-color: var(--arvo-color-t-info-light);
+      --arvo-lnk-icon-color: var(--arvo-color-t-info-light);
+
+      // Primary / secondary: underline retracts left->right (origin: right).
+      &.arvo-lnk--primary .arvo-lnk__lbl::after,
+      &.arvo-lnk--secondary .arvo-lnk__lbl::after {
+        transform: scaleX(0);
+      }
+
+      // Tertiary: underline draws in left->right (origin: left).
+      &.arvo-lnk--tertiary .arvo-lnk__lbl::after {
+        transform: scaleX(1);
+      }
+    }
+  }
+
+  // -- Focus -----------------------------------------------------------------
+  &:focus-visible {
+    --arvo-lnk-text-color: var(--arvo-color-t-info-light);
+    --arvo-lnk-icon-color: var(--arvo-color-t-info-light);
+    outline: 1px solid var(--arvo-color-b-theme-focus);
+    outline-offset: $arvo-space-2;
+
+    // Primary / secondary: retract the underline while the focus ring shows.
+    &.arvo-lnk--primary .arvo-lnk__lbl::after,
+    &.arvo-lnk--secondary .arvo-lnk__lbl::after {
+      transform: scaleX(0);
+    }
+  }
+
+  // -- Active ----------------------------------------------------------------
+  &:not(.is-disabled):active,
+  &:not(.is-disabled).active {
+    --arvo-lnk-text-color: var(--arvo-color-t-info-light);
+    --arvo-lnk-icon-color: var(--arvo-color-t-info-light);
+
+    .arvo-lnk__lbl::after {
+      transform: scaleX(0);
+    }
+  }
+
+  // -- Visited ---------------------------------------------------------------
+  // Visited styling is opt-in via the `.visited` class. When the feature is
+  // off, suppress the UA `:visited` default so visited links keep the normal
+  // variant colors (UA `a:visited { color: ... }` is more specific than a
+  // single class otherwise).
+  &:visited:not(.visited) {
+    --arvo-lnk-text-color: var(--arvo-color-t-info-dark);
+    --arvo-lnk-icon-color: var(--arvo-color-t-info-dark);
+    color: var(--arvo-lnk-text-color);
+
+    .arvo-lnk__lbl {
+      color: var(--arvo-lnk-text-color);
+    }
+
+    .arvo-lnk__ico,
+    .arvo-lnk__ext {
+      color: var(--arvo-lnk-icon-color);
+    }
+  }
+
+  &.visited:visited {
+    --arvo-lnk-text-color: var(--arvo-color-t-util-purple) !important;
+    --arvo-lnk-icon-color: var(--arvo-color-t-util-purple) !important;
+  }
+
+  // -- Disabled --------------------------------------------------------------
+  &.is-disabled {
+    --arvo-lnk-text-color: var(--arvo-color-t-disabled);
+    --arvo-lnk-icon-color: var(--arvo-color-i-disabled);
+    cursor: not-allowed;
+    pointer-events: auto;
+  }
+
+  // -- Loading State (Pattern A) ---------------------------------------------
+  &.loading {
+    pointer-events: none;
+    cursor: default;
+
+    .arvo-lnk__lbl {
+      text-decoration: none;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background-color: var(--arvo-color-s-pulse-light);
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-dark) 50%,
+        transparent 100%
+      );
+      transform: translateX(-100%);
+      animation: arvo-skeleton-shimmer 1.5s ease-in-out infinite;
+    }
+
+    color: transparent;
+
+    .arvo-lnk__lbl,
+    .arvo-lnk__ico,
+    .arvo-lnk__ext {
+      opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::before {
+        animation: none;
+      }
+    }
+  }
+}

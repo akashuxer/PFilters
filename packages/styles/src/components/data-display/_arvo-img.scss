@@ -1,0 +1,177 @@
+@use '../../../../tokens/src/scss/all' as *;
+
+// ArvoImage component styles.
+
+.arvo-img {
+  --arvo-img-fit: cover;
+  --arvo-img-position: center;
+
+  display: block;
+  max-inline-size: 100%;
+  color: var(--arvo-color-t-primary);
+}
+
+.arvo-img__figure {
+  margin: 0;
+  display: grid;
+  gap: $arvo-space-8;
+}
+
+.arvo-img__frame {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  min-block-size: 80px;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  background: var(--arvo-color-s-layer-02);
+  color: inherit;
+  text-align: inherit;
+  aspect-ratio: var(--arvo-img-ratio, auto);
+}
+
+button.arvo-img__frame {
+  cursor: pointer;
+}
+
+.arvo-img--previewable button.arvo-img__frame:not(:disabled) {
+  cursor: zoom-in;
+}
+
+button.arvo-img__frame:disabled {
+  cursor: default;
+}
+
+button.arvo-img__frame:focus-visible {
+  outline: 2px solid var(--arvo-color-b-focus);
+  outline-offset: 2px;
+}
+
+.arvo-img__picture,
+.arvo-img__asset {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.arvo-img__asset {
+  object-fit: var(--arvo-img-fit);
+  object-position: var(--arvo-img-position);
+}
+
+.arvo-img__state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: $arvo-space-16;
+  background: var(--arvo-color-s-layer-02);
+  color: var(--arvo-color-t-secondary);
+  font-size: $arvo-font-size-12;
+  line-height: 16px;
+  text-align: center;
+
+  .arvo-empty {
+    max-inline-size: min(100%, 320px);
+  }
+}
+
+.arvo-img__skeleton {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--arvo-color-s-layer-03);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--arvo-color-s-layer-01) 72%, transparent),
+      transparent
+    );
+    animation: arvo-img-shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+.arvo-img__overlay {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  display: grid;
+  gap: $arvo-space-2;
+  padding: $arvo-space-24 $arvo-space-16 $arvo-space-12;
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, #000 28%, transparent) 32%,
+    color-mix(in srgb, #000 72%, transparent) 100%
+  );
+  text-shadow: 0 1px 2px color-mix(in srgb, #000 72%, transparent);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: auto $arvo-space-8 $arvo-space-8 $arvo-space-8;
+    block-size: calc(100% - #{$arvo-space-24});
+    border-radius: $arvo-space-4;
+    background: color-mix(in srgb, #000 12%, transparent);
+    pointer-events: none;
+  }
+}
+
+.arvo-img__overlay-title,
+.arvo-img__overlay-subtitle {
+  position: relative;
+  z-index: 1;
+}
+
+.arvo-img__overlay-title {
+  font-size: $arvo-font-size-14;
+  line-height: 20px;
+  font-weight: $arvo-medium;
+}
+
+.arvo-img__overlay-subtitle {
+  font-size: $arvo-font-size-12;
+  line-height: 16px;
+}
+
+.arvo-img__preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $arvo-space-6;
+  color: var(--arvo-color-t-inverse);
+  background: transparent;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+  font-size: 24px;
+  line-height: 1;
+  text-shadow: 0 1px 4px color-mix(in srgb, #000 60%, transparent);
+}
+
+.arvo-img--previewable .arvo-img__frame:hover .arvo-img__preview,
+.arvo-img--previewable .arvo-img__frame:focus-visible .arvo-img__preview {
+  opacity: 1;
+}
+
+.arvo-img__caption {
+  color: var(--arvo-color-t-secondary);
+  font-size: $arvo-font-size-12;
+  line-height: 16px;
+}
+
+@keyframes arvo-img-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

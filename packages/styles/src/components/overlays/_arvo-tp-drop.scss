@@ -1,0 +1,48 @@
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// TimePickerDropdown component styles
+// BEM Block: .arvo-tp-drop
+// Abbreviation: tp-drop
+// Category: DateTime
+// Descriptor: descriptors/timepicker-dropdown.json
+//
+// Public Layer 4 floating time dropdown. Bring-your-own-trigger wrapper
+// around the internal ArvoTimeDropdown listbox. Rendered into a portal
+// driven by the OverlaySurface engine (architecture/18-OVERLAY-SURFACE-ENGINE.md).
+// Display is gated on the engine-managed `.open` class so the panel is
+// `display: none` (invisible AND inert) after the engine removes `.open`
+// once the exit transition completes. Required for the JS twin, where the
+// popover element is created once and reused across opens rather than
+// removed from the DOM.
+
+.arvo-tp-drop {
+  --arvo-tp-drop-w: 144px;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  flex-direction: column;
+  width: var(--arvo-tp-drop-w, 144px);
+  box-sizing: border-box;
+  background-color: var(--arvo-color-s-layer-03);
+  box-shadow: $arvo-shadow-down;
+  z-index: var(--arvo-z-popover, 1000);
+  font-family: var(--o9-font-family);
+
+  &.open { display: flex; }
+
+  // Transition classes applied by @arvo/core enter()/exit(). Direction-aware
+  // popup enter/exit animation. See `popup-animation`.
+  @include popup-animation;
+
+  &__body {
+    width: 100%;
+    display: flex;
+  }
+
+  &__body > .arvo-tdrop {
+    width: 100%;
+  }
+}

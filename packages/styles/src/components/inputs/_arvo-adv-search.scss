@@ -1,0 +1,388 @@
+// AdvanceSearch component styles
+// BEM Block: .arvo-adv-search
+// Abbreviation: adv-search
+// Loading Pattern: A (leading search icon swapped for spinner of the same footprint)
+// Variants: scopedSearch (left DropdownButton + OptionList), customFilter
+//           (right IconButton + Popover), filterBy (right DropdownButton + one of
+//           HybridPopover / OptionList / date+time pickers in anchor mode).
+//
+// NOTE: Visual contract diverges from Arvo Search (40px row vs 32px, 20px search
+// icon vs 16px, flat 0 radius, embedded trigger, custom 1.5px underline). This
+// is a brand-new block, not a Search variant -- expressing it as
+// arvo-search--* modifiers would pollute Search's stable form-input contract.
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/typography' as *;
+@use '../../mixins/loading' as *;
+
+.arvo-adv-search {
+  // Per-size tokens. Size only changes the field row height and the
+  // vertical padding -- the inner controls (search icon, input typography,
+  // trigger buttons, badge, clear, separator) stay at their canonical
+  // sizes across all three. The size modifier classes below cascade these
+  // CSS variables onto __field.
+  --arvo-adv-search-field-h: 40px;
+  --arvo-adv-search-field-py: #{$arvo-space-4};
+
+  // -- Root wrapper ----------------------------------------------------------
+  // Outer container: holds the input field row + the optional inline message.
+  // Width defaults to 575px (canonical Figma row); set --arvo-form-input-width
+  // via the width prop or use --full-width for 100%.
+  display: inline-flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  width: var(--arvo-form-input-width, 575px);
+  position: relative;
+  font-family: var(--arvo-font-family);
+
+  &--full-width {
+    --arvo-form-input-width: 100%;
+  }
+
+  // -- Size modifiers ------------------------------------------------------
+  // sm and lg only shrink / grow the field row height (and the vertical
+  // padding that keeps the 32px inner controls centered). Everything else
+  // -- search icon size, input typography, trigger buttons, badge, clear,
+  // separator -- stays identical to md so an AdvanceSearch always reads
+  // like itself regardless of size. Per Figma 40597:3380 (sm) /
+  // 40597:3230 (lg).
+  &--sm {
+    --arvo-adv-search-field-h: 36px;
+    --arvo-adv-search-field-py: #{$arvo-space-2};
+  }
+
+  &--md {
+    --arvo-adv-search-field-h: 40px;
+    --arvo-adv-search-field-py: #{$arvo-space-4};
+  }
+
+  &--lg {
+    --arvo-adv-search-field-h: 44px;
+    --arvo-adv-search-field-py: #{$arvo-space-6};
+  }
+
+  // -- __field --------------------------------------------------------------
+  // Flat row with the layer-04 background. Default height/padding match the
+  // md size; --sm / --lg override via the CSS vars above. Variant-specific
+  // layout (left vs right trigger) is composed via the inner __lead /
+  // __input-group / __actions slots, not via modifier-driven CSS on __field.
+  &__field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: var(--arvo-adv-search-field-h);
+    padding-block: var(--arvo-adv-search-field-py);
+    padding-inline: $arvo-space-8 $arvo-space-4;
+    gap: $arvo-space-12;
+    background-color: var(--arvo-color-s-layer-04);
+    border-radius: 0;
+    cursor: text;
+
+    // Hover -> warmer bg. Suppressed on disabled/readonly.
+    @include hover {
+      .arvo-adv-search:not(.is-disabled):not(.is-readonly):hover > & {
+        background-color: var(--arvo-color-s-theme-hover-4);
+      }
+    }
+  }
+
+  // -- __lead ---------------------------------------------------------------
+  // scopedSearch-only left cluster: trigger + 32px separator.
+  &__lead {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-2;
+    flex-shrink: 0;
+  }
+
+  // -- __input-group --------------------------------------------------------
+  // Center cluster: leading 20px search icon + native input.
+  &__input-group {
+    display: flex;
+    flex: 1 1 0%;
+    min-width: 0;
+    align-items: center;
+    gap: $arvo-space-8;
+    height: 100%;
+  }
+
+  // -- __ico (20x20 leading search icon -- NOT the 16px used by Search) -----
+  &__ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: $arvo-icon-20;
+    height: $arvo-icon-20;
+    font-family: $o9con;
+    font-size: $arvo-icon-20;
+    line-height: 1;
+    color: var(--arvo-color-i-secondary);
+    pointer-events: none;
+  }
+
+  // -- __input (native <input type="search">) -------------------------------
+  &__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    outline: 0;
+    box-sizing: border-box;
+    color: var(--arvo-color-t-form-value);
+    @include arvo-font-l14-r;
+
+    &::placeholder {
+      color: var(--arvo-color-t-placeholder);
+    }
+
+    &::selection {
+      background-color: var(--arvo-color-s-theme);
+      color: var(--arvo-color-t-inverse);
+    }
+
+    // Strip native webkit search decorations -- our right cluster owns the UX.
+    &::-webkit-search-cancel-button,
+    &::-webkit-search-decoration {
+      display: none;
+      -webkit-appearance: none;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+  }
+
+  // -- __actions (right cluster) --------------------------------------------
+  // Layout order is owned by the React/JS templates; this just defines the
+  // flex container shape.
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-8;
+    flex-shrink: 0;
+    height: 100%;
+  }
+
+  // -- __shortcut (keyboard shortcut badge) ---------------------------------
+  &__shortcut {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding-inline: $arvo-space-4;
+    padding-block: $arvo-space-2;
+    background-color: var(--arvo-color-s-layer-01);
+    color: var(--arvo-color-t-tertiary);
+    border-radius: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    @include arvo-font-p12-r;
+  }
+
+  // -- __counter (ArvoBadge) ------------------------------------------------
+  // Counter visuals come from the composed ArvoBadge instance; we only own
+  // layout flex-shrink so the badge does not collapse.
+  &__counter {
+    flex-shrink: 0;
+  }
+
+  // -- __clear (composed ArvoIconButton sm tertiary) ------------------------
+  &__clear {
+    flex-shrink: 0;
+  }
+
+  // -- __err-ico (tooltip-mode error icon) ----------------------------------
+  // 16x16 o9con-status-error-filled; visible only when error-tooltip state.
+  &__err-ico {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: $arvo-icon-16;
+    height: $arvo-icon-16;
+    flex-shrink: 0;
+    font-family: $o9con;
+    font-size: $arvo-icon-16;
+    line-height: 1;
+    color: var(--arvo-color-i-negative);
+  }
+
+  // -- __sep (32px vertical separator) --------------------------------------
+  &__sep {
+    display: inline-block;
+    width: 0;
+    height: 32px;
+    border-left: $arvo-border-1 solid var(--arvo-color-b-separator);
+    flex-shrink: 0;
+  }
+
+  // -- __submit (composed ArvoButton primary sm) ----------------------------
+  &__submit {
+    flex-shrink: 0;
+  }
+
+  // -- __trigger (variant trigger) ------------------------------------------
+  // Visuals come from the composed ArvoButton (with arvo-dd-btn) for
+  // scopedSearch / filterBy, or the composed ArvoIconButton for customFilter.
+  // We only own layout flex-shrink here.
+  &__trigger {
+    flex-shrink: 0;
+  }
+
+  // -- __underline (1.5px bottom focus/invalid bar) --------------------------
+  // Absolutely-positioned inside __field; transparent by default.
+  &__underline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 0;
+    border-bottom: $arvo-border-3 solid transparent;
+    pointer-events: none;
+    transition: border-bottom-color 120ms ease;
+  }
+
+  // -- __message (inline error row) -----------------------------------------
+  &__message {
+    width: 100%;
+  }
+
+  // ------------------------------------------------------------------------
+  // States
+  // ------------------------------------------------------------------------
+
+  // Focus -> underline becomes theme-focus (1.5px). The container background
+  // is unchanged on focus (parity with the Figma sample).
+  &.is-focused:not(.is-disabled):not(.has-error) {
+    .arvo-adv-search__underline {
+      border-bottom-color: var(--arvo-color-b-theme-focus);
+    }
+  }
+
+  // Invalid -> underline becomes negative, the field's vertical padding
+  // bumps up one step to reserve room for the 1.5px underline, message
+  // row renders below the field (gap 8 from root). Wins over focus. Each
+  // size's invalid padding step is the next visual notch above its
+  // resting padding so the field doesn't visibly grow.
+  &.has-error {
+    --arvo-adv-search-field-py: #{$arvo-space-6};
+
+    &.arvo-adv-search--sm {
+      --arvo-adv-search-field-py: #{$arvo-space-4};
+    }
+
+    &.arvo-adv-search--lg {
+      --arvo-adv-search-field-py: #{$arvo-space-8};
+    }
+
+    .arvo-adv-search__underline {
+      border-bottom-color: var(--arvo-color-b-negative);
+      transition: none;
+    }
+  }
+
+  // errorDisplay='tooltip' -> reveal the right-cluster err-ico. The inline
+  // __message row is not rendered in the template, so no display:none needed.
+  &.has-error.error-tooltip {
+    .arvo-adv-search__err-ico {
+      display: inline-flex;
+    }
+  }
+
+  // has-value -> hide shortcut. Counter/clear visibility is controlled by the
+  // template (so the React/JS render does not allocate the DOM at all when
+  // empty); the .has-value selector only governs shortcut.
+  &.has-value {
+    .arvo-adv-search__shortcut {
+      display: none;
+    }
+  }
+
+  // Open -> trigger gets the .open class via the overlay surface engine; this
+  // hook is for any additional component-level open-state styling.
+  &.is-open {
+    .arvo-adv-search__trigger {
+      // DropdownButton-style trigger: bg + label/icon shift.
+      &.arvo-dd-btn {
+        background-color: var(--arvo-color-s-theme-active-2);
+        color: var(--arvo-color-t-primary);
+      }
+
+      // IconButton-style trigger: bg + icon color shift.
+      &.arvo-icon-btn {
+        background-color: var(--arvo-color-s-theme-active-2);
+        color: var(--arvo-color-i-theme-active);
+      }
+    }
+  }
+
+  // Disabled -> outer overlay color shift, all text/icons disabled tokens,
+  // all interactive children non-focusable via the React/JS templates.
+  &.is-disabled {
+    cursor: not-allowed;
+
+    .arvo-adv-search__field {
+      background-color: var(--arvo-color-s-disabled);
+      cursor: not-allowed;
+    }
+
+    .arvo-adv-search__ico,
+    .arvo-adv-search__err-ico {
+      color: var(--arvo-color-i-disabled);
+    }
+
+    .arvo-adv-search__input {
+      color: var(--arvo-color-t-disabled);
+      cursor: not-allowed;
+
+      &::placeholder {
+        color: var(--arvo-color-t-disabled);
+      }
+    }
+
+    .arvo-adv-search__shortcut {
+      color: var(--arvo-color-t-disabled);
+    }
+
+    .arvo-adv-search__underline {
+      border-bottom-color: transparent;
+    }
+  }
+
+  // Readonly -> input keeps focus for copy; clear/submit suppressed via
+  // template; no underline change.
+  &.is-readonly {
+    .arvo-adv-search__field {
+      cursor: text;
+    }
+  }
+
+  // Loading -> the leading search icon slot renders a spinner (consumer-
+  // provided glyph; sized 20x20). This block just toggles aria-busy and a
+  // hook for any future spinner motion.
+  &.loading {
+    .arvo-adv-search__ico {
+      // Future: animate a loading spinner glyph when one is added.
+    }
+  }
+
+  // ------------------------------------------------------------------------
+  // Variants
+  // ------------------------------------------------------------------------
+  // scopedSearch: trigger on the LEFT (inside __lead, before __input-group);
+  // no __sep inside __actions (since trigger is not there).
+  &--scoped-search {
+    // No structural CSS needed -- the React/JS template puts the trigger
+    // inside __lead. The __lead container handles spacing.
+  }
+
+  // customFilter & filterBy: trigger on the RIGHT, separator before it.
+  &--custom-filter,
+  &--filter-by {
+    // Template renders __sep + __trigger inside __actions in this order.
+    // No structural CSS overrides required.
+  }
+}

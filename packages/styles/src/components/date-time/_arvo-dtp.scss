@@ -1,0 +1,391 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-input' as form-input;
+@use '../../mixins/picker-field-actions' as picker-field-actions;
+@use '../../mixins/hover' as hover;
+@use '../../mixins/popup-animation' as *;
+
+// DateTimePicker component styles
+// BEM Block: .arvo-dtp
+// Abbreviation: dtp
+// Category: DateTime
+// Descriptor: descriptors/datetime-picker.json
+// Loading Pattern: C -- spinner replaces trigger-btn; popover cannot open.
+//
+// Popover layout (matches the Figma date-time-dropdown node 30443:1102):
+//   .arvo-dtp__popover   -- outer container: arvo-color-s-base background,
+//                          flex-row, 2px gap. The 2px gap shows the s-base
+//                          surface through and acts as the vertical divider
+//                          between calendar and time columns.
+//   .arvo-dtp__cal       -- calendar column: layer-03 background, padding 12,
+//                          flex-column with 8px gap. Contains the header
+//                          (CalendarNav) above the ArvoCalendar grid.
+//   .arvo-dtp__time      -- time column: layer-03 background, padding-top 8,
+//                          self-stretch so it spans the full popover height.
+//                          Hosts the ArvoTimeDropdown -- the AM/PM toggle
+//                          stays static at the top while the scrollable
+//                          option list grows to fill the remaining height.
+//
+// Shared patterns actually consumed: form-label, form-input, picker-field-actions,
+// hover. (msg-alert, calendar-grid, and calendar-nav-header live on the composed
+// children -- ArvoMessageAlert, ArvoCalendar, ArvoCalendarNav -- and are NOT
+// re-applied here, matching _arvo-dp.scss.)
+//
+// Constraint matrix (maintainer note only; no styling implications):
+//   - min / max     : FULL datetime constraints. The time portion of the bound
+//                     applies ONLY on the boundary date; all other in-range
+//                     dates accept the full 24h window.
+//   - startTime /
+//     endTime       : TIME-ONLY constraints applied across ALL selectable
+//                     dates (e.g. business hours).
+//   - Combined      : most restrictive wins. The disabled visual treatment for
+//                     out-of-range calendar cells and time options is owned by
+//                     ArvoCalendar / ArvoTimeDropdown respectively.
+
+// ----- Block -----------------------------------------------------------------
+
+.arvo-dtp {
+  // -- Trigger CSS variables (form-input-actions-overlay pattern) -------------
+  // Height values reflect the EDITABLE FIELD only. The total label+field
+  // frames in Figma (46px sm, 54px lg) include the form label which is
+  // rendered as a sibling block by ArvoFormLabel and is not part of the
+  // form-input height contract.
+  --arvo-form-input-width: 300px;     // overridden by width prop or --full-width
+  --arvo-form-input-height: 32px;     // lg default; --sm overrides to 24px
+  --arvo-form-input-pad-r: 0px;       // ResizeObserver-driven by actions overlay
+
+  // -- Popover CSS variables --------------------------------------------------
+  // Popover dimensions per the Figma date-time-dropdown node (30443:1102):
+  //   - Calendar column: 280 (body) + 24 (p-12 sides) = 304 outer
+  //                      320 (body, --show-weeks) + 24 = 344 outer
+  //   - Time column: 144 outer (no horizontal padding)
+  //   - 2px gap between columns shows the s-base surface as the divider
+  //
+  //   default       : 304 + 2 + 144 = 450 outer
+  //   --show-weeks  : 344 + 2 + 144 = 490 outer
+  --arvo-dtp-popover-w: 450px;
+  --arvo-dtp-cal-padding: 12px;
+
+  // -- Root layout ------------------------------------------------------------
+  @include form-input.form-input-default-width;
+
+  display: inline-flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+  gap: $arvo-space-8;
+  font-family: var(--o9-font-family);
+
+  // ----- Modifiers (--sm, --lg, --full-width, --show-weeks, --anchor-mode) ----
+
+  &--full-width { --arvo-form-input-width: 100%; }
+
+  // Surface modifiers -- swap the at-rest field background between tinted
+  // (filled, default) and host surface (base) via the shared
+  // form-input-surface pattern. Every other state color is unchanged.
+  &--surface-filled { @include form-input.form-input-surface-filled; }
+  &--surface-base { @include form-input.form-input-surface-base; }
+
+  &--sm {
+    --arvo-form-input-height: 24px;
+    --arvo-form-input-font-size: #{$arvo-font-size-12};
+  }
+
+  &--lg {
+    --arvo-form-input-height: 32px;
+    --arvo-form-input-font-size: #{$arvo-font-size-14};
+  }
+
+  // --anchor-mode: the consumer element acts as the trigger; field, label, and
+  // error message are suppressed with !important so consumer styles cannot
+  // accidentally reveal them.
+  &--anchor-mode {
+    display: contents;
+
+    > .arvo-dtp__field,
+    > .arvo-dtp__lbl,
+    > .arvo-dtp__err-msg { display: none !important; }
+  }
+
+  // --show-weeks: forwarded to ArvoCalendar via the showWeeks prop. The
+  // popover widens by 40px when the week column is visible so the dropdown
+  // shrinks to the actual content size when weeks are off, avoiding an
+  // empty column of whitespace.
+  &--show-weeks {
+    --arvo-dtp-popover-w: 490px;
+  }
+
+  // ----- Label (__lbl) -------------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS). Date/time
+  // pickers render the label at 12px regardless of field size.
+
+  // ----- Trigger (__field, __input, __border, __actions) ---------------------
+
+  &__field {
+    @include form-input.form-input-base;
+    @include form-input.form-input-hover-bg;
+    @include form-input.form-input-disabled-bg;
+
+    flex-direction: row;
+    gap: $arvo-space-4;
+    width: 100%;
+    overflow: hidden;
+    padding: $arvo-space-4 $arvo-space-4 $arvo-space-4 $arvo-space-8;
+  }
+
+  &.is-disabled &__field { cursor: not-allowed; pointer-events: none; }
+  &.is-readonly &__field { @include form-input.form-input-readonly-field; }
+
+  &__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--arvo-color-t-form-value);
+    font-size: var(--arvo-form-input-font-size, #{$arvo-font-size-14});
+    font-family: var(--o9-font-family);
+    outline: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+    padding-right: var(--arvo-form-input-pad-r, 0);
+    width: 100%;
+
+    &::placeholder { color: var(--arvo-color-t-placeholder); }
+
+    // Segmented-input focused-segment highlight is rendered by the native
+    // text-selection range; the React and JS layers call setSelectionRange()
+    // around the focused segment so the browser draws the highlight using
+    // the theme selection tokens below.
+    &::selection {
+      background-color: var(--arvo-color-s-theme);
+      color: var(--arvo-color-t-inverse);
+    }
+  }
+
+  &.is-disabled &__input { color: var(--arvo-color-t-disabled); cursor: not-allowed; }
+  &.is-readonly &__input { cursor: not-allowed; }
+
+  &__actions    { @include picker-field-actions.picker-field-actions-layout; }
+  &__clear-btn  { @include picker-field-actions.picker-field-actions-clear; }
+  &__err-ico    { @include picker-field-actions.picker-field-actions-error-icon; }
+  &__sep        { @include picker-field-actions.picker-field-actions-separator; }
+  &__trigger-btn { @include picker-field-actions.picker-field-actions-trigger; }
+
+  &__err-msg {
+    font-size: $arvo-font-size-12;
+    color: var(--arvo-color-t-negative);
+    margin-block-start: $arvo-space-4;
+  }
+
+  &.error-tooltip &__err-msg { display: none; }
+
+  &__border { @include form-input.form-input-animated-border-base; }
+
+  &:focus-within:not(.is-disabled):not(.is-readonly):not(.has-error) {
+    .arvo-dtp__border::after {
+      background-color: var(--arvo-color-b-theme-focus);
+      height: var(--arvo-form-input-border-focus-width, #{$arvo-border-3});
+      transform: scaleX(1);
+    }
+  }
+
+  &.has-error {
+    .arvo-dtp__border {
+      background: var(--arvo-color-b-negative);
+
+      &::after {
+        background-color: var(--arvo-color-b-negative);
+        height: var(--arvo-form-input-border-focus-width, #{$arvo-border-3});
+        transform: scaleX(1);
+        transition: none;
+      }
+    }
+  }
+
+  &.is-disabled &__border {
+    background: var(--arvo-color-b-disabled);
+
+    &::after {
+      background-color: var(--arvo-color-b-disabled);
+      height: var(--arvo-form-input-border-width, 1px);
+      transform: none;
+      transition: none;
+    }
+  }
+
+  // -- State: readonly (shared border + inert trigger-btn) ------------------
+  // Dashed line via form-input-readonly-border; trigger-btn muted +
+  // non-interactive via form-input-readonly-action (matches DatePicker).
+  &.is-readonly &__border {
+    @include form-input.form-input-readonly-border;
+  }
+
+  &.is-readonly &__trigger-btn {
+    @include form-input.form-input-readonly-action;
+  }
+
+  // ----- Popover (__popover, __cal, __time) ---------------------------------
+  // The popover lives in a body-level portal driven by the OverlaySurface
+  // engine. Display is gated on the engine-managed `.open` class so the
+  // panel is `display: none` (invisible AND inert) after the engine removes
+  // `.open` once the exit transition completes. Required for the JS twin,
+  // where the popover element is created once and reused across opens rather
+  // than removed from the DOM.
+  // Background is s-base; the 2px gap between calendar and time columns
+  // shows s-base through and acts as the vertical divider per the Figma
+  // date-time-dropdown node (30443:1102).
+
+  &__popover {
+    display: none;
+    flex-direction: row;
+    align-items: stretch;
+    gap: $arvo-border-2; // 2px gap reveals s-base surface as the divider
+    width: var(--arvo-dtp-popover-w, 450px);
+    box-sizing: border-box;
+    background-color: var(--arvo-color-s-base);
+    box-shadow: $arvo-shadow-down;
+    z-index: var(--arvo-z-popover, 1000);
+
+    &.open { display: flex; }
+
+    // Direction-aware popup enter / exit animation. See `popup-animation`.
+    @include popup-animation;
+  }
+
+  // Loading (Pattern C) prevents the popover from opening; the rule below is
+  // defense-in-depth in case a parent toggles loading while the surface is open.
+  &.loading &__popover { display: none; }
+
+  // Calendar column: layer-03 surface, p-12, contains header above grid.
+  // Width matches the calendar body (with --show-weeks adding the 40px
+  // week gutter), so the dropdown contracts when weeks are hidden.
+  &__cal {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+    box-sizing: border-box;
+    padding: var(--arvo-dtp-cal-padding, 12px);
+    background-color: var(--arvo-color-s-layer-03);
+  }
+
+  &__header {
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  &__cal-grid {
+    width: 100%;
+  }
+
+  // Time column: layer-03 surface, padding-top 8 (no horizontal padding).
+  // self-stretch via the flex parent so the column spans the full height
+  // of the popover (which is driven by the calendar column's content).
+  // overflow:hidden + flex-column inside the column lets the AM/PM toggle
+  // stay static at the top while the option list grows to fill the rest.
+  //
+  // The list flex contract is flipped here so its intrinsic height drops
+  // to 0 and the column does NOT push the popover to fit every time
+  // option. The column then stretches to the calendar height via the
+  // popover's `align-items: stretch`, and the list grows back into the
+  // remaining space with overflow-y:auto for scroll.
+  &__time {
+    flex: 0 0 auto;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    width: 144px;
+    max-height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: $arvo-space-8 0 $arvo-space-16 0;
+    background-color: var(--arvo-color-s-layer-03);
+
+    > .arvo-tdrop {
+      flex: 1 1 0;
+      min-height: 0;
+      width: 100%;
+      // Stretch the tdrop root to fill the column instead of sizing to its
+      // intrinsic content. The inner __tabs stays static and __list takes
+      // the remaining height.
+      display: flex;
+      flex-direction: column;
+      gap: $arvo-space-2;
+    }
+    > .arvo-tdrop > .arvo-tdrop__list {
+      flex: 1 1 0;
+      min-height: 0;
+      max-height: none;
+    }
+
+    > .arvo-tdrop > .arvo-tdrop__tabs {
+      padding: $arvo-space-8 $arvo-space-8 $arvo-space-10 $arvo-space-8;
+      
+      
+    }
+  }
+
+  // ----- State classes (.open, .has-value, .has-text-selected, .has-error,
+  //                     .error-tooltip, .is-disabled, .is-readonly, .loading) -
+  // Most state rules are scoped inline alongside their element selectors above.
+  // .open              -> field-level state class; reflects open state for hooks.
+  //                       (Popover display is gated on its own .open class --
+  //                       added by the OverlaySurface engine and removed
+  //                       after the exit transition completes.)
+  // .has-value         -> clear-btn visibility handled by picker-field-actions-clear
+  // .has-text-selected -> segment focus highlight via native ::selection on __input
+  // .has-error         -> border + error-icon + err-msg handled inline above
+  // .error-tooltip     -> err-msg hidden inline above; err-ico shown via picker-field-actions
+  // .is-disabled       -> field, input, label, border handled inline above
+  // .is-readonly       -> field, input, border handled inline above
+  // .loading           -> handled in Loading Pattern C section below
+}
+
+// Hover border activation (hover-capable devices only)
+@include hover.hover {
+  .arvo-dtp:not(.is-disabled):not(.has-error):not(.is-readonly):hover {
+    .arvo-dtp__border::after { transform: scaleX(1); }
+  }
+}
+
+// ----- Loading Pattern C -----------------------------------------------------
+// Spinner replaces trigger-btn in the actions overlay; popover cannot open.
+
+@mixin _arvo-dtp-loading {
+  pointer-events: none;
+
+  .arvo-dtp__field      { cursor: default; }
+  .arvo-dtp__trigger-btn { display: none; }
+  .arvo-dtp__input      { pointer-events: none; }
+
+  .arvo-dtp__actions::after {
+    content: "";
+    flex: 0 0 auto;
+    display: block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--arvo-color-b-disabled);
+    border-top-color: var(--arvo-color-b-theme);
+    border-radius: 50%;
+    animation: arvo-dtp-spin 0.7s linear infinite;
+  }
+}
+
+.arvo-dtp.loading { @include _arvo-dtp-loading; }
+
+[data-arvo-loading="true"] .arvo-dtp:not([data-arvo-loading-ignore="true"]) {
+  @include _arvo-dtp-loading;
+}
+
+@keyframes arvo-dtp-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+// ----- Parent overrides (arvo-form-field --arvo-form-input-width: 100%) ------
+
+.arvo-form-field {
+  .arvo-dtp { --arvo-form-input-width: 100%; }
+}

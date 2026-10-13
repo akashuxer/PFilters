@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "jsx": "preserve",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node", "jquery"],
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@arvo/core": ["packages/core/src/index.ts"],
+      "@arvo/core/*": ["packages/core/src/*"],
+      "@arvo/js": ["packages/js/src/index.ts"],
+      "@arvo/js/*": ["packages/js/src/*"],
+      "@arvo/utils": ["packages/utils/src/index.ts"],
+      "@arvo/utils/*": ["packages/utils/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "vite.config.ts"]
+}

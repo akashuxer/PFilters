@@ -1,0 +1,142 @@
+@use '../../mixins/hover' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-spl ----------------------------------------------------------------
+// ArvoSplitter -- thin separator that visually divides two adjacent regions
+// along one axis. With `arvo-spl--resizable` it gains pointer/keyboard
+// interaction, a centered indicator line, and hover/focus/active state chrome.
+// Without it the splitter is a static visual separator (no indicator, no
+// interaction, not focusable).
+//
+// The host element IS the 4px rail -- no inner rail span. The only optional
+// child is `__handle`, the 1x8 (vertical) / 8x1 (horizontal) center indicator
+// line that signals "this rail can be dragged" in the default resting state.
+// Hover, focus, and active states change the rail bg and hide the indicator
+// so the rail surface itself communicates the interaction state.
+
+.arvo-spl {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  background: var(--arvo-color-s-base);
+  outline: none;
+  transition: background-color $arvo-duration-fast ease-out;
+
+  // -- Orientation: vertical (default) -------------------------------------
+  // Vertical rail runs top-to-bottom; drag horizontally to resize width.
+  &--vertical {
+    width: $arvo-panel-splitter-thickness;
+    align-self: stretch;
+
+    .arvo-spl__handle {
+      width: 1px;
+      height: 0.5rem; // 8px
+    }
+  }
+
+  // -- Orientation: horizontal --------------------------------------------
+  // Horizontal rail runs left-to-right; drag vertically to resize height.
+  &--horizontal {
+    height: $arvo-panel-splitter-thickness;
+    align-self: stretch;
+
+    .arvo-spl__handle {
+      width: 0.5rem; // 8px
+      height: 1px;
+    }
+  }
+
+  // -- __handle ------------------------------------------------------------
+  // Decorative centered indicator. Color matches the Figma spec
+  // (--arvo-color-s-layer-07). Visibility is driven by interaction state on
+  // the resizable variant (default = visible, hover/focus/active = hidden).
+  &__handle {
+    background: var(--arvo-color-s-layer-07);
+    pointer-events: none;
+    transition: opacity $arvo-duration-fast ease-out;
+  }
+
+  // -- Resizable variant: interactive states + cursor ---------------------
+  // Static (non-resizable) splitters skip every selector below and stay as
+  // a flat 4px rail with no hover/focus/active chrome.
+  &--resizable {
+    touch-action: none;
+
+    &.arvo-spl--vertical {
+      cursor: col-resize;
+    }
+    &.arvo-spl--horizontal {
+      cursor: row-resize;
+    }
+
+    @include hover {
+      &:not(.is-disabled):hover {
+        background: var(--arvo-color-s-theme-hover-2);
+
+        .arvo-spl__handle {
+          opacity: 0;
+        }
+      }
+    }
+
+    &:focus-visible {
+      background: var(--arvo-color-s-theme-hover-2);
+
+      .arvo-spl__handle {
+        opacity: 0;
+      }
+    }
+
+    // Focus inner border -- 1px line on the edge that faces the target.
+    // Drawn as an inset box-shadow so the rail thickness stays constant.
+    // Default (target before splitter): border on the START edge
+    //   - vertical:   left edge   => inset 1px 0 0
+    //   - horizontal: top edge    => inset 0 1px 0 0
+    &.arvo-spl--vertical:focus-visible {
+      box-shadow: inset 1px 0 0 var(--arvo-color-b-theme-focus);
+    }
+    &.arvo-spl--horizontal:focus-visible {
+      box-shadow: inset 0 1px 0 0 var(--arvo-color-b-theme-focus);
+    }
+    // Inverse (target after splitter): border on the END edge
+    //   - vertical:   right edge  => inset -1px 0 0
+    //   - horizontal: bottom edge => inset 0 -1px 0 0
+    &.arvo-spl--inverse.arvo-spl--vertical:focus-visible {
+      box-shadow: inset -1px 0 0 var(--arvo-color-b-theme-focus);
+    }
+    &.arvo-spl--inverse.arvo-spl--horizontal:focus-visible {
+      box-shadow: inset 0 -1px 0 0 var(--arvo-color-b-theme-focus);
+    }
+
+    &.active {
+      background: var(--arvo-color-b-theme-active);
+
+      .arvo-spl__handle {
+        opacity: 0;
+      }
+    }
+  }
+
+  // -- Disabled (resizable only) ------------------------------------------
+  &--disabled,
+  &.is-disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+    opacity: $arvo-opacity-40;
+
+    &:focus-visible {
+      box-shadow: none;
+    }
+  }
+}
+
+// -- Reduced motion ----------------------------------------------------------
+@media (prefers-reduced-motion: reduce) {
+  .arvo-spl,
+  .arvo-spl__handle {
+    transition: none;
+  }
+}

@@ -1,0 +1,595 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-input' as form-input;
+@use '../../mixins/calendar-nav-header' as cal-nav-header;
+@use '../../mixins/member-tile-grid' as mtg;
+@use '../../mixins/rolling-stepper' as rolling-stepper;
+@use '../../mixins/overlay-footer' as overlay-footer;
+@use '../../mixins/hover' as hover;
+@use '../../mixins/popup-animation' as *;
+
+// DateRangePicker component styles
+// BEM Block: .arvo-drp
+// Abbreviation: drp
+// Category: DateTime
+// Descriptor: descriptors/date-range-picker.json
+// Loading Pattern: C -- spinner replaces trigger-btn; popover cannot open.
+//
+// Single public component, three config-gated capability layers (ADR-1):
+//   (a) absolute  -- dual calendar with em-dash separator (no memberData/rolling)
+//   (b) member    -- single scrollable member-tile panel (memberData + frequency)
+//   (c) rolling   -- Start/End ArvoNumberInput steppers + tile panel + footer
+//
+// Popover dimensions per layer (ADR-8):
+//   absolute: 680 x 296  (2 calendars + em-dash, no footer)
+//   member:   692 x 304  (8x3 tile panel, no footer)
+//   rolling:  692 x 442  (rolling-setting + tile panel + 44h sticky footer)
+//
+// Shared patterns consumed: form-label, form-input, picker-field-actions,
+// calendar-nav-header, member-tile-grid, rolling-stepper, overlay-footer.
+// (msg-alert, calendar-grid all live on their composed children
+// and are NOT re-applied here.)
+
+// ----- Block -----------------------------------------------------------------
+
+.arvo-drp {
+  // -- Trigger CSS variables (form-input-actions-overlay pattern) -------------
+  // Height values reflect the EDITABLE FIELD only. The total label+field
+  // frames in Figma (46px sm, 54px lg) include the form label which is
+  // rendered as a sibling block by ArvoFormLabel and is not part of the
+  // form-input height contract.
+  --arvo-form-input-width: 300px;
+  --arvo-form-input-height: 32px;
+  --arvo-form-input-pad-r: 0px;
+
+  // -- Popover CSS variables (per-mode width/height per ADR-8) ----------------
+  // The mode-specific width/height variables are documented in the descriptor
+  // under cssVariables.popover; --arvo-drp-popover-w / --arvo-drp-popover-h
+  // are the runtime aliases the &.arvo-drp--{mode} modifier swaps to the
+  // mode-specific value so a single &__popover rule can read them.
+  //
+  // Absolute mode shrinks 80px (two calendars * 40px week gutter) when
+  // `--show-weeks` is off so the dropdown matches the actual content size
+  // instead of reserving the worst-case width.
+  --arvo-drp-popover-absolute-w: 600px;
+  --arvo-drp-popover-member-w:   692px;
+  --arvo-drp-popover-rolling-w:  692px;
+  --arvo-drp-popover-absolute-h: 296px;
+  --arvo-drp-popover-member-h:   304px;
+  --arvo-drp-popover-rolling-h:  442px;
+  --arvo-drp-popover-w: var(--arvo-drp-popover-absolute-w);
+  --arvo-drp-popover-h: var(--arvo-drp-popover-absolute-h);
+
+  // -- Root layout ------------------------------------------------------------
+  @include form-input.form-input-default-width;
+
+  display: inline-flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+  gap: $arvo-space-8;
+  font-family: var(--o9-font-family);
+
+  // ----- Modifiers (sizes, layout, modes) ------------------------------------
+
+  &--full-width { --arvo-form-input-width: 100%; }
+
+  // Surface modifiers -- swap the at-rest field background between tinted
+  // (filled, default) and host surface (base) via the shared
+  // form-input-surface pattern. Every other state color is unchanged.
+  &--surface-filled { @include form-input.form-input-surface-filled; }
+  &--surface-base { @include form-input.form-input-surface-base; }
+
+  &--sm {
+    --arvo-form-input-height: 24px;
+    --arvo-form-input-font-size: #{$arvo-font-size-12};
+  }
+
+  &--lg {
+    --arvo-form-input-height: 32px;
+    --arvo-form-input-font-size: #{$arvo-font-size-14};
+  }
+
+  // --anchor-mode: the consumer element acts as the trigger; field, label, and
+  // error message are suppressed with !important so consumer styles cannot
+  // accidentally reveal them (ADR-10).
+  &--anchor-mode {
+    display: contents;
+
+    > .arvo-drp__field,
+    > .arvo-drp__lbl,
+    > .arvo-drp__err-msg { display: none !important; }
+  }
+
+  // --show-weeks: forwarded to ArvoCalendar via the showWeeks prop. In
+  // absolute mode the popover grows 80px (40px per calendar) so the two
+  // calendar bodies contract back to 280px when weeks are off, avoiding
+  // empty whitespace. Member and rolling modes are unaffected -- they
+  // don't render the calendar grid.
+  &--show-weeks.arvo-drp--absolute {
+    --arvo-drp-popover-absolute-w: 680px;
+    --arvo-drp-popover-w: var(--arvo-drp-popover-absolute-w);
+  }
+
+  // --absolute (default), --member, --rolling: select the popover dimensions.
+  // These modifiers are mutually exclusive. The React/JS layers compute the
+  // active mode and apply the matching modifier on every render.
+  &--absolute {
+    --arvo-drp-popover-w: var(--arvo-drp-popover-absolute-w);
+    --arvo-drp-popover-h: var(--arvo-drp-popover-absolute-h);
+  }
+
+  &--member {
+    --arvo-drp-popover-w: var(--arvo-drp-popover-member-w);
+    --arvo-drp-popover-h: var(--arvo-drp-popover-member-h);
+  }
+
+  &--rolling {
+    --arvo-drp-popover-w: var(--arvo-drp-popover-rolling-w);
+    --arvo-drp-popover-h: var(--arvo-drp-popover-rolling-h);
+  }
+
+  // ----- Label (__lbl) -------------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS). Date/time
+  // pickers render the label at 12px regardless of field size.
+
+  // ----- Trigger (__field, __input, __border, __actions) ---------------------
+
+  // Trigger field: [value (start -> end)] [actions]. Matches the Figma
+  // input-container (flex, gap-8, pl-8 pr-4 py-4). The dual-segment value grows;
+  // the action cluster keeps its intrinsic width on the right.
+  &__field {
+    @include form-input.form-input-base;
+    @include form-input.form-input-hover-bg;
+    @include form-input.form-input-disabled-bg;
+
+    flex-direction: row;
+    gap: $arvo-space-8;
+    width: 100%;
+    overflow: hidden;
+    padding: $arvo-space-4 $arvo-space-4 $arvo-space-4 $arvo-space-8;
+  }
+
+  &.is-disabled &__field { cursor: not-allowed; pointer-events: none; }
+  &.is-readonly &__field { @include form-input.form-input-readonly-field; }
+
+  // Dual-segment value: [start segment] [arrow] [end segment].
+  &__value {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    align-items: center;
+    gap: $arvo-space-4;
+    overflow: hidden;
+  }
+
+  // Each editable date segment. Grows within the value track and truncates
+  // independently; the end segment is right-aligned (Figma 30457:67665).
+  &__seg {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--arvo-color-t-form-value);
+    font-size: var(--arvo-form-input-font-size, #{$arvo-font-size-14});
+    font-family: var(--o9-font-family);
+    outline: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+
+    &::placeholder { color: var(--arvo-color-t-placeholder); }
+
+    // Focused-segment highlight rendered by the native text-selection range;
+    // the React / JS layers call setSelectionRange() around the active segment.
+    &::selection {
+      background-color: var(--arvo-color-s-theme);
+      color: var(--arvo-color-t-inverse);
+    }
+
+    &--end { text-align: right; }
+  }
+
+  &.is-disabled &__seg { color: var(--arvo-color-t-disabled); cursor: not-allowed; }
+  &.is-readonly &__seg { cursor: not-allowed; }
+
+  // The arrow glyph between the two segments (12px, placeholder color).
+  &__arrow {
+    flex: 0 0 auto;
+    color: var(--arvo-color-t-placeholder);
+    font-size: $arvo-font-size-12;
+    font-family: var(--o9-font-family);
+    user-select: none;
+  }
+
+  // Right-side action cluster (inline flex, matching the Figma input actions).
+  // Slot order follows DOM order: [clear] [err-ico] [unsaved-ind] [divider]
+  // [trigger-btn]; conditional slots are rendered only when relevant.
+  &__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex-shrink: 0;
+  }
+
+  &__clear-btn,
+  &__err-ico,
+  &__trigger-btn { flex-shrink: 0; }
+
+  // Vertical divider between the dynamic actions and the trigger button
+  // (Figma input separator 32000:3880).
+  &__seg-divider {
+    flex-shrink: 0;
+    width: $arvo-border-1;
+    height: 24px;
+    background-color: var(--arvo-color-b-divider);
+  }
+
+  &__err-msg {
+    font-size: $arvo-font-size-12;
+    color: var(--arvo-color-t-negative);
+    margin-block-start: $arvo-space-4;
+  }
+
+  &.error-tooltip &__err-msg { display: none; }
+
+  &__border { @include form-input.form-input-animated-border-base; }
+
+  &:focus-within:not(.is-disabled):not(.is-readonly):not(.has-error) {
+    .arvo-drp__border::after {
+      background-color: var(--arvo-color-b-theme-focus);
+      height: var(--arvo-form-input-border-focus-width, #{$arvo-border-3});
+      transform: scaleX(1);
+    }
+  }
+
+  &.has-error {
+    .arvo-drp__border {
+      background: var(--arvo-color-b-negative);
+
+      &::after {
+        background-color: var(--arvo-color-b-negative);
+        height: var(--arvo-form-input-border-focus-width, #{$arvo-border-3});
+        transform: scaleX(1);
+        transition: none;
+      }
+    }
+  }
+
+  &.is-disabled &__border {
+    background: var(--arvo-color-b-disabled);
+
+    &::after {
+      background-color: var(--arvo-color-b-disabled);
+      height: var(--arvo-form-input-border-width, 1px);
+      transform: none;
+      transition: none;
+    }
+  }
+
+  // -- State: readonly (shared border + inert trigger-btn) ------------------
+  // Dashed line via form-input-readonly-border; trigger-btn muted +
+  // non-interactive via form-input-readonly-action (matches DatePicker).
+  &.is-readonly &__border {
+    @include form-input.form-input-readonly-border;
+  }
+
+  &.is-readonly &__trigger-btn {
+    @include form-input.form-input-readonly-action;
+  }
+
+  // ----- Popover (__popover, __header, __body, __footer) -------------------
+  // The popover lives in a body-level portal driven by the OverlaySurface
+  // engine (see architecture/18-OVERLAY-SURFACE-ENGINE.md). Display is gated
+  // on the engine-managed `.open` class so the panel is `display: none`
+  // (invisible AND inert) when the engine has removed `.open` after the exit
+  // transition completes. Required for the JS twin, where the popover element
+  // is created once and reused across opens rather than removed from the DOM.
+
+  &__popover {
+    --arvo-form-input-width: auto;
+    display: none;
+    flex-direction: column;
+    gap: $arvo-space-8;
+    width: var(--arvo-drp-popover-w);
+    // Content-driven height with the per-mode value as a floor (ADR-8 keeps the
+    // WIDTH constant per mode). Using min-height -- not a fixed height -- means a
+    // 6-week month is never clipped and the day grid can't overflow the surface.
+    min-height: var(--arvo-drp-popover-h);
+    padding: $arvo-space-12;
+    box-sizing: border-box;
+    background-color: var(--arvo-color-s-layer-03);
+    box-shadow: $arvo-shadow-down;
+    z-index: var(--arvo-z-popover, 1000);
+
+    &.open { display: flex; }
+
+    // Direction-aware popup enter / exit animation. See `popup-animation`.
+    @include popup-animation;
+  }
+
+  // Loading (Pattern C) prevents the popover from opening; the rule below is
+  // defense-in-depth in case a parent toggles loading while the surface is open.
+  &.loading &__popover { display: none; }
+
+  // ----- Header (CalendarNav variants) -------------------------------------
+  &__header {
+    @include cal-nav-header.calendar-nav-header-base;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  // Member-mode header hides Today (member nav is by tile-grid scroll).
+  &--member &__header {
+    @include cal-nav-header.calendar-nav-header-member;
+  }
+
+  // Rolling-mode header hides ALL navigation icon buttons (rolling nav is
+  // through the Start/End steppers in the body); only the period-label pair
+  // and the Absolute/Rolling tab-group remain.
+  &--rolling &__header {
+    @include cal-nav-header.calendar-nav-header-rolling;
+  }
+
+  &__hdr-switch,
+  &__hdr-tabs { flex-shrink: 0; }
+
+  // Rolling-mode header hides ALL interactive zoom/nav controls; only the
+  // Absolute/Rolling tab is visible. The picker doesn't render prev/next/
+  // today/switch DOM in rolling mode so additional hiding rules are not
+  // needed here -- the member mixin already covers Today.
+
+  // ----- Body --------------------------------------------------------------
+  &__body {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+  }
+
+  // Absolute mode body: two ArvoCalendar instances side by side, separated only
+  // by a 16px gap (Figma calendar-wrapper 31980:4026). The em-dash lives in the
+  // header range label, NOT between the calendars.
+  &--absolute &__body {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: $arvo-space-16;
+  }
+
+  &__cal {
+    flex: 0 0 auto;
+  }
+
+  // ----- Rolling setting row (rolling mode only) ---------------------------
+  &__rolling-setting {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  &__rolling-row {
+    @include rolling-stepper.rolling-stepper-row;
+  }
+
+  &__rolling-block {
+    @include rolling-stepper.rolling-stepper-input;
+  }
+
+  &__rolling-lbl {
+    @include rolling-stepper.rolling-stepper-label;
+  }
+
+  // ----- Inline info alert (range count) -----------------------------------
+  &__info-alert {
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  // ----- Member tile panel (member + rolling modes) ------------------------
+  &__tile-panel {
+    width: calc(100% + $arvo-space-12);
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  &__mtg-scroll {
+    @include mtg.member-tile-grid-row-snap;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+  }
+
+  &__mtg-grid {
+    @include mtg.member-tile-grid-base;
+  }
+
+  &__mtg-tile {
+    @include mtg.member-tile-grid-tile;
+    position: relative;
+    color: var(--arvo-color-t-primary);
+    background-color: transparent;
+    transition: background-color $arvo-duration-fast $arvo-ease-simple;
+
+    @include hover.hover {
+      &:not(.is-disabled):not(.selected):hover {
+        background-color: var(--arvo-color-s-theme-hover-3);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--arvo-color-b-theme-focus);
+      outline-offset: -2px;
+    }
+
+    &.in-range {
+      background-color: var(--arvo-color-s-theme-active-4);
+    }
+
+    &.preview {
+      background-color: var(--arvo-color-s-theme-active-4);
+    }
+
+    &.selected {
+      background-color: var(--arvo-color-s-theme-active-1);
+      color: var(--arvo-color-t-inverse);
+    }
+
+    &.current-member::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: 4px;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      background-color: var(--arvo-color-s-theme);
+      pointer-events: none;
+    }
+
+    &.selected.current-member::after {
+      background-color: var(--arvo-color-s-direct);
+    }
+
+    &.is-disabled {
+      opacity: $arvo-opacity-40;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  // Rolling-mode tiles are display-only -- the active range is driven by the
+  // Start / End steppers in the body. Tiles must not present a clickable
+  // affordance: cursor: not-allowed and no hover background change.
+  &--rolling &__mtg-tile {
+    cursor: not-allowed;
+
+    @include hover.hover {
+      &:not(.is-disabled):not(.selected):hover {
+        background-color: transparent;
+      }
+    }
+  }
+
+  &__mtg-tile-label {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-regular;
+    line-height: 1;
+  }
+
+  // ----- Footer (rolling mode only; sticky Save/Cancel) --------------------
+  &__footer {
+    @include overlay-footer.overlay-footer-actions-layout;
+    width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: $arvo-space-4 0 0;
+    gap: $arvo-space-8;
+
+    .arvo-btn {
+      max-width: 120px;
+    }
+  }
+
+  // Footer "Current {period} ({prefix}): {displayName}" legend. Mirrors the
+  // Figma `currentTime` group (node mDBMujrLrauhRs1ZLj0qqo / 10086:14201):
+  //   - 6x6 indicator square uses the `s-inverse` surface token so it reads
+  //     as the opposite of the popover background in both themes (black on
+  //     light / white on dark).
+  //   - The "Current ..." label inherits the secondary text color (regular
+  //     weight) from `&__current-ind`.
+  //   - The trailing displayName value overrides to primary text color and
+  //     medium weight.
+  &__current-ind {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    color: var(--arvo-color-t-secondary);
+    font-size: $arvo-font-size-16;
+    flex: 1 1 0 !important;
+    min-width: 0;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background-color: var(--arvo-color-s-inverse);
+      flex-shrink: 0;
+    }
+  }
+
+  .arvo-drp__current-ind-value {
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-t-primary);
+  }
+
+  // ----- State classes (.open, .has-value, .has-text-selected,
+  //                     .has-error, .error-tooltip,
+  //                     .is-disabled, .is-readonly, .loading) --------------
+  // Most state rules are scoped inline alongside their element selectors
+  // above. Documented here for the descriptor:
+  // .open              -> field-level state class; reflects open state for hooks.
+  //                       (Popover display is gated on its own .open class --
+  //                       added by the OverlaySurface engine and removed
+  //                       after the exit transition completes.)
+  // .has-value         -> clear-btn visibility via picker-field-actions-clear
+  // .has-text-selected -> segment focus highlight via native ::selection
+  // .has-error         -> border + error-icon + err-msg handled inline above
+  // .error-tooltip     -> err-msg hidden inline; err-ico shown via shared mixin
+  // .is-disabled       -> field, input, label, border handled inline above
+  // .is-readonly       -> field, input, border handled inline above
+  // .loading           -> handled in Loading Pattern C section below
+}
+
+// Hover border activation (hover-capable devices only)
+@include hover.hover {
+  .arvo-drp:not(.is-disabled):not(.has-error):not(.is-readonly):hover {
+    .arvo-drp__border::after { transform: scaleX(1); }
+  }
+}
+
+// ----- Loading Pattern C -----------------------------------------------------
+// Spinner replaces trigger-btn in the actions overlay; popover cannot open.
+
+@mixin _arvo-drp-loading {
+  pointer-events: none;
+
+  .arvo-drp__field       { cursor: default; }
+  .arvo-drp__trigger-btn { display: none; }
+  .arvo-drp__input       { pointer-events: none; }
+
+  .arvo-drp__actions::after {
+    content: "";
+    flex: 0 0 auto;
+    display: block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--arvo-color-b-disabled);
+    border-top-color: var(--arvo-color-b-theme);
+    border-radius: 50%;
+    animation: arvo-drp-spin 0.7s linear infinite;
+  }
+}
+
+.arvo-drp.loading { @include _arvo-drp-loading; }
+
+[data-arvo-loading="true"] .arvo-drp:not([data-arvo-loading-ignore="true"]) {
+  @include _arvo-drp-loading;
+}
+
+@keyframes arvo-drp-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+// ----- Parent overrides (arvo-form-field --arvo-form-input-width: 100%) ------
+
+.arvo-form-field {
+  .arvo-drp { --arvo-form-input-width: 100%; }
+}

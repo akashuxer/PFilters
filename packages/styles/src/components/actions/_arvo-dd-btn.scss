@@ -1,0 +1,179 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-input' as *;
+
+// DropdownButton (arvo-dd-btn) & DropdownIconButton (arvo-dd-icon-btn)
+// BEM Block: arvo-dd-btn / arvo-dd-icon-btn
+// Abbreviation: dd-btn / dd-icon-btn
+// Loading Pattern: A (inherited from .arvo-btn base class on trigger element)
+//
+// Both trigger elements also carry .arvo-btn, so all base layout, colors,
+// focus, disabled, hover, and loading states are fully inherited from _arvo-btn.scss.
+// This file only adds: caret layout, open-state rotation, and compact mode.
+
+// --- .arvo-dd-btn ------------------------------------------------------------
+
+.arvo-dd-btn {
+  // -- CSS custom properties -------------------------------------------------
+  --arvo-dd-btn-caret-size: #{$arvo-icon-16};
+  --arvo-dd-btn-gap: #{$arvo-space-4};
+
+  // Override btn gap -- caret is tighter than a leading icon
+  --arvo-btn-gap: var(--arvo-dd-btn-gap);
+
+  // -- Icon -----------------------------------------------------------------
+  &__icon {
+    flex-shrink: 0;
+    line-height: normal;
+    pointer-events: none;
+  }
+
+  // -- Label ----------------------------------------------------------------
+  &__lbl {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  // -- Caret ----------------------------------------------------------------
+  // Sets --arvo-btn-icon-size on this element so the btn-base icon rule
+  // (font-size: var(--arvo-btn-icon-size), specificity 0-2-0) resolves to
+  // the caret size rather than the leading icon size.
+  &__caret {
+    --arvo-btn-icon-size: var(--arvo-dd-btn-caret-size);
+    color: inherit;
+    width: var(--arvo-dd-btn-caret-size);
+    height: var(--arvo-dd-btn-caret-size);
+    flex-shrink: 0;
+    line-height: normal;
+    pointer-events: none;
+    transition: transform $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  // -- Open state: caret rotates 180deg -------------------------------------
+  &.open &__caret {
+    transform: rotate(180deg);
+  }
+
+  // -- Size: Small -----------------------------------------------------------
+  &.arvo-btn--sm {
+    --arvo-dd-btn-caret-size: #{$arvo-icon-14};
+  }
+
+  // -- Size: Medium (default) ------------------------------------------------
+  // --arvo-dd-btn-caret-size: $arvo-icon-16 (block default above)
+
+  // -- Size: Large -----------------------------------------------------------
+  &.arvo-btn--lg {
+    --arvo-dd-btn-gap: #{$arvo-space-6};
+    // caret stays at 16px (same as md)
+  }
+
+  // -- Appearance: field -----------------------------------------------------
+  // V2-only presentation class. The component remains a menu button; this
+  // modifier changes only trigger layout/skin to match Arvo form fields.
+  &--field {
+    --arvo-form-input-height: 32px;
+    --arvo-form-input-font-size: #{$arvo-font-size-14};
+    --arvo-form-input-padding-inline: #{$arvo-space-8};
+
+    @include form-input-base;
+    @include form-input-hover-bg;
+
+    justify-content: flex-start;
+    width: 100%;
+    min-width: 0;
+    gap: #{$arvo-space-6};
+    color: var(--arvo-color-t-form-value);
+    border: 0;
+    border-block-end: 1px solid var(--arvo-color-b-form);
+    border-radius: 0;
+    background-color: var(--arvo-form-input-bg-color, var(--arvo-color-s-layer-04));
+    box-shadow: none;
+    text-align: start;
+
+    &.arvo-btn--sm {
+      --arvo-form-input-height: 24px;
+      --arvo-form-input-font-size: #{$arvo-font-size-12};
+    }
+
+    &.arvo-btn--lg {
+      --arvo-form-input-height: 40px;
+      --arvo-form-input-font-size: #{$arvo-font-size-14};
+    }
+  }
+
+  &--field &__lbl {
+    flex: 1 1 auto;
+    text-align: start;
+  }
+
+  &--field &__caret {
+    margin-inline-start: auto;
+  }
+}
+
+// --- .arvo-dd-icon-btn -------------------------------------------------------
+
+.arvo-dd-icon-btn {
+  // -- CSS custom properties -------------------------------------------------
+  --arvo-dd-icon-btn-caret-size: #{$arvo-icon-16};
+  --arvo-btn-gap: #{$arvo-space-4};
+  --arvo-btn-padding-inline: #{$arvo-space-8};
+  --arvo-btn-padding-block: #{$arvo-space-8};
+
+  // -- Icon -----------------------------------------------------------------
+  &__icon {
+    flex-shrink: 0;
+    line-height: normal;
+    pointer-events: none;
+  }
+
+  // -- Caret ----------------------------------------------------------------
+  &__caret {
+    --arvo-btn-icon-size: var(--arvo-dd-icon-btn-caret-size);
+    color: inherit;
+    width: var(--arvo-dd-icon-btn-caret-size);
+    height: var(--arvo-dd-icon-btn-caret-size);
+    flex-shrink: 0;
+    line-height: normal;
+    pointer-events: none;
+    transition: transform $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  // -- Open state: caret rotates 180deg -------------------------------------
+  &.open &__caret {
+    transform: rotate(180deg);
+  }
+
+  // -- Compact modifier: square, caret hidden --------------------------------
+  &--compact {
+    width: var(--arvo-btn-height);
+    min-width: var(--arvo-btn-height);
+    padding-inline: 0;
+    justify-content: center;
+    --arvo-btn-gap: 0;
+  }
+
+  &--compact &__caret {
+    display: none;
+  }
+
+  // -- Size: Small -----------------------------------------------------------
+  &.arvo-btn--sm {
+    --arvo-dd-icon-btn-caret-size: #{$arvo-icon-12};
+    --arvo-btn-padding-block: #{$arvo-space-4};
+    --arvo-btn-padding-inline: #{$arvo-space-6};
+  }
+
+  // -- Size: Medium (default) ------------------------------------------------
+  // --arvo-dd-icon-btn-caret-size: $arvo-icon-16 (block default above)
+  &.arvo-btn--md {
+    --arvo-dd-icon-btn-caret-size: #{$arvo-icon-16};
+  }
+
+  // -- Size: Large -----------------------------------------------------------
+  &.arvo-btn--lg {
+    --arvo-dd-icon-btn-caret-size: #{$arvo-icon-20};
+  }
+}

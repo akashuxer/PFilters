@@ -1,0 +1,88 @@
+// Message Alert component styles
+// BEM Block: .arvo-msg-alert
+// Abbreviation: msg-alert
+// Category: Feedback
+//
+// Public atomic message-alert primitive. Two display modes:
+//   * Full   (default)         -- icon + message + optional dismiss button
+//   * Inline (--inline)        -- icon-only 16x16 (in-field tooltip-error use case)
+//
+// Six semantic types (negative, positive, warning, info, neutral, block) drive
+// icon glyph + color via the shared `mixins/_msg-alert` pattern.
+//
+// See descriptors/message-alert.json for the full spec.
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/msg-alert' as *;
+
+.arvo-msg-alert {
+  @include msg-alert-base;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--arvo-msg-alert-body-gap, #{$arvo-space-8});
+  min-width: 0;
+
+  // -- Dismiss animation ----------------------------------------------------
+  // Matches the ArvoBannerAlert dismiss motion: the host collapses from
+  // bottom to top -- opacity fades, the host slides slightly upward, and
+  // the host's max-height (locked to its current pixel height by the
+  // JS / React layer just before .is-closing is applied) transitions to 0
+  // so surrounding layout reflows smoothly into the freed space. Scoped
+  // to the public block here, NOT to the shared `msg-alert-*` mixin so
+  // form-input compositions (textbox, combobox, etc.) that reuse those
+  // mixins do not inherit the dismiss transition.
+  overflow: hidden;
+  transition:
+    $arvo-motion-feedback,
+    max-height $arvo-duration-medium $arvo-ease-simple;
+
+  &.is-closing {
+    opacity: 0;
+    transform: $arvo-transform-banner-dismiss-exit;
+    pointer-events: none;
+  }
+
+  // -- __body (wrapper for __ico + __msg in full mode) ----------------------
+  &__body {
+    display: inline-flex;
+    flex: 1 0 0;
+    align-items: flex-start;
+    gap: #{$arvo-space-4};
+    min-width: 0;
+  }
+
+  // -- __ico (leading status icon) ------------------------------------------
+  &__ico { @include msg-alert-icon; }
+
+  // -- __msg (trailing message text) ----------------------------------------
+  &__msg {
+    @include msg-alert-msg;
+  }
+
+  // -- Type modifiers -------------------------------------------------------
+  &--negative { @include msg-alert-negative; }
+  &--positive { @include msg-alert-positive; }
+  &--warning  { @include msg-alert-warning; }
+  &--info     { @include msg-alert-info; }
+  &--neutral  { @include msg-alert-neutral; }
+  &--block    { @include msg-alert-block; }
+
+  // -- Layout / state modifiers --------------------------------------------
+  &--inline       { @include msg-alert-inline; }
+  &--dismissable  { @include msg-alert-dismissable; }
+
+  // Custom-icon override: when an explicit `icon` prop is passed, the SCSS
+  // pattern's `::before` glyph is suppressed and a child <i class="o9con-*">
+  // renders inside __ico instead. The color still follows the `type` modifier.
+  &.has-icon-override .arvo-msg-alert__ico::before {
+    content: none;
+  }
+
+  // -- Reduced motion ------------------------------------------------------
+  // Skip the dismiss transition; the JS / React layer short-circuits the
+  // transitionend wait and detaches the host element synchronously when
+  // prefers-reduced-motion is active.
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}

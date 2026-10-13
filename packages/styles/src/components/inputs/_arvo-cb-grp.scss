@@ -1,0 +1,73 @@
+// CheckboxGroup component styles
+// BEM Block: .arvo-cb-grp
+// Abbreviation: cb-grp
+// Loading Pattern: C (group disables pointer-events + aria-busy; children show Pattern A shimmer)
+
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-cb-grp ------------------------------------------------------------
+
+.arvo-cb-grp {
+  // -- Base layout ----------------------------------------------------------
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+
+  // -- __lbl (group label) --------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS); the React/JS
+  // layer passes size={componentSize} so the group caption scales with the
+  // child controls (sm=12px, lg=14px).
+
+  // -- __bdy (body wrapping __items + below-group error message) -----------
+  &__bdy {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+  }
+
+  // -- __items (flex container for ArvoCheckbox children) ---------------------
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+  }
+
+  // -- Size: sm -------------------------------------------------------------
+  &--sm {}
+
+  // -- Layout: horizontal ---------------------------------------------------
+  &--horizontal {
+    .arvo-cb-grp__items {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+
+  // -- Layout: label-start (only with --horizontal) -------------------------
+  // Root becomes row so __lbl and __bdy sit side-by-side
+  &--horizontal#{&}--label-start {
+    flex-direction: row;
+    gap: $arvo-space-12;
+  }
+
+  // -- State: disabled ------------------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+  }
+
+  // -- State: readonly ------------------------------------------------------
+  &.is-readonly {
+    .arvo-cb-grp__items {
+      pointer-events: none;
+    }
+  }
+
+  // -- Loading state (Pattern C) --------------------------------------------
+  // Group disables pointer-events + sets aria-busy; child ArvoCheckbox instances
+  // show their own shimmer via [data-arvo-loading="true"] on __items.
+  &.loading,
+  &[data-arvo-loading="true"] {
+    pointer-events: none;
+  }
+}

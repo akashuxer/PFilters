@@ -1,0 +1,224 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+
+// ArvoChipList component styles.
+// BEM Block: .arvo-chip-list
+// Abbreviation: chip-list
+// Category: Inputs
+//
+// Collection container that lays out ArvoChip children with consistent
+// spacing, wrapping, overflow, and propagated context. The list owns LAYOUT
+// only -- chip surface/typography tokens are owned by ArvoChip and are never
+// restyled here.
+//
+// Overflow modes: wrap (default), single-line, max-rows, none.
+// Reorder: .arvo-chip-list--reorderable via @arvo/core dnd engine (JS-driven).
+// Loading: Pattern C -- the list blocks pointer-events (aria-busy set by
+// React/JS); each child chip renders its own Pattern A shimmer.
+//
+// The --general/--filter/--input (variant), --primary/--outline/--utility
+// (appearance), color (--semantic) and the size COLOR axis are propagation
+// context only and carry no list-level surface styling, so no rules are emitted
+// for them. Size classes DO carry the inline-gap override (below).
+
+// ---------------------------------------------------------------------------
+// Block
+// ---------------------------------------------------------------------------
+
+.arvo-chip-list {
+  // Dynamic layout tokens (defaults = md). Inline gap changes per size; row gap
+  // applies when wrapping. Both are the only custom properties this list owns
+  // beyond the JS-set --arvo-chip-list-max-rows.
+  --arvo-chip-list-gap: #{$arvo-space-4};
+  --arvo-chip-list-row-gap: #{$arvo-space-4};
+
+  display: flex;
+  align-items: center;
+  gap: var(--arvo-chip-list-gap);
+
+  // ---------------------------------------------------------------------------
+  // Sizes -- only the inline gap is list-owned; chips size themselves.
+  // ---------------------------------------------------------------------------
+
+  &--sm {
+    --arvo-chip-list-gap: #{$arvo-space-2};
+  }
+
+  &--md {
+    --arvo-chip-list-gap: #{$arvo-space-4};
+  }
+
+  &--lg {
+    --arvo-chip-list-gap: #{$arvo-space-4};
+  }
+
+  // ---------------------------------------------------------------------------
+  // Overflow layout modifiers
+  // ---------------------------------------------------------------------------
+
+  // Free wrap -- chips flow onto new rows separated by the row gap.
+  &--wrap {
+    flex-wrap: wrap;
+    row-gap: var(--arvo-chip-list-row-gap);
+  }
+
+  // Single row -- chips that do not fit are hidden by React/JS (inline
+  // visibility:hidden; position:absolute; pointer-events:none) and collapse
+  // into the __overflow action. The SCSS only keeps everything on one row.
+  &--single-line {
+    flex-wrap: nowrap;
+  }
+
+  // Bounded wrap -- chips wrap up to the JS-measured row clamp, then the
+  // remainder collapse into __overflow. Row clamping is JS-measured (it sets
+  // --arvo-chip-list-max-rows from the maxRows prop and hides overflowing chips
+  // directly); the SCSS keeps to wrap + row-gap so it never fights that
+  // measurement with a CSS clip.
+  &--max-rows {
+    flex-wrap: wrap;
+    row-gap: var(--arvo-chip-list-row-gap);
+  }
+
+  // Parent-owned overflow -- the surrounding field owns clipping/scrolling and
+  // no __overflow action is created. The list keeps one row and lets content
+  // flow; it must NOT clip here.
+  &--none {
+    flex-wrap: nowrap;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Behavior modifiers
+  // ---------------------------------------------------------------------------
+
+  // Reorder is JS-driven (@arvo/core dnd). Each chip renders and styles its own
+  // .arvo-chip__grip handle (grab cursor lives on the grip's SCSS) and the
+  // dragged chip uses ArvoChip's own dragging surface hook -- no list-level
+  // surface styling is required, so this hook intentionally emits nothing.
+  &--reorderable {
+    // intentionally empty -- see note above.
+  }
+
+  // ---------------------------------------------------------------------------
+  // Chip layout discipline inside the list
+  // ---------------------------------------------------------------------------
+  //
+  // Chips must not shrink to fit the list -- when the list runs out of room
+  // the JS measurement layer hides overflowing chips and the `+N more`
+  // disclosure picks them up. Without `flex-shrink: 0` the chips would be
+  // squeezed by their flex parent (especially in `--single-line` or
+  // `--max-rows` modes), which makes the label illegible AND fights the JS
+  // measurement (`offsetWidth` would report a shrunken value).
+  //
+  // This rule applies to every list mode -- a wrapped chip whose label is
+  // wider than its container would otherwise wrap awkwardly inside the
+  // chip too, since the chip's own `overflow: hidden` (added for the
+  // remove leave animation) would clip the truncated label.
+  //
+  // Important: the chip's `.is-removing` modifier deliberately shrinks
+  // max-width / padding / border to zero, so it inherits the chip root's
+  // `overflow: hidden` and animates collapsing the row of chips. That
+  // contract is preserved here because `flex-shrink: 0` only constrains
+  // the FLEX algorithm; `max-width: 0` still wins on a per-chip basis.
+  > .arvo-chip {
+    flex-shrink: 0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // State classes (aria-disabled / aria-readonly / aria-busy set by React/JS)
+  // ---------------------------------------------------------------------------
+
+  &.is-disabled {
+    pointer-events: none;
+  }
+
+  // Read-only keeps content readable and exposed to assistive tech; suppression
+  // of dismiss/reorder/selection is behavioral (React/JS), so no list-level
+  // visual treatment is needed beyond this hook.
+  &.is-readonly {
+    // intentionally empty -- behavioral suppression is owned by React/JS.
+  }
+
+  // Loading (Pattern C): the list blocks pointer-events; the shimmer lives on
+  // each child chip (Pattern A), never on the list. Mirrors ArvoChip's
+  // data-arvo-loading ancestor handling (combined individual + parent-
+  // controlled selector with the same opt-out form).
+  &.loading,
+  [data-arvo-loading="true"] &:not([data-arvo-loading-ignore="true"]) {
+    pointer-events: none;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Overflow element -- the inline "+n more" action.
+  //
+  // The button itself is an ArvoDisclosureButton (size='sm', hasChevron=false)
+  // owned by the React/JS layer, so the typography, color, hover and focus
+  // treatment all come from `.arvo-disc-btn`. The chip-list only adds:
+  //
+  // - Layout discipline: never shrink to less than its label width (chip-list
+  //   wraps + measures using the button's `offsetWidth`, so a shrunk button
+  //   would skew the measurement).
+  // - Disabled / read-only tone: ArvoDisclosureButton has no `disabled` /
+  //   `isReadOnly` prop by design (it is a tonal, surface-less control). The
+  //   chip-list propagates its own disabled / readonly state down via these
+  //   parent overrides on the disclosure button's tokens.
+  // ---------------------------------------------------------------------------
+
+  &__overflow.arvo-disc-btn {
+    flex-shrink: 0;
+  }
+
+  &.is-disabled &__overflow.arvo-disc-btn,
+  &.is-readonly &__overflow.arvo-disc-btn {
+    --arvo-disc-btn-text-color: var(--arvo-color-t-disabled);
+    --arvo-disc-btn-icon-color: var(--arvo-color-i-disabled);
+    cursor: not-allowed;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Static overflow indicator -- non-interactive `+N more` label.
+  //
+  // Used when `isStaticOverflow=true` (e.g. ArvoMultiSelect's strict
+  // single-line overflow mode). Rendered as a `<span>` rather than an
+  // ArvoDisclosureButton: no chevron, no hover, no cursor:pointer, no
+  // focus ring. Inherits the same color and typography tokens as the
+  // disclosure button so the visual reads as an informational sibling of
+  // the chip row.
+  // ---------------------------------------------------------------------------
+
+  &__overflow--static {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    cursor: default;
+    pointer-events: none;
+    white-space: nowrap;
+    font-family: var(--o9-font-family);
+    font-weight: $arvo-regular;
+    font-size: $arvo-font-size-12;
+    line-height: 1;
+    color: var(--arvo-color-t-info-dark);
+  }
+
+  &.is-disabled &__overflow--static,
+  &.is-readonly &__overflow--static {
+    color: var(--arvo-color-t-disabled);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Token-field context (isWithinField=true on React/JS)
+  //
+  // Hook exposed for parent token-field components (ArvoMultiSelect, future
+  // ArvoTokenInput) to layer on additional styling without targeting the
+  // chip-list's internals directly. The base chip-list reserves only the
+  // attribute selector; the parent owns the actual overrides (e.g. bumping
+  // the disclosure font to match the field row).
+  // ---------------------------------------------------------------------------
+  &[data-within-field='true'] {
+    // intentionally empty -- parent components layer their own rules.
+  }
+}

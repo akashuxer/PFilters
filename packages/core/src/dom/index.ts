@@ -1,0 +1,1 @@
+export { isTruncated } from './truncation';

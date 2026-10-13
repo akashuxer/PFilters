@@ -1,0 +1,219 @@
+// Textbox component styles
+// BEM Block: .arvo-textbox
+// Abbreviation: textbox
+// Loading Pattern: A (overlay shimmer)
+// Sizes: sm (24px), lg (32px, default)
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-input' as *;
+@use '../../mixins/form-char-counter' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// --- .arvo-textbox -----------------------------------------------------------
+
+.arvo-textbox {
+  // Only dynamic values that change per size modifier
+  --arvo-form-input-height: 32px;
+  --arvo-form-input-font-size: #{$arvo-font-size-14};
+  --arvo-form-input-affix-sep-height: 20px;
+
+  // -- Root layout -----------------------------------------------------------
+  @include form-input-default-width;
+  display: inline-flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  position: relative;
+
+  // Full-width modifier
+  &--full-width {
+    --arvo-form-input-width: 100%;
+  }
+
+  // Surface modifiers -- swap the at-rest field background between
+  // tinted (filled, default) and host surface (base) via the shared
+  // form-input-surface pattern. Every other state color is unchanged.
+  &--surface-filled { @include form-input-surface-filled; }
+  &--surface-base { @include form-input-surface-base; }
+
+  // -- __lbl (form label) ----------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS). This scoped
+  // selector exists only for layout / loading shimmer hooks below.
+
+  // -- __field (flex container for input + icons + border) --------------
+  &__field {
+    @include form-input-base;
+    @include form-input-hover-bg;
+    @include form-input-disabled-bg;
+
+    gap: $arvo-space-8;
+    height: var(--arvo-form-input-height, 32px);
+    width: 100%;
+  }
+
+  // -- __input (native <input>) ----------------------------------------------
+  &__input {
+    @include form-input-text-colors;
+
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    padding-right: var(--arvo-form-input-pad-r, 0);
+    border: 0;
+    background: transparent;
+    outline: 0;
+    font: inherit;
+    box-sizing: border-box;
+    text-overflow: ellipsis;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &[readonly] {
+      cursor: not-allowed;
+    }
+  }
+
+  // -- __actions (right-side absolute container for clear + error icon) ----
+  &__actions {
+    position: absolute;
+    right: var(--arvo-form-input-padding-inline, #{$arvo-space-8});
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    pointer-events: auto;
+  }
+
+  // -- Affix slots (shared `form-input-affix` pattern) -----------------------
+  // Leading icon, leading text prefix, separator, and trailing text suffix
+  // all render as inline flex children of __field. State recolors travel
+  // through the shared CSS-variable cascade, so the slots themselves don't
+  // need per-state selectors.
+  &__ico { @include form-input-affix-ico; }
+  &__prefix { @include form-input-affix-prefix; }
+  &__prefix-sep { @include form-input-affix-sep; }
+  &__suffix { @include form-input-affix-suffix; }
+
+  // -- Modifier: --has-prefix / --has-suffix (presence markers) -------------
+  // Pure selector hooks so parents / consumers can target the prefix /
+  // suffix-enabled layout without prop-sniffing. Layout itself is driven
+  // by the inline-flex __prefix / __suffix slots above.
+  &--has-prefix {}
+  &--has-suffix {}
+
+  // -- __border (animated bottom border, inside __field) ----------------
+  // Uses the default variant: visible 1px base line, animated hover
+  // reveal in --arvo-color-b-theme-hover-2, and thicker 1.5px focus reveal
+  // in --arvo-color-b-theme-focus. The focus-only variant is reserved for
+  // Search.
+  &__border {
+    @include form-input-animated-border-base;
+  }
+
+  // -- __err-ico (slot for in-field <ArvoMessageAlert isInline /> child) -----
+  // Icon glyph + color come from the child .arvo-msg-alert; this slot only
+  // controls visibility based on the parent's .has-error.error-tooltip state.
+  &__err-ico {
+    display: none;
+    flex: 0 0 auto;
+  }
+
+  // -- __counter (character counter, below field) ----------------------------
+  &__counter {
+    @include form-char-counter-base;
+
+    .is-disabled & {
+      @include form-char-counter-disabled;
+    }
+
+    // Hide when below-field error message is visible
+    .has-error:not(.error-tooltip) & {
+      display: none;
+    }
+  }
+
+  // -- Size: sm --------------------------------------------------------------
+  &--sm {
+    --arvo-form-input-height: 24px;
+    --arvo-form-input-font-size: #{$arvo-font-size-12};
+    --arvo-form-input-affix-sep-height: 16px;
+  }
+
+  // -- Size: lg (default) ----------------------------------------------------
+  &--lg {
+    --arvo-form-input-height: 32px;
+    --arvo-form-input-font-size: #{$arvo-font-size-14};
+  }
+
+  // -- State: disabled (cursor only -- border handled by mixin) -------------
+  &.is-disabled {
+    cursor: not-allowed;
+
+    .arvo-textbox__field {
+      cursor: not-allowed;
+    }
+  }
+
+  // -- State: readonly (shared readonly treatment) --------------------------
+  // Dashed border via form-input-readonly-border; field/input use
+  // form-input-readonly-field (cursor: not-allowed while allowing text
+  // highlight). The clear button is suppressed by the .has-value rule below
+  // whose selector excludes readonly, so no extra rule is needed here.
+  &.is-readonly {
+    .arvo-textbox__field {
+      @include form-input-readonly-field;
+    }
+
+    .arvo-textbox__border {
+      @include form-input-readonly-border;
+    }
+  }
+
+  // Inline icon variant: error icon (rendered as <ArvoMessageAlert isInline />)
+  // inside the field, below-field message hidden by consumer.
+  &.has-error.error-tooltip {
+    .arvo-textbox__err-ico {
+      display: inline-flex;
+    }
+  }
+
+  // -- State: has-value (show clear button) ----------------------------------
+  // Clear is suppressed in readonly / disabled / loading so the field reads
+  // as non-interactive per the shared readonly contract.
+  &.has-value:not(.is-readonly):not(.is-disabled):not(.loading) {
+    .arvo-textbox__clear {
+      display: inline-flex;
+    }
+  }
+
+  // Hide clear button by default (ArvoIconButton instance)
+  &__clear {
+    display: none;
+  }
+
+  // Password visibility toggle (ArvoIconButton instance) -- always visible
+  // when type='password'. Lives inside __actions and inherits the existing
+  // form-input-actions-overlay positioning via that container.
+  &__pw-toggle {
+    display: inline-flex;
+  }
+
+  // -- Loading state (per-element shimmer on field + label) ------------------
+  &.loading,
+  [data-arvo-loading="true"] &:not([data-arvo-loading-ignore="true"]) {
+    pointer-events: none;
+
+    .arvo-textbox__field {
+      @include loading-element-shimmer;
+    }
+
+    .arvo-textbox__lbl {
+      @include loading-element-shimmer;
+    }
+  }
+}

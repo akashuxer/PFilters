@@ -1,0 +1,249 @@
+{
+  "american-sign-language-interpreting": [
+    "asl-interpreting"
+  ],
+  "apps": [
+    "th"
+  ],
+  "bars": [
+    "navicon",
+    "reorder"
+  ],
+  "bin": [
+    "trash",
+    "trash-o"
+  ],
+  "btc": [
+    "bitcoin"
+  ],
+  "call-alt": [
+    "phone"
+  ],
+  "caret-down": [
+    "sort-desc",
+    "sort-down"
+  ],
+  "caret-scroll-v": [
+    "sort",
+    "unsorted"
+  ],
+  "caret-square-o-down": [
+    "toggle-down"
+  ],
+  "caret-square-o-left": [
+    "toggle-left"
+  ],
+  "caret-square-o-right": [
+    "toggle-right"
+  ],
+  "caret-square-o-up": [
+    "toggle-up"
+  ],
+  "caret-up": [
+    "sort-asc",
+    "sort-up"
+  ],
+  "circle-thin": [
+    "genderless"
+  ],
+  "clipboard": [
+    "paste"
+  ],
+  "close": [
+    "remove"
+  ],
+  "cny": [
+    "jpy",
+    "rmb",
+    "yen"
+  ],
+  "cog": [
+    "gear"
+  ],
+  "cogs": [
+    "gears"
+  ],
+  "cut": [
+    "scissors"
+  ],
+  "dashboard": [
+    "tachometer"
+  ],
+  "dedent": [
+    "outdent"
+  ],
+  "doctor-male": [
+    "user-md"
+  ],
+  "dollar": [
+    "usd"
+  ],
+  "empire": [
+    "ge"
+  ],
+  "eur": [
+    "euro"
+  ],
+  "exclamation-triangle": [
+    "warning"
+  ],
+  "eye": [
+    "show"
+  ],
+  "eye-slash": [
+    "hide"
+  ],
+  "female-o": [
+    "venus"
+  ],
+  "file-image-o": [
+    "file-photo-o",
+    "file-picture-o"
+  ],
+  "file-music-o": [
+    "file-audio-o",
+    "file-sound-o"
+  ],
+  "file-text-o": [
+    "file-text"
+  ],
+  "file-video-o": [
+    "file-movie-o"
+  ],
+  "floppy-o": [
+    "save"
+  ],
+  "folder-open": [
+    "folder-open-o"
+  ],
+  "futbol-o": [
+    "soccer-ball-o"
+  ],
+  "graduation-cap": [
+    "mortar-board"
+  ],
+  "group": [
+    "users"
+  ],
+  "hand-paper-o": [
+    "hand-stop-o"
+  ],
+  "hand-rock-o": [
+    "hand-grab-o"
+  ],
+  "ils": [
+    "shekel",
+    "sheqel"
+  ],
+  "inr": [
+    "rupee"
+  ],
+  "institution": [
+    "university"
+  ],
+  "life-bouy": [
+    "support"
+  ],
+  "lock-open": [
+    "unlock"
+  ],
+  "lock-open-alt": [
+    "unlock-alt"
+  ],
+  "mail-reply": [
+    "reply"
+  ],
+  "mail-reply-all": [
+    "reply-all"
+  ],
+  "male-o": [
+    "mars"
+  ],
+  "mobile": [
+    "mobile-phone"
+  ],
+  "next": [
+    "step-forward"
+  ],
+  "paper-plane": [
+    "send"
+  ],
+  "paper-plane-o": [
+    "send-o"
+  ],
+  "pencil-square-o": [
+    "edit"
+  ],
+  "picture": [
+    "image",
+    "photo",
+    "photo-o",
+    "picture-o"
+  ],
+  "play-circle": [
+    "play-circle-o"
+  ],
+  "prev": [
+    "step-backward"
+  ],
+  "printer": [
+    "print"
+  ],
+  "registered-trademark": [
+    "registered"
+  ],
+  "rotate-left": [
+    "undo"
+  ],
+  "rotate-right": [
+    "redo"
+  ],
+  "rss": [
+    "feed"
+  ],
+  "rub": [
+    "rouble",
+    "ruble"
+  ],
+  "share": [
+    "mail-forward"
+  ],
+  "shuffle": [
+    "random"
+  ],
+  "speaker": [
+    "volume-off"
+  ],
+  "stack": [
+    "server"
+  ],
+  "star-half-o": [
+    "star-half",
+    "star-half-empty",
+    "star-half-full"
+  ],
+  "thumbs-down": [
+    "thumbs-o-down"
+  ],
+  "thumbs-up": [
+    "thumbs-o-up"
+  ],
+  "times-circle": [
+    "close-circle"
+  ],
+  "times-circle-o": [
+    "close-circle-o"
+  ],
+  "transgender": [
+    "intersex"
+  ],
+  "tree-view": [
+    "sitemap"
+  ],
+  "zoom-in": [
+    "search-plus"
+  ],
+  "zoom-out": [
+    "search-minus"
+  ]
+}

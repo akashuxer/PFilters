@@ -1,0 +1,65 @@
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-rb-grp ------------------------------------------------------------
+
+.arvo-rb-grp {
+  // -- Base layout ----------------------------------------------------------
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+
+  // -- __lbl (group label) --------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS); the React/JS
+  // layer passes size={componentSize} so the group caption scales with the
+  // child controls (sm=12px, lg=14px).
+
+  // -- __bdy (body wrapping __items + below-group error message) -----------
+  &__bdy {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+  }
+
+  // -- __items (flex container for ArvoRadio children) -------------------------
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-8;
+  }
+
+  // -- Size: sm -------------------------------------------------------------
+  &--sm {}
+
+  // -- Layout: horizontal ---------------------------------------------------
+  &--horizontal {
+    .arvo-rb-grp__items {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+
+  // -- Layout: label-start (only with --horizontal) -------------------------
+  &--horizontal#{&}--label-start {
+    flex-direction: row;
+    gap: $arvo-space-12;
+  }
+
+  // -- State: disabled ------------------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+  }
+
+  // -- State: readonly ------------------------------------------------------
+  &.is-readonly {
+    .arvo-rb-grp__items {
+      pointer-events: none;
+    }
+  }
+
+  // -- Loading state (Pattern C) --------------------------------------------
+  &.loading,
+  &[data-arvo-loading="true"] {
+    pointer-events: none;
+  }
+}

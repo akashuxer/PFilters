@@ -1,0 +1,221 @@
+@use '../../../tokens/src/scss/all' as *;
+@use 'typography' as *;
+
+// Shared empty-state pattern -- responsive centered or row-aligned figure with
+// illustration, title, message, primary/secondary actions, and optional link.
+// Parametrized on $block so overlay consumers can embed the same anatomy under
+// their own BEM block or use the standalone .arvo-empty component block.
+//
+// Used by: action-menu, popover, hybrid-popover (via shared EmptyState
+// primitive) and by any application surface that needs a stable empty figure.
+//
+// Sizes (token = max illustration size):
+//   xs   -> 64px illustration  (`$o9illus-64`)   compact, default for overlays
+//   sm   -> 96px illustration  (`$o9illus-96`)   compact, default for overlays
+//   md   -> 124px illustration (`$o9illus-124`)  default
+//   lg   -> 224px illustration (`$o9illus-224`)  marketing / large empty pages
+//   xl   -> 300px illustration (`$o9illus-300`)  hero empty pages
+//
+// Orientations:
+//   vertical   -> column layout, illustration above text (default)
+//   horizontal -> row layout, illustration left of text
+//
+// The figure centers itself in any host -- container fills the host (100%
+// width / height) and the figure is centered with flex. The figure has a
+// max-width based on size and can shrink horizontally down to a small floor
+// so it stays usable inside narrow overlays without forcing the host wider.
+// Vertical centering is provided too; if the host is taller than the figure
+// it sits in the middle.
+
+@mixin empty-state($block: 'arvo-empty') {
+  // Host (centering container): fills available space, centers figure.
+  .#{$block} {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100%;
+    padding: $arvo-space-16;
+    box-sizing: border-box;
+    font-family: var(--o9-font-family);
+
+    // Figure max-width per size, with sensible shrink floor so the figure
+    // collapses gracefully inside narrow overlay panels.
+    --arvo-empty-figure-w: 264px;
+    --arvo-empty-figure-min-w: 200px;
+    --arvo-empty-illus-size: #{$o9illus-124};
+    --arvo-empty-gap-figure: #{$arvo-space-24};
+    --arvo-empty-gap-msg: #{$arvo-space-16};
+    --arvo-empty-gap-actions: #{$arvo-space-20};
+    --arvo-empty-title-size: #{$arvo-font-size-16};
+    --arvo-empty-message-size: #{$arvo-font-size-14};
+  }
+
+  // ---- Size modifiers ----------------------------------------------------
+  // Illustration size cap + typography scale.
+  .#{$block}--xs {
+    --arvo-empty-illus-size: #{$o9illus-64};
+    --arvo-empty-figure-w: 264px;
+    --arvo-empty-gap-msg: #{$arvo-space-8};
+    --arvo-empty-gap-figure: #{$arvo-space-16};
+  }
+
+  .#{$block}--sm {
+    --arvo-empty-illus-size: #{$o9illus-96};
+    --arvo-empty-figure-w: 264px;
+    --arvo-empty-gap-msg: #{$arvo-space-8};
+    --arvo-empty-gap-figure: #{$arvo-space-16};
+  }
+
+  .#{$block}--md {
+    --arvo-empty-illus-size: #{$o9illus-124};
+    --arvo-empty-figure-w: 264px;
+  }
+
+  .#{$block}--lg {
+    --arvo-empty-illus-size: #{$o9illus-224};
+    --arvo-empty-figure-w: 320px;
+    --arvo-empty-title-size: #{$arvo-font-size-20};
+    --arvo-empty-message-size: #{$arvo-font-size-16};
+  }
+
+  .#{$block}--xl {
+    --arvo-empty-illus-size: #{$o9illus-300};
+    --arvo-empty-figure-w: 360px;
+    --arvo-empty-title-size: #{$arvo-font-size-20};
+    --arvo-empty-message-size: #{$arvo-font-size-16};
+  }
+
+  // ---- Figure ------------------------------------------------------------
+  // The visible block (illustration + body). Sits inside the centered host.
+  // Shrinks horizontally toward `--arvo-empty-figure-min-w` so narrow hosts
+  // (overlay panels, side panels) render without horizontal overflow.
+  .#{$block}__figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--arvo-empty-gap-figure);
+    width: clamp(
+      var(--arvo-empty-figure-min-w),
+      100%,
+      var(--arvo-empty-figure-w)
+    );
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  // ---- Illustration ------------------------------------------------------
+  // Width matches the configured size cap; shrinks proportionally if the
+  // host is narrower than the cap. Height is implicit via the o9illus class
+  // sizing in @arvo/assets (background-size: contain).
+  .#{$block}__illus {
+    flex: 0 0 auto;
+    width: min(var(--arvo-empty-illus-size), 100%);
+    aspect-ratio: 1 / 1;
+    height: auto;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  
+
+  // ---- Body (msg + actions) ---------------------------------------------
+  .#{$block}__body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--arvo-empty-gap-figure);
+    width: 100%;
+    min-width: min-content;
+  }
+
+  // ---- Message block (title + message) ----------------------------------
+  .#{$block}__msg {
+    display: flex;
+    flex-direction: column;
+    gap: var(--arvo-empty-gap-msg);
+    width: 100%;
+  }
+
+  .#{$block}__title {
+    @include arvo-font-h16-m;
+    font-size: var(--arvo-empty-title-size);
+    color: var(--arvo-color-t-primary);
+    word-break: break-word;
+    line-height: normal;
+  }
+
+  .#{$block}__message {
+    @include arvo-font-p14-r;
+    font-size: var(--arvo-empty-message-size);
+    color: var(--arvo-color-t-tertiary);
+    word-break: break-word;
+    line-height: normal;
+  }
+
+  // ---- Actions ----------------------------------------------------------
+  // Stacks primary + secondary button row above optional link.
+  .#{$block}__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--arvo-empty-gap-actions);
+    width: 100%;
+  }
+
+  .#{$block}__action-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: $arvo-space-6;
+    width: 100%;
+  }
+
+  .#{$block}__link {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-6;
+  }
+
+  // ---- Orientation: horizontal ------------------------------------------
+  .#{$block}--horizontal {
+    align-items: stretch;
+  }
+
+  .#{$block}--horizontal .#{$block}__illus {
+    flex: 0 1 auto;
+    width: clamp(#{$o9illus-64}, 35%, var(--arvo-empty-illus-size));
+  }
+  
+  .#{$block}--horizontal .#{$block}__figure {
+    flex-direction: row;
+    align-items: center;
+    text-align: start;
+    width: 100%;
+    max-width: none;
+  }
+
+  .#{$block}--horizontal .#{$block}__body {
+    align-items: flex-start;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .#{$block}--horizontal .#{$block}__msg {
+    text-align: start;
+  }
+
+  .#{$block}--horizontal .#{$block}__actions {
+    align-items: flex-start;
+  }
+
+  .#{$block}--horizontal .#{$block}__action-row {
+    justify-content: flex-start;
+    width: auto;
+  }
+}

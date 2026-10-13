@@ -1,0 +1,3 @@
+// Build entry point -- compiles CSS custom properties (:root variables) only.
+// SCSS variables ($arvo-*) are not emitted; they are compile-time only.
+@use './root';

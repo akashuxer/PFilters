@@ -1,0 +1,242 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-input' as form-input;
+@use '../../mixins/msg-alert' as msg-alert;
+@use '../../mixins/picker-field-actions' as picker-field-actions;
+@use '../../mixins/hover' as hover;
+@use '../../mixins/popup-animation' as *;
+
+// TimePicker component styles
+// BEM Block: .arvo-tp
+// Abbreviation: tp
+// Category: DateTime
+// Descriptor: descriptors/time-picker.json
+// Loading Pattern: C -- spinner replaces trigger-btn; popover cannot open.
+
+.arvo-tp {
+  // Height values reflect the EDITABLE FIELD only. The total label+field
+  // frames in Figma (46px sm, 54px lg) include the form label which is
+  // rendered as a sibling block by ArvoFormLabel and is not part of the
+  // form-input height contract.
+  --arvo-form-input-width: 300px;
+  --arvo-form-input-height: 32px;     // lg default; --sm overrides to 24px
+  --arvo-form-input-pad-r: 0px;
+  --arvo-tp-popover-w: 144px;
+
+  @include form-input.form-input-default-width;
+
+  display: inline-flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+  gap: $arvo-space-8;
+  font-family: var(--o9-font-family);
+
+  &--full-width { --arvo-form-input-width: 100%; }
+
+  // Surface modifiers -- swap the at-rest field background between tinted
+  // (filled, default) and host surface (base) via the shared
+  // form-input-surface pattern. Every other state color is unchanged.
+  &--surface-filled { @include form-input.form-input-surface-filled; }
+  &--surface-base { @include form-input.form-input-surface-base; }
+
+  &--sm {
+    --arvo-form-input-height: 24px;
+    --arvo-form-input-font-size: #{$arvo-font-size-12};
+  }
+
+  &--lg {
+    --arvo-form-input-height: 32px;
+    --arvo-form-input-font-size: #{$arvo-font-size-14};
+  }
+
+  &--anchor-mode {
+    display: contents;
+
+    > .arvo-tp__field,
+    > .arvo-tp__lbl,
+    > .arvo-tp__err-msg { display: none !important; }
+  }
+
+  // __lbl typography, sizing, required/disabled/invalid state all come from
+  // the shared .arvo-form-lbl primitive (ArvoFormLabel React + JS). Date/time
+  // pickers render the label at 12px regardless of field size.
+
+  &__field {
+    @include form-input.form-input-base;
+    @include form-input.form-input-hover-bg;
+    @include form-input.form-input-disabled-bg;
+
+    flex-direction: row;
+    gap: $arvo-space-4;
+    width: 100%;
+    overflow: hidden;
+    padding: $arvo-space-4 $arvo-space-4 $arvo-space-4 $arvo-space-8;
+  }
+
+  &.is-disabled &__field { cursor: not-allowed; pointer-events: none; }
+  &.is-readonly &__field { @include form-input.form-input-readonly-field; }
+
+  &__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--arvo-color-t-form-value);
+    font-size: var(--arvo-form-input-font-size, #{$arvo-font-size-14});
+    font-family: var(--o9-font-family);
+    outline: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+    padding-right: var(--arvo-form-input-pad-r, 0);
+    width: 100%;
+
+    &::placeholder { color: var(--arvo-color-t-placeholder); }
+
+    // Segmented-input focused-segment highlight is rendered by the native
+    // text-selection range. The React and JS layers call setSelectionRange()
+    // around the focused segment so the browser draws the highlight using
+    // the theme selection tokens below.
+    &::selection {
+      background-color: var(--arvo-color-s-theme);
+      color: var(--arvo-color-t-inverse);
+    }
+  }
+
+  &.is-disabled &__input { color: var(--arvo-color-t-disabled); cursor: not-allowed; }
+  &.is-readonly &__input { cursor: not-allowed; }
+
+  &__actions     { @include picker-field-actions.picker-field-actions-layout; }
+  &__clear-btn   { @include picker-field-actions.picker-field-actions-clear; }
+  &__err-ico     { @include picker-field-actions.picker-field-actions-error-icon; }
+  &__sep         { @include picker-field-actions.picker-field-actions-separator; }
+  &__trigger-btn { @include picker-field-actions.picker-field-actions-trigger; }
+
+  &__err-msg {
+    font-size: $arvo-font-size-12;
+    color: var(--arvo-color-t-negative);
+  }
+
+  &.error-tooltip &__err-msg { display: none; }
+
+  &__border { @include form-input.form-input-animated-border-base; }
+
+  &:focus-within:not(.is-disabled):not(.is-readonly):not(.has-error) {
+    .arvo-tp__border::after {
+      background-color: var(--arvo-color-b-theme-focus);
+      height: var(--arvo-form-input-border-focus-width, #{$arvo-border-3});
+      transform: scaleX(1);
+    }
+  }
+
+  &.has-error {
+    .arvo-tp__border {
+      background: var(--arvo-color-b-negative);
+
+      &::after {
+        background-color: var(--arvo-color-b-negative);
+        height: var(--arvo-form-input-border-focus-width, #{$arvo-border-3});
+        transform: scaleX(1);
+        transition: none;
+      }
+    }
+  }
+
+  &.is-disabled &__border {
+    background: var(--arvo-color-b-disabled);
+
+    &::after {
+      background-color: var(--arvo-color-b-disabled);
+      height: var(--arvo-form-input-border-width, 1px);
+      transform: none;
+      transition: none;
+    }
+  }
+
+  // -- State: readonly (shared border + inert trigger-btn) ------------------
+  // Dashed line via form-input-readonly-border; trigger-btn muted +
+  // non-interactive via form-input-readonly-action (matches DatePicker).
+  &.is-readonly &__border {
+    @include form-input.form-input-readonly-border;
+  }
+
+  &.is-readonly &__trigger-btn {
+    @include form-input.form-input-readonly-action;
+  }
+
+  // ----- Popover (__popover, __body) -------------------------------------------
+  // The popover lives in a body-level portal driven by the OverlaySurface
+  // engine (see architecture/18-OVERLAY-SURFACE-ENGINE.md). Display is gated
+  // on the engine-managed `.open` class so the panel is `display: none`
+  // (invisible AND inert) after the engine removes `.open` once the exit
+  // transition completes. Required for the JS twin, where the popover element
+  // is created once and reused across opens rather than removed from the DOM.
+
+  &__popover {
+    display: none;
+    flex-direction: column;
+    width: var(--arvo-tp-popover-w, 144px);
+    box-sizing: border-box;
+    background-color: var(--arvo-color-s-layer-03);
+    box-shadow: $arvo-shadow-down;
+    z-index: var(--arvo-z-popover, 1000);
+
+    &.open { display: flex; }
+
+    // Direction-aware popup enter / exit animation. See `popup-animation`.
+    @include popup-animation;
+  }
+
+  // Loading (Pattern C) prevents the popover from opening; the rule below is
+  // defense-in-depth in case a parent toggles loading while the surface is open.
+  &.loading &__popover { display: none; }
+
+  &__body {
+    width: 100%;
+    display: flex;
+  }
+
+  &__body > .arvo-tdrop { width: 100%; }
+}
+
+@include hover.hover {
+  .arvo-tp:not(.is-disabled):not(.has-error):not(.is-readonly):hover {
+    .arvo-tp__border::after { transform: scaleX(1); }
+  }
+}
+
+@mixin _arvo-tp-loading {
+  pointer-events: none;
+
+  .arvo-tp__field { cursor: default; }
+  .arvo-tp__trigger-btn { display: none; }
+  .arvo-tp__input { pointer-events: none; }
+
+  .arvo-tp__actions::after {
+    content: '';
+    flex: 0 0 auto;
+    display: block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--arvo-color-b-disabled);
+    border-top-color: var(--arvo-color-b-theme);
+    border-radius: 50%;
+    animation: arvo-tp-spin 0.7s linear infinite;
+  }
+}
+
+.arvo-tp.loading { @include _arvo-tp-loading; }
+
+[data-arvo-loading='true'] .arvo-tp:not([data-arvo-loading-ignore='true']) {
+  @include _arvo-tp-loading;
+}
+
+@keyframes arvo-tp-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.arvo-form-field {
+  .arvo-tp { --arvo-form-input-width: 100%; }
+}

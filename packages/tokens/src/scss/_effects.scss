@@ -1,0 +1,22 @@
+// All Arvo Effect Tokens
+
+// Shadow -- color portion uses mode-aware CSS variables so light vs dark mode
+// resolves the correct shadow tint at runtime. The shadow tokens themselves
+// stay SCSS so consumers can embed them in transitions without an extra
+// CSS-var indirection.
+$arvo-shadow-left: -10px 0px 10px 0px var(--arvo-color-s-shadow-static-2);
+$arvo-shadow-right: 10px 0px 10px 0px var(--arvo-color-s-shadow-static-2);
+$arvo-shadow-down: 0px 10px 20px 0px var(--arvo-color-s-shadow-static-1);
+$arvo-shadow-up: 0px -10px 20px 0px var(--arvo-color-s-shadow-static-1);
+$arvo-shadow-center: 0px 4px 40px 0px var(--arvo-color-s-shadow-static-1);
+$arvo-shadow-fab: 0px 4px 7px 2px var(--arvo-color-s-shadow-static-1);
+$arvo-shadow-low: 0px 2px 6px -1px var(--arvo-color-s-shadow-static-1);
+
+// Blur
+$arvo-shadow-blur: blur(4px);
+
+// Opacity
+$arvo-opacity-80: 0.8;
+$arvo-opacity-60: 0.6;
+$arvo-opacity-40: 0.4;
+$arvo-opacity-20: 0.2;

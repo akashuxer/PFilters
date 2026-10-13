@@ -1,0 +1,395 @@
+/*
+ * o9 Design System -- Web Font @font-face Declarations
+ *
+ * URL paths are root-absolute (e.g. ./o9Sans/...) and resolve
+ * against the consuming platform's deployment root. The actual .woff/.woff2
+ * binaries are hosted by the platform, NOT bundled in @o9ds/assets.
+ *
+ * If your deployment serves fonts from a different path, override these
+ * declarations or serve the files at the expected locations.
+ */
+
+/* o9Sans */
+
+@font-face {
+  font-family: "o9Sans";
+  src: url("./o9Sans/o9Sans-Regular.woff2") format("woff2"), url("./o9Sans/o9Sans-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Sans";
+  src: url("./o9Sans/o9Sans-RegularItalic.woff2") format("woff2"), url("./o9Sans/o9Sans-RegularItalic.woff") format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Sans";
+  src: url("./o9Sans/o9Sans-Medium.woff2") format("woff2"), url("./o9Sans/o9Sans-Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Sans";
+  src: url("./o9Sans/o9Sans-MediumItalic.woff2") format("woff2"), url("./o9Sans/o9Sans-MediumItalic.woff") format("woff");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Sans";
+  src: url("./o9Sans/o9Sans-Bold.woff2") format("woff2"), url("./o9Sans/o9Sans-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Sans";
+  src: url("./o9Sans/o9Sans-BoldItalic.woff2") format("woff2"), url("./o9Sans/o9Sans-BoldItalic.woff") format("woff");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Sans_italic";
+  src: url("./o9Sans/o9Sans-RegularItalic.woff2") format("woff2"), url("./o9Sans/o9Sans-RegularItalic.woff") format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Sans";
+  src: url("./o9Sans/o9Sans-Light.woff2") format("woff2"), url("./o9Sans/o9Sans-Light.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Sans";
+  src: url("./o9Sans/o9Sans-LightItalic.woff2") format("woff2"), url("./o9Sans/o9Sans-LightItalic.woff") format("woff");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+
+/* NotoSans */
+
+/* Unicode Ranges for Simple Chinese, Japanese, and Korean
+
+    Simple Chinese
+    - U+4E00-9FFF: Unified CJK Ideographs (Shared with Japanese)
+    - U+3000-303F: CJK Symbols and Punctuation
+    - U+FF00-FFEF: Halfwidth and Fullwidth Forms
+
+   Japanese
+    - U+3040-309F: Hiragana
+    - U+30A0-30FF: Katakana
+    - U+31F0-31FF: Katakana Phonetic Extensions
+    - U+FF66-FF9D: Halfwidth Katakana
+
+    Korean
+    - U+1100-11FF: Hangul Jamo
+    - U+AC00-D7AF: Hangul Syllables
+*/
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSans-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSans-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSans-MediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSans-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+  font-style: italic;
+}
+
+
+/* NotoSans (language specific): Regular */
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansSC-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansKR-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+1100-11FF, U+AC00-D7AF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansJP-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+3040-309F, U+30A0-30FF, U+31F0-31FF, U+FF66-FF9D;
+}
+
+/* NotoSans (language specific): Synthesized Italic (Native not available) */
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansSC-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: italic;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansKR-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: italic;
+  unicode-range: U+1100-11FF, U+AC00-D7AF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansJP-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: italic;
+  unicode-range: U+3040-309F, U+30A0-30FF, U+31F0-31FF, U+FF66-FF9D;
+}
+
+/* NotoSans (language specific): Medium */
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansSC-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansKR-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+1100-11FF, U+AC00-D7AF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansJP-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+3040-309F, U+30A0-30FF, U+31F0-31FF, U+FF66-FF9D;
+}
+
+/* NotoSans (language specific): Medium Italic */
+/* Italic styles synthesized as no dedicated files are available */
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansSC-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: italic;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansKR-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: italic;
+  unicode-range: U+1100-11FF, U+AC00-D7AF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansJP-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: italic;
+  unicode-range: U+3040-309F, U+30A0-30FF, U+31F0-31FF, U+FF66-FF9D;
+}
+
+/* NotoSans (language specific): Bold */
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansSC-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansKR-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+1100-11FF, U+AC00-D7AF;
+}
+
+@font-face {
+  font-family: "NotoSans";
+  src: url("./NotoSans/NotoSansJP-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+3040-309F, U+30A0-30FF, U+31F0-31FF, U+FF66-FF9D;
+}
+
+/* o9Roboto */
+
+@font-face {
+  font-family: "o9Roboto";
+  src: url("./Roboto/Roboto-Regular.woff2") format("woff2"), url("./Roboto/Roboto-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Roboto";
+  src: url("./Roboto/Roboto-Italic.woff2") format("woff2"), url("./Roboto/Roboto-Italic.woff") format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Roboto";
+  src: url("./Roboto/Roboto-Medium.woff2") format("woff2"), url("./Roboto/Roboto-Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Roboto";
+  src: url("./Roboto/Roboto-MediumItalic.woff2") format("woff2"), url("./Roboto/Roboto-MediumItalic.woff") format("woff");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Roboto";
+  src: url("./Roboto/Roboto-Bold.woff2") format("woff2"), url("./Roboto/Roboto-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Roboto";
+  src: url("./Roboto/Roboto-BoldItalic.woff2") format("woff2"), url("./Roboto/Roboto-BoldItalic.woff") format("woff");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Roboto_italic";
+  src: url("./Roboto/Roboto-Italic.woff2") format("woff2"), url("./Roboto/Roboto-Italic.woff") format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* o9Helvetica */
+
+@font-face {
+  font-family: "o9Helvetica";
+  src: url("./Helvetica/HelveticaNeueLTW05-55Roman.woff2") format("woff2"), url("./Helvetica/HelveticaNeueLTW05-55Roman.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Helvetica";
+  src: url("./Helvetica/HelveticaNeueLTW05-56Italic.woff2") format("woff2"), url("./Helvetica/HelveticaNeueLTW05-56Italic.woff") format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Helvetica";
+  src: url("./Helvetica/HelveticaNeueLTW05-65Medium.woff2") format("woff2"), url("./Helvetica/HelveticaNeueLTW05-65Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Helvetica";
+  src: url("./Helvetica/HelveticaNeueLTW05-65Medium.woff2") format("woff2"), url("./Helvetica/HelveticaNeueLTW05-65Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "o9Helvetica_italic";
+  src: url("./Helvetica/HelveticaNeueLTW05-56Italic.woff2") format("woff2"), url("./Helvetica/HelveticaNeueLTW05-56Italic.woff") format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}

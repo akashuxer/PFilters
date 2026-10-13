@@ -1,0 +1,599 @@
+@use '../../mixins/panel-shell' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-pnl -----------------------------------------------------------------
+// ArvoPanel host. Edge-attached container that supersedes ArvoSidePanel and
+// ArvoDrawer by unifying overlay + docked display modes, four placements,
+// expansion, and five typed body templates. Interior anatomy comes from the
+// panel-shell shared pattern with parentBlock='arvo-pnl'.
+//
+// This file owns:
+//   - 4-placement (left/right/top/bottom) layout + slide direction
+//   - directional shadows (overlay only)
+//   - splitter rail anchoring on the inner edge
+//   - expansion sizing (fullscreen / maxSize)
+//   - FAB position
+//   - modal vs non-modal opacity / mask interaction hooks
+//   - pin/expand state classes (variant flip without remount)
+//
+// HOST-HEIGHT REQUIREMENT
+// -----------------------
+// Same as ArvoSidePanel -- the host must have a deterministic height for the
+// panel-shell flex chain to resolve. Docked mode inherits 100% from its layout
+// parent. Overlay mode pins to top:0; bottom:0; (for left/right placements) or
+// left:0; right:0; (for top/bottom placements) in document.body (or `container`).
+
+.arvo-pnl {
+  // Inner anatomy from panel-shell.
+  @include panel-shell-pane('arvo-pnl');
+  @include panel-shell-hdr('arvo-pnl');
+  @include panel-shell-header-action('arvo-pnl');
+  @include panel-shell-sticky('arvo-pnl');
+  @include panel-shell-body('arvo-pnl');
+  @include panel-shell-list('arvo-pnl');
+  @include panel-shell-empty('arvo-pnl');
+  @include panel-shell-skeleton('arvo-pnl');
+  @include panel-shell-footer('arvo-pnl');
+
+  // -- Dynamic CSS variables (only what changes per instance) ---------------
+  // Size axis is mapped to the appropriate dimension by placement modifiers.
+  // --arvo-pnl-vmax is the placement-appropriate viewport-relative cap;
+  // --arvo-pnl-min-size / --arvo-pnl-max-size hold the consumer's bounds.
+  --arvo-pnl-size: #{$arvo-panel-default-w};
+  --arvo-pnl-min-size: #{$arvo-panel-wmin};
+  --arvo-pnl-max-size: #{$arvo-panel-wmax-px};
+  --arvo-pnl-vmax: 80vw;
+  --arvo-pnl-slide-duration: 200ms;
+  --arvo-pnl-bg: var(--arvo-color-s-layer-03); // overlay default
+
+  position: relative;
+  box-sizing: border-box;
+
+  // -- __pane sizing extensions ----------------------------------------------
+  // The shared panel-shell-pane mixin already sets display:flex; flex-direction:column;
+  // height:100%; min-height:0. Panel-specific overrides add size + background.
+  //
+  // `position: relative` makes __pane the positioning context for __fab so the
+  // floating action button stays anchored to the bottom-right corner of the
+  // PANE (not the scrolling body). The FAB is rendered as a sibling of the
+  // panel-shell wrapper inside __pane -- moving it OUT of __body so it no
+  // longer scrolls away with the body content.
+  &__pane {
+    background: var(--arvo-pnl-bg);
+    position: relative;
+  }
+
+  // -- __rich-hdr ------------------------------------------------------------
+  // Optional rich identity / summary region below the standard header.
+  // Padding follows the spec: 8/12 (block/inline). Consumer-supplied content
+  // governs height; we constrain only padding + gap.
+  &__rich-hdr {
+    display: flex;
+    align-items: flex-start;
+    gap: $arvo-space-8;
+    padding: $arvo-space-8 $arvo-space-12;
+    background: var(--arvo-pnl-bg);
+    flex: 0 0 auto;
+  }
+
+  &__rich-hdr-content {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  // -- __rich-hdr-back ------------------------------------------------------
+  // Optional 24x24 (xs) ArvoIconButton rendered as the LEADING child of
+  // `__rich-hdr` when `richHeader.hasBack === true`. Clicking it fires
+  // `richHeader.onBack` and dispatches `pnl:rich-hdr-back` on the pane.
+  // Sits at the start of the row (default flex order); the trailing
+  // affordances (`__rich-hdr-close` / `__rich-hdr-clear`) push themselves
+  // to the end via `margin-inline-start: auto`, which correctly ignores
+  // this back button.
+  &__rich-hdr-back {
+    flex: 0 0 auto;
+  }
+
+  // -- __rich-hdr-clear -----------------------------------------------------
+  // Optional 24x24 (xs) ArvoIconButton rendered as the TRAILING child of
+  // `__rich-hdr` when `richHeader.hasClear === true`. Clicking it fires
+  // `richHeader.onClear`; the React consumer removes the region by
+  // clearing the `richHeader` prop, the JS twin also removes the DOM node
+  // in-place. `margin-inline-start: auto` pushes this to the trailing
+  // edge regardless of whether a `__rich-hdr-back` leads the row.
+  &__rich-hdr-clear {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+  }
+
+  // -- __rich-hdr-close -----------------------------------------------------
+  // Optional 24x24 (xs) ArvoIconButton rendered as the TRAILING child of
+  // `__rich-hdr` when `richHeader.hasClose === true`. Clicking it fires
+  // `richHeader.onClose` and dispatches `pnl:rich-hdr-close` on the pane.
+  // Mutually exclusive with `__rich-hdr-clear` -- when both are configured
+  // the framework layer discards `hasClear` so only one trailing icon
+  // renders. `margin-inline-start: auto` pushes this to the trailing
+  // edge regardless of whether a `__rich-hdr-back` leads the row.
+  &__rich-hdr-close {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+  }
+
+  // -- __fab ----------------------------------------------------------------
+  // Floating action button anchored to the inner bottom-right corner of the
+  // PANE (not the body). Rendered as a sibling of `arvo-panel-shell` inside
+  // __pane so it stays in place when the body scrolls and sits above the
+  // footer when one is rendered. Padding matches body padding so the FAB
+  // never crowds the content edge.
+  &__fab {
+    position: absolute;
+    right: $arvo-space-12;
+    bottom: $arvo-space-12;
+    z-index: 2;
+    pointer-events: auto;
+  }
+
+  // -- Splitter slot --------------------------------------------------------
+  // The ArvoSplitter renders itself; we just position it. Width/height auto
+  // (the splitter sets its own rail thickness via $arvo-panel-splitter-thickness).
+  &__splitter {
+    flex-shrink: 0;
+  }
+
+  // -- Display mode: overlay (default) --------------------------------------
+  // Overlay panels are typically portaled to document.body and use
+  // position:fixed pinned to the appropriate edge. Each placement modifier
+  // sets the anchor + the closed transform; the `.open` modifier flips the
+  // transform back to translate(0,0) to slide the panel into view.
+  //
+  // Closed state is `visibility: hidden` (NOT `display: none`) so the
+  // transform transition has time to run. The transition declaration
+  // includes a 0s visibility transition delayed until the transform
+  // finishes -- this makes the panel un-focusable / inert AFTER the slide
+  // completes, which mirrors the standard CSS visibility-transition idiom
+  // used across the design system for slide-in overlay surfaces.
+  &--mode-overlay {
+    position: fixed;
+    z-index: var(--arvo-z-popover, 1000);
+    --arvo-pnl-bg: var(--arvo-color-s-layer-03);
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      $arvo-motion-pane,
+      visibility 0s linear $arvo-duration-slow;
+  }
+
+  // Open: visibility flips synchronously at the start of the cycle so the
+  // panel is immediately interactive, transform animates over the canonical
+  // pane duration. Mirrors `.is-open` in the spec reference.
+  &--mode-overlay.open {
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      $arvo-motion-pane,
+      visibility 0s linear 0s;
+  }
+
+  // -- Scoped overlay -------------------------------------------------------
+  // When the resolved container is NOT document.body, the component adds the
+  // `arvo-pnl--scoped` modifier and the overlay anchors absolutely within the
+  // container (consumer's container must be a positioning context -- i.e. set
+  // `position: relative` or any non-static value). z-index remains the same;
+  // the four placement anchors (top/right/bottom/left = 0) continue to apply.
+  &--mode-overlay.arvo-pnl--scoped {
+    position: absolute;
+  }
+
+  // -- Display mode: docked -------------------------------------------------
+  // Docked panels participate in the application layout. No shadow, no portal.
+  &--mode-docked {
+    position: relative;
+    --arvo-pnl-bg: var(--arvo-color-s-layer-01);
+    box-shadow: none;
+  }
+
+  // -- Pane size animation --------------------------------------------------
+  // Width/height are NOT GPU-accelerated properties, but transitioning them
+  // is the only way to animate a pane between its default size and its
+  // expanded (fullscreen / maxSize) target without distorting the content
+  // with a `transform: scale()` (which would visually stretch the tabstrip,
+  // typography, and the FAB).
+  //
+  // The transition is GATED on the host's `arvo-pnl--animating-expand`
+  // class so the pane only animates around an expand/restore toggle. The
+  // class is added by the component immediately before flipping
+  // `arvo-pnl--expanded` and removed on `transitionend` (or after a safety
+  // timeout). Without the gate, every splitter drag (which writes to
+  // `--arvo-pnl-size`) would lag the pointer by the transition duration.
+  // Uses the canonical pane motion timing so growth/shrink reads with the
+  // same rhythm as the open/close slide. The open/close transform-based
+  // slide stays separate -- it is applied to the host (.arvo-pnl), not
+  // to the pane.
+  &--animating-expand .arvo-pnl__pane {
+    transition:
+      width $arvo-duration-slow $arvo-ease-standard,
+      height $arvo-duration-slow $arvo-ease-standard,
+      max-width $arvo-duration-slow $arvo-ease-standard,
+      max-height $arvo-duration-slow $arvo-ease-standard;
+    will-change: width, height;
+  }
+
+  // Honor `prefers-reduced-motion` for the size transition too.
+  @media (prefers-reduced-motion: reduce) {
+    &--animating-expand .arvo-pnl__pane {
+      transition: none;
+    }
+  }
+
+  // -- Placement: left ------------------------------------------------------
+  &--placement-left {
+    display: flex;
+    flex-direction: row;
+    --arvo-pnl-vmax: 80vw;
+
+    &.arvo-pnl--mode-overlay {
+      top: 0;
+      bottom: 0;
+      left: 0;
+      box-shadow: $arvo-shadow-right;
+      flex-direction: row;
+    }
+
+    &.arvo-pnl--mode-docked {
+      height: 100%;
+    }
+
+    .arvo-pnl__pane {
+      width: min(
+        var(--arvo-pnl-size),
+        var(--arvo-pnl-max-size),
+        var(--arvo-pnl-vmax)
+      );
+      min-width: var(--arvo-pnl-min-size);
+      height: 100%;
+    }
+
+    // Splitter on right (inner) edge -- pane is first child.
+    .arvo-pnl__splitter {
+      order: 2;
+    }
+    .arvo-pnl__pane {
+      order: 1;
+    }
+  }
+
+  // -- Placement: right -----------------------------------------------------
+  &--placement-right {
+    display: flex;
+    flex-direction: row;
+    --arvo-pnl-vmax: 80vw;
+
+    &.arvo-pnl--mode-overlay {
+      top: 0;
+      bottom: 0;
+      right: 0;
+      box-shadow: $arvo-shadow-left;
+      flex-direction: row;
+    }
+
+    &.arvo-pnl--mode-docked {
+      height: 100%;
+    }
+
+    .arvo-pnl__pane {
+      width: min(
+        var(--arvo-pnl-size),
+        var(--arvo-pnl-max-size),
+        var(--arvo-pnl-vmax)
+      );
+      min-width: var(--arvo-pnl-min-size);
+      height: 100%;
+    }
+
+    // Splitter on left (inner) edge -- splitter is first child.
+    .arvo-pnl__splitter {
+      order: 1;
+    }
+    .arvo-pnl__pane {
+      order: 2;
+    }
+  }
+
+  // -- Placement: top -------------------------------------------------------
+  &--placement-top {
+    display: flex;
+    flex-direction: column;
+    --arvo-pnl-vmax: 80vh;
+    --arvo-pnl-size: #{$arvo-panel-default-h};
+    --arvo-pnl-min-size: #{$arvo-panel-hmin};
+    --arvo-pnl-max-size: #{$arvo-panel-hmax-px};
+
+    &.arvo-pnl--mode-overlay {
+      top: 0;
+      left: 0;
+      right: 0;
+      box-shadow: $arvo-shadow-down;
+      flex-direction: column;
+    }
+
+    &.arvo-pnl--mode-docked {
+      width: 100%;
+    }
+
+    .arvo-pnl__pane {
+      height: min(
+        var(--arvo-pnl-size),
+        var(--arvo-pnl-max-size),
+        var(--arvo-pnl-vmax)
+      );
+      min-height: var(--arvo-pnl-min-size);
+      width: 100%;
+    }
+
+    // Splitter on bottom (inner) edge -- pane is first child.
+    .arvo-pnl__splitter {
+      order: 2;
+    }
+    .arvo-pnl__pane {
+      order: 1;
+    }
+
+    // Body vertical rhythm differs for horizontal panels (top/bottom): less
+    // top padding, slightly more bottom padding to balance the inner edge
+    // (where the splitter / pane terminus sits). Matches Figma node 40166:11154.
+    .arvo-pnl__body {
+      padding-block: $arvo-space-8 $arvo-space-12;
+    }
+  }
+
+  // -- Placement: bottom ----------------------------------------------------
+  &--placement-bottom {
+    display: flex;
+    flex-direction: column;
+    --arvo-pnl-vmax: 80vh;
+    --arvo-pnl-size: #{$arvo-panel-default-h};
+    --arvo-pnl-min-size: #{$arvo-panel-hmin};
+    --arvo-pnl-max-size: #{$arvo-panel-hmax-px};
+
+    &.arvo-pnl--mode-overlay {
+      bottom: 0;
+      left: 0;
+      right: 0;
+      box-shadow: $arvo-shadow-up;
+      flex-direction: column;
+    }
+
+    &.arvo-pnl--mode-docked {
+      width: 100%;
+    }
+
+    .arvo-pnl__pane {
+      height: min(
+        var(--arvo-pnl-size),
+        var(--arvo-pnl-max-size),
+        var(--arvo-pnl-vmax)
+      );
+      min-height: var(--arvo-pnl-min-size);
+      width: 100%;
+    }
+
+    // Splitter on top (inner) edge -- splitter is first child.
+    .arvo-pnl__splitter {
+      order: 1;
+    }
+    .arvo-pnl__pane {
+      order: 2;
+    }
+
+    // Same vertical body rhythm as placement-top.
+    .arvo-pnl__body {
+      padding-block: $arvo-space-8 $arvo-space-12;
+    }
+  }
+
+  // -- isEdge -- body runs flush to the inline (left/right) edges -----------
+  // Header, rich-header, sticky-area, and footer keep their inline padding so
+  // their controls remain visually grouped. Matches Figma "isEdge=true" set.
+  &--edge .arvo-pnl__body {
+    padding-inline: 0;
+  }
+
+  // -- Expanded state -------------------------------------------------------
+  // Two target modes:
+  //   - fullscreen (default for overlay): pane fills viewport
+  //   - maxSize (default for docked):    pane grows to --arvo-pnl-max-size
+  //
+  // The component sets `arvo-pnl--expanded` AND an `--arvo-pnl-expand-mode`
+  // class (`--expand-fullscreen` or `--expand-maxsize`) so the CSS can branch.
+  &--expanded {
+    &.arvo-pnl--placement-left,
+    &.arvo-pnl--placement-right {
+      &.arvo-pnl--expand-fullscreen .arvo-pnl__pane {
+        width: 100vw;
+        max-width: 100vw;
+      }
+      &.arvo-pnl--expand-maxSize .arvo-pnl__pane {
+        width: min(var(--arvo-pnl-max-size), var(--arvo-pnl-vmax));
+      }
+    }
+
+    &.arvo-pnl--placement-top,
+    &.arvo-pnl--placement-bottom {
+      &.arvo-pnl--expand-fullscreen .arvo-pnl__pane {
+        height: 100vh;
+        max-height: 100vh;
+      }
+      &.arvo-pnl--expand-maxSize .arvo-pnl__pane {
+        height: min(var(--arvo-pnl-max-size), var(--arvo-pnl-vmax));
+      }
+    }
+
+    // Hide the splitter while expanded -- resizing is no-op when fullscreen
+    // or at maxSize. Component also sets is-disabled on the splitter for ARIA.
+    .arvo-pnl__splitter {
+      display: none;
+    }
+  }
+
+  // -- Modal vs non-modal hooks --------------------------------------------
+  // The OverlaySurface engine paints the mask portaled to <body> when isModal=true;
+  // this class is informational only (used for component-level styling hooks,
+  // not for mask rendering).
+  &--non-modal.arvo-pnl--mode-overlay {
+    // No shadow change; non-modal overlays still get the directional shadow.
+  }
+
+  // -- Compact NavPanel rail -----------------------------------------------
+  // Applied by ArvoNavPanel when `isCompact=true`. The rail width is
+  // derived from the nested Arvo Nav `size` prop via the size modifier
+  // ramp below (sm=32px, md=40px, lg=48px). NavItem row content is
+  // hidden by the ArvoNav's own `--compact` selectors -- the panel only
+  // pins the width and suppresses full-width sticky content that would
+  // not fit inside the icon-only rail (per compact-mode UX rules).
+  //
+  // Consumers do NOT separately configure defaultSize / minSize /
+  // maxSize in compact mode -- they are driven entirely from `size`.
+  --arvo-nav-panel-compact-wmin-sm: 32px;
+  --arvo-nav-panel-compact-wmin-md: 40px;
+  --arvo-nav-panel-compact-wmin-lg: 48px;
+
+  &--compact {
+    // Default (no size modifier written) maps to md.
+    --arvo-pnl-size: var(--arvo-nav-panel-compact-wmin-md);
+    --arvo-pnl-min-size: var(--arvo-nav-panel-compact-wmin-md);
+    --arvo-pnl-max-size: var(--arvo-nav-panel-compact-wmin-md);
+
+    &.arvo-pnl--size-sm {
+      --arvo-pnl-size: var(--arvo-nav-panel-compact-wmin-sm);
+      --arvo-pnl-min-size: var(--arvo-nav-panel-compact-wmin-sm);
+      --arvo-pnl-max-size: var(--arvo-nav-panel-compact-wmin-sm);
+    }
+
+    &.arvo-pnl--size-md {
+      --arvo-pnl-size: var(--arvo-nav-panel-compact-wmin-md);
+      --arvo-pnl-min-size: var(--arvo-nav-panel-compact-wmin-md);
+      --arvo-pnl-max-size: var(--arvo-nav-panel-compact-wmin-md);
+    }
+
+    &.arvo-pnl--size-lg {
+      --arvo-pnl-size: var(--arvo-nav-panel-compact-wmin-lg);
+      --arvo-pnl-min-size: var(--arvo-nav-panel-compact-wmin-lg);
+      --arvo-pnl-max-size: var(--arvo-nav-panel-compact-wmin-lg);
+    }
+
+    // Suppress full-width sticky content that cannot render inside a
+    // 32/40/48px rail. The compact-mode content rules say:
+    //   - inline banners are not displayed;
+    //   - full-width TabStrip content is not displayed;
+    //   - a full inline search field is not displayed.
+    // The header itself is kept -- consumers can hide it explicitly
+    // via `hasHeader={false}` when they want a pure icon rail.
+    .arvo-pnl__banner,
+    .arvo-pnl__tabs,
+    .arvo-pnl__search,
+    .arvo-pnl__rich-hdr {
+      display: none;
+    }
+
+    // Compact rail header: the panel is only wide enough for a single
+    // 20x20 o9con glyph, so the label, header actions, and dismiss
+    // affordances collapse out of view. The leading icon remains as
+    // the sole visual identifier (the accessible name still lives on
+    // the panel root via `aria-label` / `title`). If a consumer wants
+    // a purely icon-only rail with NO header row, they can pass
+    // `hasHeader={false}`.
+    .arvo-pnl__hdr {
+      padding-inline: 0;
+      justify-content: center;
+    }
+
+    .arvo-pnl__title,
+    .arvo-pnl__title-leading:empty,
+    .arvo-pnl__title-trailing,
+    .arvo-pnl__hdr-actions,
+    .arvo-pnl__close,
+    .arvo-pnl__back {
+      display: none;
+    }
+
+    // Icon centers inside the rail rather than sitting flush-left.
+    .arvo-pnl__hdr-lft {
+      flex: 0 0 auto;
+      justify-content: center;
+    }
+
+    // Body inline padding also collapses -- the icon-only rail has no
+    // room for horizontal gutters.
+    .arvo-pnl__body {
+      padding-inline: 0;
+    }
+  }
+
+  // -- Slide animations (overlay mode only) --------------------------------
+  //
+  // Pure-transform slide -- no opacity fade. Animating opacity alongside
+  // transform reads as a "flash": the pane is briefly transparent at the
+  // edge and only becomes opaque mid-slide, so the eye perceives a sudden
+  // appearance rather than a smooth glide. The open / close motion uses
+  // only the placement-appropriate `translate`; the resting state is
+  // `translate(0, 0)`.
+  //
+  // The closed transform is applied to the host whenever `.open` is NOT
+  // present; `.open` flips the transform back to `translate(0, 0)` and
+  // the host-level `transition: $arvo-motion-pane` handles both
+  // directions. The overlay engine is configured with `transition: null`
+  // because the SCSS owns the animation lifecycle here (see Panel.tsx /
+  // Panel.ts: createOverlaySurface).
+  &--mode-overlay.arvo-pnl--placement-left {
+    transform: $arvo-transform-pane-closed-left;
+
+    &.open {
+      transform: $arvo-transform-pane-open;
+    }
+  }
+
+  &--mode-overlay.arvo-pnl--placement-right {
+    transform: $arvo-transform-pane-closed-right;
+
+    &.open {
+      transform: $arvo-transform-pane-open;
+    }
+  }
+
+  &--mode-overlay.arvo-pnl--placement-top {
+    transform: $arvo-transform-pane-closed-top;
+
+    &.open {
+      transform: $arvo-transform-pane-open;
+    }
+  }
+
+  &--mode-overlay.arvo-pnl--placement-bottom {
+    transform: $arvo-transform-pane-closed-bottom;
+
+    &.open {
+      transform: $arvo-transform-pane-open;
+    }
+  }
+
+  // -- Disabled / loading hooks --------------------------------------------
+  // panel-shell writes is-disabled on __pane; the splitter is disabled too
+  // (matching SidePanel -- the component also calls splitter.disabled(true)).
+  // The opacity here is purely visual.
+  &.is-disabled .arvo-pnl__pane,
+  .arvo-pnl__pane.is-disabled {
+    opacity: $arvo-opacity-40;
+    pointer-events: none;
+  }
+}
+
+// -- Reduced motion ----------------------------------------------------------
+@media (prefers-reduced-motion: reduce) {
+  .arvo-pnl--mode-overlay,
+  .arvo-pnl--mode-overlay.open {
+    // Skip the slide entirely for users who request reduced motion. The
+    // panel still snaps between closed and open instantly via the
+    // visibility / transform rules above; only the smooth animation is
+    // suppressed.
+    transition: none;
+  }
+}

@@ -1,0 +1,668 @@
+@use './colors' as *;
+@use './spacing' as *;
+@use './typography' as *;
+@use './borders' as *;
+@use './animation' as *;
+@use './effects' as *;
+@use './icon-size' as *;
+@use './illustration-size' as *;
+
+// ROOT CSS VARIABLES
+//   Dynamic-only CSS custom properties used by component styles.
+//   Static tokens (spacing, font-size, font-weight, border-width, border-radius,
+//   shadows, opacity, motion, icon-size) are NOT emitted as CSS variables --
+//   they are consumed directly via the $arvo-* SCSS tokens at compile time.
+//
+//   Layering (source order matters because all data-* selectors share
+//   specificity (0,0,1,1); later rules win):
+//     1. Foundation                -- font family
+//     2. Default light mode        -- bulk light semantic tokens + o9 Theme as the default brand
+//     3. Brand theme overrides     -- per-data-theme overrides of theme-only tokens (light mode)
+//     4. Dark mode                 -- bulk dark semantic tokens + single dark palette for theme tokens
+//                                     (placed LAST so it overrides brand theme tokens when both apply)
+//     5. User override signal      -- reserved for data-user-theme="on"
+//
+//   Cascade examples:
+//     <html>                                 -> default light + o9 Theme
+//     <html data-theme="o9default">          -> default light + Sky Blue overrides
+//     <html data-mode="dark">                -> dark bulk tokens + dark theme tokens
+//     <html data-theme="o9green" data-mode="dark"> -> dark wins (data-mode="dark"
+//                                                     declared after data-theme rules)
+
+// =====================================
+// 1. FOUNDATION
+// =====================================
+
+:root {
+    --o9-font-family: o9Sans, NotoSans, Arial, sans-serif;
+}
+
+// =====================================
+// 2. DEFAULT LIGHT MODE (o9 Theme defaults baked in)
+// =====================================
+//
+// :root provides fallback values when no data-mode attribute is set, so
+// consumers do not need to opt-in to the light palette. Theme tokens here
+// resolve to the o9 Theme palette per the UX-provided semantic file --
+// it is the default brand. Setting data-theme to any other brand value in
+// section 3 only overrides the theme tokens (s-theme-*, b-theme-*,
+// t-theme-*, i-theme-*); all other semantic tokens remain shared.
+
+:root,
+html[data-mode="light"] {
+    // -- Surface --
+    --arvo-color-s-base: #{$arvo-global-gray-01};
+    --arvo-color-s-layer-01: #{$arvo-global-white};
+    --arvo-color-s-layer-02: #{$arvo-global-gray-01};
+    --arvo-color-s-layer-03: #{$arvo-global-white};
+    --arvo-color-s-layer-04: #{$arvo-global-gray-01};
+    --arvo-color-s-layer-05: #{$arvo-global-gray-01};
+    --arvo-color-s-layer-06: #{$arvo-global-white};
+    --arvo-color-s-layer-07: #{$arvo-global-gray-03};
+    --arvo-color-s-placeholder: #{$arvo-global-white};
+    --arvo-color-s-placeholder-2: #{$arvo-global-gray-07};
+    --arvo-color-s-brand: #{$arvo-global-gray-01};
+
+    // Theme tokens default to o9 Theme (light)
+    --arvo-color-s-theme: #{$arvo-global-o9theme-10};
+    --arvo-color-s-theme-2: #{$arvo-global-o9theme-10};
+    --arvo-color-s-theme-hover-1: #{$arvo-global-o9theme-09};
+    --arvo-color-s-theme-hover-2: #{$arvo-global-o9theme-08};
+    --arvo-color-s-theme-hover-3: #{$arvo-global-o9theme-07};
+    --arvo-color-s-theme-hover-4: #{$arvo-global-o9theme-07};
+    --arvo-color-s-theme-active-1: #{$arvo-global-o9theme-10};
+    --arvo-color-s-theme-active-2: #{$arvo-global-o9theme-07};
+    --arvo-color-s-theme-active-3: #{$arvo-global-o9theme-06};
+    --arvo-color-s-theme-active-4: #{$arvo-global-o9theme-06};
+    --arvo-color-s-theme-active-5: #{$arvo-global-o9theme-11};
+
+    --arvo-color-s-hover: #{$arvo-global-gray-04};
+    --arvo-color-s-active: #{$arvo-global-white};
+    --arvo-color-s-disabled: #{$arvo-global-gray-02};
+    --arvo-color-s-readonly: #{$arvo-global-gray-01};
+    --arvo-color-s-negative-subtle: #{$arvo-global-redish-05};
+    --arvo-color-s-positive-subtle: #{$arvo-global-greenish-07};
+    --arvo-color-s-warning-subtle: #{$arvo-global-warning-06};
+    --arvo-color-s-info-subtle: #{$arvo-global-bluish-06};
+    --arvo-color-s-positive-strong: #{$arvo-global-positive-10};
+    --arvo-color-s-negative-strong: #{$arvo-global-redish-09};
+    --arvo-color-s-warning-strong: #{$arvo-global-warning-10};
+    --arvo-color-s-info-strong: #{$arvo-global-bluish-09};
+    --arvo-color-s-neutral-strong: #{$arvo-global-gray-07};
+    --arvo-color-s-negative: #{$arvo-global-redish-09};
+    --arvo-color-s-negative-hover: #{$arvo-global-redish-10};
+    --arvo-color-s-negative-active: #{$arvo-global-redish-11};
+    --arvo-color-s-negative-static: #{$arvo-global-redish-08};
+    --arvo-color-s-neutral: #{$arvo-global-black};
+    --arvo-color-s-inverse: #{$arvo-global-black};
+    --arvo-color-s-direct: #{$arvo-global-white};
+    --arvo-color-s-on-inverse: #{$arvo-global-gray-08};
+    --arvo-color-s-white-static: #{$arvo-global-white};
+    --arvo-color-s-black-static: #{$arvo-global-gray-10};
+    --arvo-color-s-overlay-static: #{$arvo-global-opacity-1};
+    --arvo-color-s-shadow-static-1: #{$arvo-global-opacity-2};
+    --arvo-color-s-shadow-static-2: #{$arvo-global-opacity-3};
+    --arvo-color-s-pulse-light: #{$arvo-global-gray-01};
+    --arvo-color-s-pulse-dark: #{$arvo-global-gray-02};
+    --arvo-color-s-fn-currenttime: #{$arvo-global-orangish-09};
+    --arvo-color-s-fn-pasttime: #{$arvo-global-gray-01};
+    --arvo-color-s-fn-editable: #{$arvo-global-orangish-07};
+    --arvo-color-s-fn-ancestorfrozen: #{$arvo-global-green-08};
+    --arvo-color-s-fn-frozen: #{$arvo-global-green-07};
+    --arvo-color-s-fn-frozenleaf: #{$arvo-global-greenish-08};
+    --arvo-color-s-util-purple-dark: #{$arvo-global-purple-10};
+    --arvo-color-s-util-purple-static: #{$arvo-global-purple-08};
+    --arvo-color-s-util-purple-subtle: #{$arvo-global-purple-08};
+    --arvo-color-s-util-pink-dark: #{$arvo-global-pink-10};
+    --arvo-color-s-util-pink-static: #{$arvo-global-pink-08};
+    --arvo-color-s-util-pink-subtle: #{$arvo-global-pink-08};
+    --arvo-color-s-util-glacier-dark: #{$arvo-global-glacier-10};
+    --arvo-color-s-util-glacier-static: #{$arvo-global-glacier-08};
+    --arvo-color-s-util-glacier-subtle: #{$arvo-global-glacier-08};
+    --arvo-color-s-util-amber-dark: #{$arvo-global-amber-10};
+    --arvo-color-s-util-amber-static: #{$arvo-global-amber-08};
+    --arvo-color-s-util-amber-subtle: #{$arvo-global-amber-08};
+    --arvo-color-s-util-greenish-dark: #{$arvo-global-greenish-10};
+    --arvo-color-s-util-greenish-static: #{$arvo-global-greenish-08};
+    --arvo-color-s-util-greenish-subtle: #{$arvo-global-greenish-08};
+    --arvo-color-s-util-bluish-dark: #{$arvo-global-bluish-10};
+    --arvo-color-s-util-bluish-static: #{$arvo-global-bluish-07};
+    --arvo-color-s-util-bluish-subtle: #{$arvo-global-bluish-07};
+    --arvo-color-s-nova-static: linear-gradient(61deg, #{$arvo-global-nova-start} 0.88%, #{$arvo-global-nova-end} 60.13%);
+
+    // -- Border --
+    --arvo-color-b-divider: #{$arvo-global-gray-02};
+    --arvo-color-b-base: #{$arvo-global-gray-01};
+    --arvo-color-b-subtle: #{$arvo-global-gray-01};
+    --arvo-color-b-dark: #{$arvo-global-gray-04};
+    --arvo-color-b-separator: #{$arvo-global-gray-02};
+    --arvo-color-b-inverse: #{$arvo-global-black};
+    --arvo-color-b-direct: #{$arvo-global-white};
+    --arvo-color-b-hover: #{$arvo-global-gray-03};
+    --arvo-color-b-active-static: #{$arvo-global-gray-05};
+    --arvo-color-b-positive: #{$arvo-global-greenish-10};
+    --arvo-color-b-negative: #{$arvo-global-redish-09};
+    --arvo-color-b-warning: #{$arvo-global-orangish-10};
+    --arvo-color-b-warning-static: #{$arvo-global-orangish-08};
+    --arvo-color-b-info: #{$arvo-global-bluish-09};
+    --arvo-color-b-neutral: #{$arvo-global-black};
+    --arvo-color-b-focus-inverse: #{$arvo-global-white};
+    --arvo-color-b-form: #{$arvo-global-gray-11};
+    --arvo-color-b-form-separator: #{$arvo-global-gray-11};
+    --arvo-color-b-disabled: #{$arvo-global-gray-03};
+    --arvo-color-b-readonly: #{$arvo-global-gray-05};
+
+    // Theme tokens default to o9 Theme (light)
+    --arvo-color-b-theme: #{$arvo-global-o9theme-10};
+    --arvo-color-b-theme-hover: #{$arvo-global-o9theme-10};
+    --arvo-color-b-theme-hover-2: #{$arvo-global-o9theme-09};
+    --arvo-color-b-theme-active: #{$arvo-global-o9theme-10};
+    --arvo-color-b-theme-focus: #{$arvo-global-o9theme-10};
+
+    --arvo-color-b-util-purple-dark: #{$arvo-global-purple-10};
+    --arvo-color-b-util-purple-static: #{$arvo-global-purple-09};
+    --arvo-color-b-util-pink-dark: #{$arvo-global-pink-10};
+    --arvo-color-b-util-pink-static: #{$arvo-global-pink-09};
+    --arvo-color-b-util-glacier-dark: #{$arvo-global-glacier-10};
+    --arvo-color-b-util-glacier-static: #{$arvo-global-glacier-09};
+    --arvo-color-b-util-amber-dark: #{$arvo-global-amber-10};
+    --arvo-color-b-util-amber-static: #{$arvo-global-amber-09};
+    --arvo-color-b-util-greenish-dark: #{$arvo-global-greenish-10};
+    --arvo-color-b-util-greenish-static: #{$arvo-global-greenish-09};
+    --arvo-color-b-util-bluish-dark: #{$arvo-global-bluish-10};
+    --arvo-color-b-util-bluish-static: #{$arvo-global-bluish-08};
+    --arvo-color-b-nova-static: linear-gradient(61deg, #{$arvo-global-nova-start} 0.88%, #{$arvo-global-nova-end} 60.13%);
+
+    // -- Text --
+    --arvo-color-t-primary: #{$arvo-global-black};
+    --arvo-color-t-secondary: #{$arvo-global-gray-08};
+    --arvo-color-t-tertiary: #{$arvo-global-gray-07};
+    --arvo-color-t-placeholder: #{$arvo-global-gray-06};
+    --arvo-color-t-hover: #{$arvo-global-black};
+    --arvo-color-t-active: #{$arvo-global-black};
+    --arvo-color-t-active-inverse: #{$arvo-global-white};
+    --arvo-color-t-inverse: #{$arvo-global-white};
+    --arvo-color-t-white-static: #{$arvo-global-white};
+    --arvo-color-t-black-static: #{$arvo-global-gray-09};
+    --arvo-color-t-disabled: #{$arvo-global-gray-04};
+    --arvo-color-t-readonly: #{$arvo-global-gray-08};
+    --arvo-color-t-positive: #{$arvo-global-greenish-10};
+    --arvo-color-t-negative: #{$arvo-global-redish-09};
+    --arvo-color-t-warning: #{$arvo-global-orangish-10};
+    --arvo-color-t-info-light: #{$arvo-global-bluish-09};
+    --arvo-color-t-info-dark: #{$arvo-global-bluish-10};
+    --arvo-color-t-neutral: #{$arvo-global-black};
+    --arvo-color-t-form-label: #{$arvo-global-gray-08};
+    --arvo-color-t-form-value: #{$arvo-global-gray-09};
+
+    // Theme tokens default to o9 Theme (light)
+    --arvo-color-t-theme: #{$arvo-global-o9theme-10};
+    --arvo-color-t-theme-hover: #{$arvo-global-o9theme-10};
+    --arvo-color-t-theme-active: #{$arvo-global-o9theme-10};
+
+    --arvo-color-t-util-purple: #{$arvo-global-purple-10};
+    --arvo-color-t-util-pink: #{$arvo-global-pink-10};
+    --arvo-color-t-util-glacier: #{$arvo-global-glacier-10};
+    --arvo-color-t-util-amber: #{$arvo-global-amber-10};
+    --arvo-color-t-util-greenish: #{$arvo-global-greenish-10};
+    --arvo-color-t-util-bluish: #{$arvo-global-bluish-10};
+
+    // -- Icon --
+    --arvo-color-i-primary: #{$arvo-global-black};
+    --arvo-color-i-secondary: #{$arvo-global-gray-08};
+    --arvo-color-i-tertiary: #{$arvo-global-gray-07};
+    --arvo-color-i-placeholder: #{$arvo-global-gray-06};
+    --arvo-color-i-hover: #{$arvo-global-black};
+    --arvo-color-i-active: #{$arvo-global-black};
+    --arvo-color-i-active-inverse: #{$arvo-global-white};
+    --arvo-color-i-inverse: #{$arvo-global-white};
+    --arvo-color-i-white-static: #{$arvo-global-white};
+    --arvo-color-i-black-static: #{$arvo-global-gray-09};
+    --arvo-color-i-disabled: #{$arvo-global-gray-04};
+    --arvo-color-i-readonly: #{$arvo-global-gray-08};
+    --arvo-color-i-positive: #{$arvo-global-greenish-10};
+    --arvo-color-i-negative: #{$arvo-global-redish-09};
+    --arvo-color-i-negative-static: #{$arvo-global-redish-08};
+    --arvo-color-i-warning: #{$arvo-global-orangish-10};
+    --arvo-color-i-warning-static: #{$arvo-global-orangish-08};
+    --arvo-color-i-info-light: #{$arvo-global-bluish-09};
+    --arvo-color-i-info-dark: #{$arvo-global-bluish-10};
+    --arvo-color-i-neutral: #{$arvo-global-black};
+
+    // Theme tokens default to o9 Theme (light)
+    --arvo-color-i-theme: #{$arvo-global-o9theme-10};
+    --arvo-color-i-theme-hover: #{$arvo-global-o9theme-10};
+    --arvo-color-i-theme-active: #{$arvo-global-o9theme-10};
+
+    --arvo-color-i-util-purple: #{$arvo-global-purple-10};
+    --arvo-color-i-util-pink: #{$arvo-global-pink-10};
+    --arvo-color-i-util-glacier: #{$arvo-global-glacier-10};
+    --arvo-color-i-util-amber: #{$arvo-global-amber-10};
+    --arvo-color-i-util-greenish: #{$arvo-global-greenish-10};
+    --arvo-color-i-util-bluish: #{$arvo-global-bluish-10};
+    --arvo-color-i-nova-static: linear-gradient(61deg, #{$arvo-global-nova-start} 0.88%, #{$arvo-global-nova-end} 60.13%);
+}
+
+// =====================================
+// 3. BRAND THEME OVERRIDES (LIGHT MODE ONLY)
+// =====================================
+//
+// Each block overrides ONLY the per-data-theme tokens (s-theme-*, b-theme-*,
+// t-theme-*, i-theme-*). All other semantic tokens remain shared with the
+// light default. Dark mode (section 4) sits after these blocks in source
+// order so it overrides the brand theme tokens when both apply.
+//
+// Brand mapping:
+//   o9theme    -> o9 Theme    (redundant with default; declared for explicit selection)
+//   o9default  -> Sky Blue
+//   o9black    -> Onyx Black
+//   o9green    -> Forest Green
+//   o9indigo   -> Midnight Indigo
+
+// Mixin: o9-light-theme-vars
+// Emits the per-data-theme surface / border / text / icon overrides for a
+// single brand in light mode.
+@mixin o9-light-theme-vars(
+    $surface,
+    $surface-2,
+    $surface-hover-1,
+    $surface-hover-2,
+    $surface-hover-3,
+    $surface-hover-4,
+    $surface-active-1,
+    $surface-active-2,
+    $surface-active-3,
+    $surface-active-4,
+    $surface-active-5,
+    $border,
+    $border-hover,
+    $border-hover-2,
+    $border-active,
+    $border-focus,
+    $text,
+    $text-hover,
+    $text-active,
+    $icon,
+    $icon-hover,
+    $icon-active
+) {
+    --arvo-color-s-theme: #{$surface};
+    --arvo-color-s-theme-2: #{$surface-2};
+    --arvo-color-s-theme-hover-1: #{$surface-hover-1};
+    --arvo-color-s-theme-hover-2: #{$surface-hover-2};
+    --arvo-color-s-theme-hover-3: #{$surface-hover-3};
+    --arvo-color-s-theme-hover-4: #{$surface-hover-4};
+    --arvo-color-s-theme-active-1: #{$surface-active-1};
+    --arvo-color-s-theme-active-2: #{$surface-active-2};
+    --arvo-color-s-theme-active-3: #{$surface-active-3};
+    --arvo-color-s-theme-active-4: #{$surface-active-4};
+    --arvo-color-s-theme-active-5: #{$surface-active-5};
+
+    --arvo-color-b-theme: #{$border};
+    --arvo-color-b-theme-hover: #{$border-hover};
+    --arvo-color-b-theme-hover-2: #{$border-hover-2};
+    --arvo-color-b-theme-active: #{$border-active};
+    --arvo-color-b-theme-focus: #{$border-focus};
+
+    --arvo-color-t-theme: #{$text};
+    --arvo-color-t-theme-hover: #{$text-hover};
+    --arvo-color-t-theme-active: #{$text-active};
+
+    --arvo-color-i-theme: #{$icon};
+    --arvo-color-i-theme-hover: #{$icon-hover};
+    --arvo-color-i-theme-active: #{$icon-active};
+}
+
+// o9 Theme -- matches the default light values; declared so an explicit
+// data-theme="o9theme" still resolves correctly when other brand themes
+// are toggled at runtime.
+html[data-theme="o9theme"] {
+    @include o9-light-theme-vars(
+        $arvo-global-o9theme-10,        // s-theme
+        $arvo-global-o9theme-10,        // s-theme-2
+        $arvo-global-o9theme-09,        // s-theme-hover-1
+        $arvo-global-o9theme-08,        // s-theme-hover-2
+        $arvo-global-o9theme-07,        // s-theme-hover-3
+        $arvo-global-o9theme-07,        // s-theme-hover-4
+        $arvo-global-o9theme-10,        // s-theme-active-1
+        $arvo-global-o9theme-07,        // s-theme-active-2
+        $arvo-global-o9theme-06,        // s-theme-active-3
+        $arvo-global-o9theme-06,        // s-theme-active-4
+        $arvo-global-o9theme-11,        // s-theme-active-5
+        $arvo-global-o9theme-10,        // b-theme
+        $arvo-global-o9theme-10,        // b-theme-hover
+        $arvo-global-o9theme-09,        // b-theme-hover-2
+        $arvo-global-o9theme-10,        // b-theme-active
+        $arvo-global-o9theme-10,        // b-theme-focus
+        $arvo-global-o9theme-10,        // t-theme
+        $arvo-global-o9theme-10,        // t-theme-hover
+        $arvo-global-o9theme-10,        // t-theme-active
+        $arvo-global-o9theme-10,        // i-theme
+        $arvo-global-o9theme-10,        // i-theme-hover
+        $arvo-global-o9theme-10         // i-theme-active
+    );
+}
+
+// Sky Blue (data-theme="o9default")
+html[data-theme="o9default"] {
+    @include o9-light-theme-vars(
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-10,
+        $arvo-global-skyblue-08,
+        $arvo-global-skyblue-07,
+        $arvo-global-skyblue-07,
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-07,
+        $arvo-global-skyblue-06,
+        $arvo-global-skyblue-06,
+        $arvo-global-skyblue-11,
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-10,
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-10,
+        $arvo-global-skyblue-10,
+        $arvo-global-skyblue-09,
+        $arvo-global-skyblue-10,
+        $arvo-global-skyblue-10
+    );
+}
+
+// Onyx Black
+html[data-theme="o9black"] {
+    @include o9-light-theme-vars(
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-09,
+        $arvo-global-onyxblack-08,
+        $arvo-global-onyxblack-07,
+        $arvo-global-onyxblack-07,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-07,
+        $arvo-global-onyxblack-06,
+        $arvo-global-onyxblack-06,
+        $arvo-global-onyxblack-11,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10,
+        $arvo-global-onyxblack-10
+    );
+}
+
+// Forest Green
+html[data-theme="o9green"] {
+    @include o9-light-theme-vars(
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-10,
+        $arvo-global-forestgreen-08,
+        $arvo-global-forestgreen-07,
+        $arvo-global-forestgreen-07,
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-07,
+        $arvo-global-forestgreen-06,
+        $arvo-global-forestgreen-06,
+        $arvo-global-forestgreen-11,
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-10,
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-10,
+        $arvo-global-forestgreen-10,
+        $arvo-global-forestgreen-09,
+        $arvo-global-forestgreen-10,
+        $arvo-global-forestgreen-10
+    );
+}
+
+// Midnight Indigo
+html[data-theme="o9indigo"] {
+    @include o9-light-theme-vars(
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-09,
+        $arvo-global-midnightindigo-08,
+        $arvo-global-midnightindigo-07,
+        $arvo-global-midnightindigo-07,
+        $arvo-global-midnightindigo-09,
+        $arvo-global-midnightindigo-07,
+        $arvo-global-midnightindigo-06,
+        $arvo-global-midnightindigo-06,
+        $arvo-global-midnightindigo-11,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-09,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10,
+        $arvo-global-midnightindigo-10
+    );
+}
+
+// =====================================
+// 4. DARK MODE
+// =====================================
+//
+// Single dark palette applied to ALL brand themes -- there is no per-brand
+// dark variant. Declared AFTER section 3 so the dark theme tokens override
+// any brand theme override when data-mode="dark" is present.
+
+html[data-mode="dark"] {
+    // -- Surface --
+    --arvo-color-s-base: #{$arvo-global-gray-09};
+    --arvo-color-s-layer-01: #{$arvo-global-gray-10};
+    --arvo-color-s-layer-02: #{$arvo-global-gray-09};
+    --arvo-color-s-layer-03: #{$arvo-global-gray-09};
+    --arvo-color-s-layer-04: #{$arvo-global-gray-08};
+    --arvo-color-s-layer-05: #{$arvo-global-gray-08};
+    --arvo-color-s-layer-06: #{$arvo-global-gray-08};
+    --arvo-color-s-layer-07: #{$arvo-global-gray-07};
+    --arvo-color-s-placeholder: #{$arvo-global-gray-03};
+    --arvo-color-s-placeholder-2: #{$arvo-global-gray-07};
+    --arvo-color-s-brand: #{$arvo-global-gray-09};
+
+    // Theme tokens -- single dark palette (no per-brand variant)
+    --arvo-color-s-theme: #{$arvo-global-dark-07};
+    --arvo-color-s-theme-2: #{$arvo-global-dark-12};
+    --arvo-color-s-theme-hover-1: #{$arvo-global-dark-03};
+    --arvo-color-s-theme-hover-2: #{$arvo-global-dark-13};
+    --arvo-color-s-theme-hover-3: #{$arvo-global-dark-12};
+    --arvo-color-s-theme-hover-4: #{$arvo-global-dark-09};
+    --arvo-color-s-theme-active-1: #{$arvo-global-dark-07};
+    --arvo-color-s-theme-active-2: #{$arvo-global-dark-12};
+    --arvo-color-s-theme-active-3: #{$arvo-global-o9theme-09};
+    --arvo-color-s-theme-active-4: #{$arvo-global-gray-08};
+    --arvo-color-s-theme-active-5: #{$arvo-global-dark-06};
+
+    --arvo-color-s-hover: #{$arvo-global-dark-05};
+    --arvo-color-s-active: #{$arvo-global-black};
+    --arvo-color-s-disabled: #{$arvo-global-gray-08};
+    --arvo-color-s-readonly: #{$arvo-global-gray-08};
+    --arvo-color-s-negative-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-positive-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-warning-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-info-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-positive-strong: #{$arvo-global-greenish-09};
+    --arvo-color-s-negative-strong: #{$arvo-global-redish-06};
+    --arvo-color-s-warning-strong: #{$arvo-global-orangish-09};
+    --arvo-color-s-info-strong: #{$arvo-global-bluish-07};
+    --arvo-color-s-neutral-strong: #{$arvo-global-gray-02};
+    --arvo-color-s-negative: #{$arvo-global-redish-06};
+    --arvo-color-s-negative-hover: #{$arvo-global-redish-09};
+    --arvo-color-s-negative-active: #{$arvo-global-redish-10};
+    --arvo-color-s-negative-static: #{$arvo-global-redish-08};
+    --arvo-color-s-neutral: #{$arvo-global-white};
+    --arvo-color-s-inverse: #{$arvo-global-white};
+    --arvo-color-s-direct: #{$arvo-global-black};
+    --arvo-color-s-on-inverse: #{$arvo-global-gray-01};
+    --arvo-color-s-white-static: #{$arvo-global-white};
+    // UX file referenced $arvo-global-dark-gray-10 (a typo: no such token).
+    // Mapped to gray-10 for parity with the corresponding light value.
+    --arvo-color-s-black-static: #{$arvo-global-gray-10};
+    --arvo-color-s-overlay-static: #{$arvo-global-opacity-1};
+    --arvo-color-s-shadow-static-1: #{$arvo-global-opacity-2};
+    --arvo-color-s-shadow-static-2: #{$arvo-global-opacity-2};
+    --arvo-color-s-pulse-light: #{$arvo-global-gray-09};
+    --arvo-color-s-pulse-dark: #{$arvo-global-gray-06};
+    --arvo-color-s-fn-currenttime: #{$arvo-global-orangish-10};
+    --arvo-color-s-fn-pasttime: #{$arvo-global-gray-09};
+    --arvo-color-s-fn-editable: #{$arvo-global-orangish-11};
+    --arvo-color-s-fn-ancestorfrozen: #{$arvo-global-green-10};
+    --arvo-color-s-fn-frozen: #{$arvo-global-greenish-10};
+    --arvo-color-s-fn-frozenleaf: #{$arvo-global-green-09};
+    --arvo-color-s-util-purple-dark: #{$arvo-global-purple-08};
+    --arvo-color-s-util-purple-static: #{$arvo-global-purple-08};
+    --arvo-color-s-util-purple-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-util-pink-dark: #{$arvo-global-pink-08};
+    --arvo-color-s-util-pink-static: #{$arvo-global-pink-08};
+    --arvo-color-s-util-pink-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-util-glacier-dark: #{$arvo-global-glacier-08};
+    --arvo-color-s-util-glacier-static: #{$arvo-global-glacier-08};
+    --arvo-color-s-util-glacier-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-util-amber-dark: #{$arvo-global-amber-08};
+    --arvo-color-s-util-amber-static: #{$arvo-global-amber-08};
+    --arvo-color-s-util-amber-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-util-greenish-dark: #{$arvo-global-greenish-08};
+    --arvo-color-s-util-greenish-static: #{$arvo-global-greenish-08};
+    --arvo-color-s-util-greenish-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-util-bluish-dark: #{$arvo-global-bluish-07};
+    --arvo-color-s-util-bluish-static: #{$arvo-global-bluish-07};
+    --arvo-color-s-util-bluish-subtle: #{$arvo-global-gray-08};
+    --arvo-color-s-nova-static: linear-gradient(61deg, #{$arvo-global-nova-start} 0.88%, #{$arvo-global-nova-end} 60.13%);
+
+    // -- Border --
+    --arvo-color-b-divider: #{$arvo-global-gray-08};
+    --arvo-color-b-base: #{$arvo-global-gray-09};
+    --arvo-color-b-subtle: #{$arvo-global-gray-10};
+    --arvo-color-b-dark: #{$arvo-global-gray-06};
+    --arvo-color-b-separator: #{$arvo-global-gray-07};
+    --arvo-color-b-inverse: #{$arvo-global-gray-01};
+    --arvo-color-b-direct: #{$arvo-global-black};
+    --arvo-color-b-hover: #{$arvo-global-gray-08};
+    --arvo-color-b-active-static: #{$arvo-global-gray-05};
+    --arvo-color-b-positive: #{$arvo-global-greenish-09};
+    --arvo-color-b-negative: #{$arvo-global-redish-06};
+    --arvo-color-b-warning: #{$arvo-global-orangish-09};
+    --arvo-color-b-warning-static: #{$arvo-global-orangish-08};
+    --arvo-color-b-info: #{$arvo-global-bluish-08};
+    --arvo-color-b-neutral: #{$arvo-global-white};
+    --arvo-color-b-focus-inverse: #{$arvo-global-black};
+    --arvo-color-b-form: #{$arvo-global-gray-05};
+    --arvo-color-b-form-separator: #{$arvo-global-gray-05};
+    --arvo-color-b-disabled: #{$arvo-global-gray-06};
+    --arvo-color-b-readonly: #{$arvo-global-gray-06};
+
+    // Theme tokens -- single dark palette
+    --arvo-color-b-theme: #{$arvo-global-dark-07};
+    --arvo-color-b-theme-hover: #{$arvo-global-dark-07};
+    --arvo-color-b-theme-hover-2: #{$arvo-global-dark-08};
+    --arvo-color-b-theme-active: #{$arvo-global-dark-07};
+    --arvo-color-b-theme-focus: #{$arvo-global-dark-07};
+
+    --arvo-color-b-util-purple-dark: #{$arvo-global-purple-08};
+    --arvo-color-b-util-purple-static: #{$arvo-global-purple-09};
+    --arvo-color-b-util-pink-dark: #{$arvo-global-pink-08};
+    --arvo-color-b-util-pink-static: #{$arvo-global-pink-09};
+    --arvo-color-b-util-glacier-dark: #{$arvo-global-glacier-08};
+    --arvo-color-b-util-glacier-static: #{$arvo-global-glacier-09};
+    --arvo-color-b-util-amber-dark: #{$arvo-global-amber-08};
+    --arvo-color-b-util-amber-static: #{$arvo-global-amber-09};
+    --arvo-color-b-util-greenish-dark: #{$arvo-global-greenish-08};
+    --arvo-color-b-util-greenish-static: #{$arvo-global-greenish-09};
+    --arvo-color-b-util-bluish-dark: #{$arvo-global-bluish-07};
+    --arvo-color-b-util-bluish-static: #{$arvo-global-bluish-08};
+    --arvo-color-b-nova-static: linear-gradient(61deg, #{$arvo-global-nova-start} 0.88%, #{$arvo-global-nova-end} 60.13%);
+
+    // -- Text --
+    --arvo-color-t-primary: #{$arvo-global-gray-02};
+    --arvo-color-t-secondary: #{$arvo-global-gray-03};
+    --arvo-color-t-tertiary: #{$arvo-global-gray-04};
+    --arvo-color-t-placeholder: #{$arvo-global-gray-04};
+    --arvo-color-t-hover: #{$arvo-global-white};
+    --arvo-color-t-active: #{$arvo-global-white};
+    --arvo-color-t-active-inverse: #{$arvo-global-black};
+    --arvo-color-t-inverse: #{$arvo-global-black};
+    --arvo-color-t-white-static: #{$arvo-global-white};
+    --arvo-color-t-black-static: #{$arvo-global-gray-09};
+    --arvo-color-t-disabled: #{$arvo-global-gray-06};
+    --arvo-color-t-readonly: #{$arvo-global-gray-03};
+    --arvo-color-t-positive: #{$arvo-global-greenish-09};
+    --arvo-color-t-negative: #{$arvo-global-redish-06};
+    --arvo-color-t-warning: #{$arvo-global-orangish-09};
+    --arvo-color-t-info-light: #{$arvo-global-bluish-07};
+    --arvo-color-t-info-dark: #{$arvo-global-bluish-08};
+    --arvo-color-t-neutral: #{$arvo-global-white};
+    --arvo-color-t-form-label: #{$arvo-global-gray-02};
+    --arvo-color-t-form-value: #{$arvo-global-gray-01};
+
+    // Theme tokens -- single dark palette
+    --arvo-color-t-theme: #{$arvo-global-dark-07};
+    --arvo-color-t-theme-hover: #{$arvo-global-dark-07};
+    --arvo-color-t-theme-active: #{$arvo-global-dark-07};
+
+    --arvo-color-t-util-purple: #{$arvo-global-purple-09};
+    --arvo-color-t-util-pink: #{$arvo-global-pink-08};
+    --arvo-color-t-util-glacier: #{$arvo-global-glacier-08};
+    --arvo-color-t-util-amber: #{$arvo-global-amber-08};
+    --arvo-color-t-util-greenish: #{$arvo-global-greenish-08};
+    --arvo-color-t-util-bluish: #{$arvo-global-bluish-07};
+
+    // -- Icon --
+    --arvo-color-i-primary: #{$arvo-global-gray-02};
+    --arvo-color-i-secondary: #{$arvo-global-gray-03};
+    --arvo-color-i-tertiary: #{$arvo-global-gray-04};
+    --arvo-color-i-placeholder: #{$arvo-global-gray-04};
+    --arvo-color-i-hover: #{$arvo-global-white};
+    --arvo-color-i-active: #{$arvo-global-white};
+    --arvo-color-i-active-inverse: #{$arvo-global-black};
+    --arvo-color-i-inverse: #{$arvo-global-black};
+    --arvo-color-i-white-static: #{$arvo-global-white};
+    --arvo-color-i-black-static: #{$arvo-global-gray-09};
+    --arvo-color-i-disabled: #{$arvo-global-gray-06};
+    --arvo-color-i-readonly: #{$arvo-global-gray-03};
+    --arvo-color-i-positive: #{$arvo-global-greenish-09};
+    --arvo-color-i-negative: #{$arvo-global-redish-06};
+    --arvo-color-i-negative-static: #{$arvo-global-redish-08};
+    --arvo-color-i-warning: #{$arvo-global-orangish-09};
+    --arvo-color-i-warning-static: #{$arvo-global-orangish-08};
+    --arvo-color-i-info-light: #{$arvo-global-bluish-07};
+    --arvo-color-i-info-dark: #{$arvo-global-bluish-08};
+    --arvo-color-i-neutral: #{$arvo-global-white};
+
+    // Theme tokens -- single dark palette
+    --arvo-color-i-theme: #{$arvo-global-dark-07};
+    --arvo-color-i-theme-hover: #{$arvo-global-dark-07};
+    --arvo-color-i-theme-active: #{$arvo-global-dark-07};
+
+    --arvo-color-i-util-purple: #{$arvo-global-purple-09};
+    --arvo-color-i-util-pink: #{$arvo-global-pink-08};
+    --arvo-color-i-util-glacier: #{$arvo-global-glacier-08};
+    --arvo-color-i-util-amber: #{$arvo-global-amber-08};
+    --arvo-color-i-util-greenish: #{$arvo-global-greenish-08};
+    --arvo-color-i-util-bluish: #{$arvo-global-bluish-07};
+    --arvo-color-i-nova-static: linear-gradient(61deg, #{$arvo-global-nova-start} 0.88%, #{$arvo-global-nova-end} 60.13%);
+}
+
+// =====================================
+// 5. USER OVERRIDE SIGNAL
+// =====================================
+
+// Reserved for html[data-user-theme="on"] -- signals a user-applied theme
+// override without changing the data-theme base. No styles should live
+// here unless a specific component needs to restrict user-set theming.

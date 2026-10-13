@@ -1,0 +1,130 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/calendar-nav-header' as cal-nav;
+
+// CalendarNav component styles
+// BEM Block: .arvo-cal-nav
+// Abbreviation: cal-nav
+// Category: DateTime
+// Internal sub-component -- NOT exported from @arvo/react or @arvo/js public barrels.
+// Consumed by: date-picker, datetime-picker, date-range-picker.
+//
+// Five structural variants (driven by parent picker mode):
+//   single      Full header: month/year zoom buttons + prev/today/next
+//   range-left  Dual month/year + em-dash; hides __next
+//   range-right Dual month/year + em-dash; hides __prev
+//   member      Switch leftmost in right cluster; today hidden
+//   rolling     Non-interactive labels; prev/next/today hidden
+
+// ----- Block -----------------------------------------------------------------
+
+.arvo-cal-nav {
+  @include cal-nav.calendar-nav-header-base;
+}
+
+// ----- Elements --------------------------------------------------------------
+
+.arvo-cal-nav__left {
+  @include cal-nav.calendar-nav-header-left;
+
+  .arvo-cal-nav__month-btn,
+  .arvo-cal-nav__year-btn {
+    flex-shrink: 0;
+    // Month and year buttons use the medium-weight 16px label per the
+    // Calendar-header figma node (30438:60005). The label-l16-m typography
+    // is enforced via the size token + font-weight override so the buttons
+    // sit visually heavier than the rest of the dropdown chrome.
+    font-weight: $arvo-medium;
+    font-size: $arvo-font-size-16;
+    padding: $arvo-space-6 $arvo-space-4;
+  }
+
+  // Decade label shown in years view (e.g. "2020 - 2029"). Non-interactive
+  // because there is no further zoom-out level above years.
+  .arvo-cal-nav__decade-lbl {
+    flex-shrink: 0;
+    padding-inline: $arvo-space-4;
+    color: var(--arvo-color-t-secondary);
+    font-family: var(--o9-font-family);
+    font-size: $arvo-font-size-16;
+    font-weight: $arvo-medium;
+    cursor: default;
+    user-select: none;
+  }
+
+  // Member/rolling period label. Visually identical to the month/year zoom
+  // buttons but non-interactive: rendered as a span with cursor: not-allowed
+  // and pointer-events: none so it cannot be focused or clicked. A pair of
+  // these joined by `__range-sep` displays the first/last visible tile
+  // display names in the member/rolling header.
+  .arvo-cal-nav__period-lbl {
+    flex-shrink: 0;
+    padding: $arvo-space-6 $arvo-space-4;
+    color: var(--arvo-color-t-secondary);
+    font-family: var(--o9-font-family);
+    font-size: $arvo-font-size-16;
+    font-weight: $arvo-medium;
+    line-height: 1;
+    cursor: not-allowed;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  // Em-dash joining the start/end label groups in the range header variant
+  // ("June 2026 - July 2026"). 14px regular t-secondary per Figma 31981:24306.
+  .arvo-cal-nav__range-sep {
+    flex-shrink: 0;
+    padding-inline: $arvo-space-8;
+    color: var(--arvo-color-t-secondary);
+    font-family: var(--o9-font-family);
+    font-size: $arvo-font-size-14;
+    user-select: none;
+  }
+}
+
+.arvo-cal-nav__right {
+  @include cal-nav.calendar-nav-header-right;
+
+  .arvo-cal-nav__prev,
+  .arvo-cal-nav__today,
+  .arvo-cal-nav__next { flex-shrink: 0; }
+}
+
+// Vertical divider between the navigation cluster and the trailing switch /
+// tab-group in the range + member headers (Figma 31981:24306). Rendered in the
+// right zone, so it lives at the block level (not nested under __left).
+.arvo-cal-nav__divider {
+  width: 1px;
+  align-self: stretch;
+  margin-block: $arvo-space-4;
+  background-color: var(--arvo-color-b-divider);
+  flex-shrink: 0;
+}
+
+.arvo-cal-nav.is-disabled { pointer-events: none; opacity: 0.5; }
+
+// ----- Variant modifier scaffolds -------------------------------------------
+
+// .arvo-cal-nav--range-left
+// Left panel of a dual-calendar range picker: hides __next via mixin.
+.arvo-cal-nav--range-left {
+  @include cal-nav.calendar-nav-header-range-left;
+}
+
+// .arvo-cal-nav--range-right
+// Right panel of a dual-calendar range picker: hides __prev via mixin.
+.arvo-cal-nav--range-right {
+  @include cal-nav.calendar-nav-header-range-right;
+}
+
+// .arvo-cal-nav--member
+// Member/rolling mode header: hides __today via mixin.
+.arvo-cal-nav--member {
+  @include cal-nav.calendar-nav-header-member;
+}
+
+// .arvo-cal-nav--rolling
+// Rolling-mode header: only the period-label pair + tab-group are visible;
+// prev / next / today / month-btn / year-btn are hidden.
+.arvo-cal-nav--rolling {
+  @include cal-nav.calendar-nav-header-rolling;
+}

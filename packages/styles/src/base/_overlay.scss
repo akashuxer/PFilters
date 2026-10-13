@@ -1,0 +1,32 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// ---------------------------------------------------------------------------
+// Shared overlay mask -- canonical scrim primitive used by Drawer, Alert
+// Dialog, and any future modal-style overlay. Created via `createMask` from
+// `@arvo/core/mask`. The component layer never paints its own backdrop.
+// ---------------------------------------------------------------------------
+
+.arvo-overlay__mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--arvo-color-s-overlay-static);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+
+  &--animated {
+    transition: opacity 300ms ease;
+  }
+
+  &--visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  &--scoped {
+    position: absolute;
+  }
+}

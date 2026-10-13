@@ -1,0 +1,280 @@
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+@use '../../mixins/typography' as *;
+@use '../../mixins/inline-panel-stack' as *;
+@use '../../mixins/resize-handle' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-hpop ----------------------------------------------------------------
+// Composes ArvoPopover -- panel chrome (header, footer, body, shadow, arrow,
+// positioning, transitions) lives in _arvo-popover.scss, and the filter list
+// rows (option rows, group dividers, select-all, skeleton, empty state) are
+// owned by the embedded ArvoList (see _arvo-list.scss). This file only styles
+// HybridPopover-specific elements rendered inside the Popover slots:
+//   __sticky   -- banner + search + counter message + conditional toggle
+//   __search   -- filter input + match-count message
+//   __cond     -- And/Or button group
+//   __banner   -- banner alert above search
+//   __applies-to-all -- info message body when dataState='appliesToAll'
+//   __inline-panel   -- nested inline popover stack
+//   __resize / __handle -- corner resize handles
+// All row-level selectors (__opt, __sa, __grp, __divider, __skeleton, __empty)
+// are removed; ArvoList renders them now (see `descriptors/hybrid-popover.json`).
+
+.arvo-hpop {
+  // Width defaults match Figma spec: 360px default, clamped to popover
+  // wmin/wmax so the composed Popover cannot disagree. The 272px
+  // min-height stays as a HybridPopover-specific comfort floor.
+  --arvo-hpop-width: 360px;
+  --arvo-hpop-min-width: #{$arvo-popover-wmin};
+  --arvo-hpop-max-width: #{$arvo-popover-wmax};
+  --arvo-hpop-min-height: 272px;
+
+  // Width is sourced from --arvo-popover-width which ArvoPopover sets from its
+  // `width` prop (clamped here so the JS twin's inline style stays in band).
+  width: clamp(
+    var(--arvo-hpop-min-width),
+    var(--arvo-popover-width, var(--arvo-hpop-width)),
+    var(--arvo-hpop-max-width)
+  );
+  min-width: var(--arvo-hpop-min-width);
+  max-width: var(--arvo-hpop-max-width);
+  // ArvoPopover's positioner sets `--arvo-popover-max-height` when the
+  // panel is clamped to fit the boundary. Min-height yields to that cap
+  // via `min()` so a viewport-constrained panel can shrink below its
+  // comfort floor of 272px. Without the yield, CSS `min-height: 272`
+  // would override the JS-applied max, the float would report 272 to
+  // the ResizeObserver after every clamp attempt, and the placement
+  // selector would re-flip on every iteration -- the visible flicker
+  // that motivated this rewrite.
+  min-height: min(var(--arvo-hpop-min-height), var(--arvo-popover-max-height, 90vh));
+  max-height: var(--arvo-popover-max-height, 90vh);
+
+  // Inline hybrid popover (rendered inside an inline-panel-stack layer of an
+  // action menu or another hybrid popover) drops all width/height caps and
+  // fills the host overlay's panel area. The shared
+  // .arvo-popover--inline modifier provides width: 100% / height: 100% on
+  // the underlying popover panel; the rules below remove the hpop-specific
+  // clamps that would otherwise force a fixed width inside the host.
+  &.arvo-popover--inline {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 0;
+    max-height: none;
+  }
+
+  // -- __sticky --------------------------------------------------------------
+  // Vertical flex column inside Popover's stickyHeader slot.
+  // Owns its own padding/gap (matches Figma 33808-23128 top-body:
+  // padding 16px 12px 8px, gap 16px). The outer Popover sticky-header
+  // padding is nulled below so we have a single source of truth and no
+  // stacked padding ring against the search input. Background is
+  // intentionally transparent -- the Popover panel already paints layer-03.
+  &__sticky {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-16;
+    padding: $arvo-space-16 $arvo-space-12 $arvo-space-8;
+    box-sizing: border-box;
+  }
+
+  // Null out the outer Popover sticky-header padding when nested inside hpop
+  // so the only padding source is __sticky above. Other Popover consumers are
+  // unaffected.
+  .arvo-popover__sticky-header {
+    padding: 0;
+  }
+
+  // -- __search --------------------------------------------------------------
+  // Vertical stack: input on top, optional message alert below. Without
+  // `flex-direction: column` the alert sat next to the input and shrank it.
+  &__search {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-4;
+
+    .arvo-search {
+      width: 100%;
+    }
+  }
+
+  // -- __search-msg (message alert below search) -----------------------------
+  &__search-msg {
+    display: flex;
+    width: 100%;
+  }
+
+  // -- __cond ----------------------------------------------------------------
+  &__cond {
+    display: flex;
+  }
+
+  // -- Inline panel stack (nested hybrid / popover per row) ------------------
+  @include inline-panel-stack('arvo-hpop__inline-panel');
+
+  // Nested inline popover / hybrid popover dimensions
+  // -------------------------------------------------
+  // Three states drive the chain (container -> layer -> host -> popover):
+  //
+  // 1. DEFAULT (no user resize): hpop panel adapts to the active inline
+  //    layer's natural content. The 272 px comfort floor is a LIST-view
+  //    convenience -- once the user navigates into a nested popover, the
+  //    panel should size to whatever the nested view actually needs.
+  //    Implementation:
+  //      - min-height drops so the panel can shrink.
+  //      - Sticky header + list body + footer chrome are hidden (mirrors
+  //        the action-menu rule). The chrome is still in the DOM but
+  //        `display: none` so it does NOT contribute to the panel's
+  //        intrinsic height.
+  //      - Inline-panel container becomes `position: relative` with
+  //        `flex: 1 1 auto` (in-flow). When the panel has no fixed
+  //        height (default), `flex: 1 1 auto` collapses to content; when
+  //        the panel has a fixed height (user resize), it grows to fill.
+  //      - Active layer is `position: relative` (in-flow -- see
+  //        `_inline-panel-stack.scss`). Default flex (`0 1 auto`)
+  //        produces content-sizing. Stays in flow through the chain.
+  //      - Popover has `--arvo-popover-width` (100% fallback) and
+  //        `--arvo-popover-height` (auto fallback). Natural height.
+  //
+  // 2. USER-RESIZED (`data-arvo-resized="true"` stamped on hpop panel by
+  //    the React/JS HybridPopover resize handle): keep the dragged
+  //    dimensions and stretch the nested popover to match. This honors
+  //    the user's explicit dimension choice and keeps the panel from
+  //    snapping to a smaller size when the user navigates into a nested
+  //    view they intentionally widened/heightened.
+  //    Implementation:
+  //      - Inline-panel container fills via `flex: 1 1 auto` (already
+  //        from the default rule).
+  //      - Active layer fills via `flex: 1 1 auto`.
+  //      - Popover height switches to `100%` (via `--arvo-popover-height`
+  //        fallback override).
+  //
+  // 3. CONFIGURED nested width / height: an inline popover passes
+  //    `width: '300px'` / `height: '200px'` which populates
+  //    `--arvo-popover-width` / `--arvo-popover-height`. These ALWAYS
+  //    win via the `var()` fallback chain in `_arvo-popover.scss`'s
+  //    `&--inline` rule, regardless of resize state.
+  //
+  // Cascade summary (height resolution for nested popover):
+  //   configured `--arvo-popover-height`
+  //     > user-resized (100% fill)
+  //     > default (auto / natural)
+  &:has(&__inline-panel.open) {
+    min-height: 0;
+  }
+
+  // Hide the standard hpop chrome (popover header with title + close,
+  // sticky header with hpop search, list body, footer buttons) when an
+  // inline panel is open. The chrome is in the DOM but `display: none`
+  // so it does NOT contribute to the panel's intrinsic height -- the
+  // inline panel container drives sizing. The nested inline popover
+  // renders its OWN header (back + title + close) inside the layer, so
+  // suppressing the parent's chrome avoids stacking two headers.
+  &:has(&__inline-panel.open) > .arvo-popover__header,
+  &:has(&__inline-panel.open) > .arvo-popover__sticky-header,
+  &:has(&__inline-panel.open) > .arvo-popover__body,
+  &:has(&__inline-panel.open) > .arvo-popover__footer {
+    display: none;
+  }
+
+  // Inline-panel container: in-flow inside the hpop panel so its content
+  // drives the panel height. `flex: 1 1 auto` lets the container grow to
+  // fill a fixed-height parent (user-resized hpop) and shrink to content
+  // when the parent has no defined height (default state).
+  & &__inline-panel {
+    position: relative;
+    inset: auto;
+    flex: 1 1 auto;
+  }
+
+  // User-resized hpop: stretch the active layer and nested popover to
+  // fill the resized dimensions. The `[data-arvo-resized='true']` flag
+  // is set by the React/JS resize handle (onResize + onCommit) so the
+  // visual transition lands as soon as the user releases the drag.
+  &[data-arvo-resized='true'] &__inline-panel__layer.active {
+    flex: 1 1 auto;
+  }
+
+  &[data-arvo-resized='true'] &__inline-panel__layer > * > .arvo-popover--inline {
+    height: var(--arvo-popover-height, 100%);
+  }
+
+  // -- __banner --------------------------------------------------------------
+  &__banner {
+    flex-shrink: 0;
+  }
+
+  &--with-banner &__sticky {
+    gap: $arvo-space-16;
+  }
+
+  // -- Embedded ArvoList -----------------------------------------------------
+  // ArvoList is rendered as the popover body. Let it grow to fill the body
+  // rectangle and own its own internal scrolling. `min-height: 0` is the
+  // standard flex trick that allows the inner scrollable region to shrink
+  // below its intrinsic content height.
+  .arvo-list {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  // -- __applies-to-all ------------------------------------------------------
+  // Informational body slot rendered when dataState='appliesToAll'. Hosts a
+  // single ArvoMessageAlert (type=info). Not a visual empty state -- header,
+  // search, and footer remain. Padding matches the body content area so the
+  // alert sits flush with the list's typical content rect.
+  &__applies-to-all {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: flex-start;
+    padding: $arvo-space-8 $arvo-space-12;
+    box-sizing: border-box;
+
+    .arvo-msg-alert {
+      width: 100%;
+    }
+  }
+
+  // -- No-data: hide popover footer per Figma spec ---------------------------
+  // The no-data state renders an Empty figure ("There are no values to
+  // display.") and intentionally omits the Reset/Cancel/Apply footer.
+  // Component code also suppresses the actions array so ArvoPopover's
+  // hasFooter resolves to false; this CSS guard backs that behavior up
+  // when consumers force dataState='noData' on a render where the actions
+  // array is provided externally.
+  &--no-data .arvo-popover__footer {
+    display: none;
+  }
+
+  // -- Resize handle (shared mixin with ArvoPopover) -------------------------
+  // Emits __resize positioning context, __handle per-corner modifiers,
+  // hover-reveal + --with-resize focus-within reveal, and .is-resizing pin.
+  // Pointer wiring is owned by createResizeHandle from @arvo/core (mounted
+  // by HybridPopover.tsx / HybridPopover.ts).
+  @include resize-handle('arvo-hpop');
+
+  // -- Loading (Pattern B) ---------------------------------------------------
+  // Hides sticky header and Popover footer while the embedded ArvoList
+  // renders its skeleton stack. Blocks interaction.
+  @mixin _hpop-loading {
+    pointer-events: none;
+
+    .arvo-hpop__sticky {
+      display: none;
+    }
+
+    .arvo-pop__ftr,
+    .arvo-popover__footer {
+      display: none;
+    }
+  }
+
+  &.loading {
+    @include _hpop-loading;
+  }
+
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _hpop-loading;
+  }
+}

@@ -1,0 +1,88 @@
+@use '../../../tokens/src/scss/all' as *;
+@use 'form-input' as *;
+
+// Shared picker-field-actions mixins -- right-side action cluster used by all
+// four date/time picker trigger fields. Wraps form-input-actions-overlay and
+// standardises slot ordering, gap, and conditional visibility so the cluster
+// behaves identically across ArvoDatePicker, ArvoTimePicker,
+// ArvoDateTimePicker, and ArvoDateRangePicker.
+//
+// Slot order (left to right inside the overlay):
+//   [clear]  [error-icon]  [trigger-icon]
+// CSS `order` enforces this order regardless of DOM source order.
+//
+// The trigger icon-button (calendar / clock) is always visible.
+// The other three slots are conditionally shown via state classes on the
+// picker root element. Consuming component SCSS applies these mixins to
+// the corresponding child elements of the actions overlay container.
+//
+// ResizeObserver contract: the picker JS layer measures the rendered
+// overlay width and writes --arvo-form-input-pad-r onto the field root so
+// the segmented input text truncates behind the cluster (not underneath it).
+//
+// Used by: date-picker, time-picker, datetime-picker, date-range-picker
+
+// CSS custom properties:
+//   --arvo-picker-actions-gap               Gap between cluster items.
+//   --arvo-picker-actions-padding-inline-end Right inset from the field edge.
+
+// picker-field-actions-layout
+// Overlay container. Builds on form-input-actions-overlay (absolute position,
+// right: 0, vertically centered) and adds the picker-specific gap and right-
+// edge inset. Apply to the __actions element inside the picker __field.
+@mixin picker-field-actions-layout {
+  @include form-input-actions-overlay;
+
+  --arvo-picker-actions-gap: #{$arvo-space-4};
+  --arvo-picker-actions-padding-inline-end: #{$arvo-space-4};
+
+  gap: var(--arvo-picker-actions-gap);
+  padding-inline-end: var(--arvo-picker-actions-padding-inline-end);
+}
+
+// picker-field-actions-separator
+// Vertical divider between the dynamic action slots (clear / error)
+// and the trigger button. Always visible (Figma input separator 32000:3880).
+// Apply to a 1px-wide span inside the actions overlay.
+@mixin picker-field-actions-separator {
+  flex-shrink: 0;
+  order: 3;
+  width: $arvo-border-1;
+  height: 24px;
+  background-color: var(--arvo-color-b-divider);
+}
+
+// picker-field-actions-trigger
+// The rightmost slot: calendar or clock trigger icon-button. Always visible.
+// Apply to the trigger IconButton (or its wrapper) inside the actions overlay.
+@mixin picker-field-actions-trigger {
+  flex-shrink: 0;
+  order: 4;
+}
+
+// picker-field-actions-clear
+// The leftmost slot: clear button. Visibility is owned by the picker's React
+// / JS layer (it mounts the element only when isClearable AND a value is set
+// AND the field is not disabled / readonly / loading / showing the error
+// tooltip icon). The mixin therefore only owns ordering; consumers may add
+// state-class guards for additional component-specific rules.
+@mixin picker-field-actions-clear {
+  flex-shrink: 0;
+  order: 1;
+}
+
+// picker-field-actions-error-icon
+// The second slot: inline error icon (ArvoMessageAlert inline variant).
+// Shown when the picker root carries .has-error AND .error-tooltip (the
+// tooltip-only error mode used when size=sm cannot fit the below-field label).
+// Apply to the error-icon wrapper inside the actions overlay.
+@mixin picker-field-actions-error-icon {
+  flex-shrink: 0;
+  order: 2;
+  display: none;
+
+  .has-error.error-tooltip & {
+    display: inline-flex;
+  }
+}
+

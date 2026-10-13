@@ -1,0 +1,190 @@
+@use '../../../tokens/src/scss/typography' as *;
+
+// HEADING MIXINS
+@mixin arvo-font-h32-r {
+    font-size: $arvo-font-size-32;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-h20-r {
+    font-size: $arvo-font-size-20;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-h18-r {
+    font-size: $arvo-font-size-18;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-h16-m {
+    font-size: $arvo-font-size-16;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-h14-r {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-h14-rc {
+    font-size: $arvo-font-size-14;
+    text-transform: uppercase;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-h14-m {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-h12-r {
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-h12-rc {
+    font-size: $arvo-font-size-12;
+    text-transform: uppercase;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-h12-m {
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-h12-mc {
+    font-size: $arvo-font-size-12;
+    text-transform: uppercase;
+    font-weight: $arvo-medium;
+}
+
+// PARAGRAPH MIXINS
+@mixin arvo-font-p16-r {
+    font-size: $arvo-font-size-16;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-p16-m {
+    font-size: $arvo-font-size-16;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-p14-r {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-p14-m {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-p14-b {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-bold;
+}
+
+@mixin arvo-font-p12-r {
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-p12-m {
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-p12-ru {
+    font-size: $arvo-font-size-12;
+    text-decoration: underline;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-p10-r {
+    font-size: $arvo-font-size-10;
+    font-weight: $arvo-regular;
+}
+
+// LABEL MIXINS
+@mixin arvo-font-l16-r {
+    font-size: $arvo-font-size-16;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-l14-r {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-l14-m {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-l14-ru {
+    font-size: $arvo-font-size-14;
+    text-decoration: underline;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-l12-r {
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-l12-m {
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-medium;
+}
+
+@mixin arvo-font-l12-ru {
+    font-size: $arvo-font-size-12;
+    text-decoration: underline;
+    font-weight: $arvo-regular;
+}
+
+@mixin arvo-font-l10-r {
+    font-size: $arvo-font-size-10;
+    font-weight: $arvo-regular;
+}
+
+
+// DO NOT USE BELOW -- legacy leftovers, not part of the design system.
+@mixin o9-font-reg-12 {
+    font-size: 12px;
+    font-weight: $arvo-regular;
+    line-height: normal;
+}
+
+@mixin o9-font-reg-12-important {
+    font-size: 12px !important;
+    font-weight: $arvo-regular !important;
+    line-height: normal !important;
+}
+
+@mixin o9-font-reg-13 {
+    font-size: 13px;
+    font-weight: $arvo-regular;
+    line-height: normal;
+}
+
+@mixin o9-font-reg-13-important {
+    font-size: 13px !important;
+    font-weight: $arvo-regular !important;
+    line-height: normal !important;
+}
+
+@mixin o9-font-reg-14 {
+    font-size: 14px;
+    line-height: normal;
+}
+
+@mixin o9-font-reg-15 {
+    font-size: 15px;
+    line-height: normal;
+}
+
+$o9-font-reg-16: normal 16px var(--o9-font-family);
+$o9-font-reg-17: normal 17px var(--o9-font-family);
+$o9-font-reg-18: normal 18px var(--o9-font-family);

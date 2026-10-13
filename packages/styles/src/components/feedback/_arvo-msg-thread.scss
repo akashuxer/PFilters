@@ -1,0 +1,60 @@
+@use '../../../../tokens/src/scss/all' as *;
+
+.arvo-msg-thread {
+  display: block;
+  max-inline-size: 960px;
+  margin: 0 auto;
+  color: var(--arvo-color-t-primary);
+  font-family: var(--o9-font-family);
+
+  &__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: $arvo-space-16; margin-block-end: $arvo-space-24; padding-block-end: $arvo-space-16; border-block-end: $arvo-border-1 solid var(--arvo-color-b-divider); }
+  &__title { margin: 0; font-size: $arvo-font-size-20; line-height: 1.25; }
+  &__subtitle { margin: $arvo-space-4 0 0; color: var(--arvo-color-t-secondary); font-size: $arvo-font-size-14; }
+  &__resolve, &__send, &__cancel { display: inline-flex; align-items: center; justify-content: center; gap: $arvo-space-6; min-block-size: 32px; border-radius: $arvo-radius-16; padding: $arvo-space-6 $arvo-space-10; font: inherit; font-size: $arvo-font-size-12; font-weight: $arvo-bold; cursor: pointer; white-space: nowrap; }
+  &__resolve { border: $arvo-border-1 solid var(--arvo-color-b-theme); background: var(--arvo-color-s-layer-01); color: var(--arvo-color-t-theme); }
+  &__resolve.is-resolved { border-color: var(--arvo-color-b-positive); color: var(--arvo-color-t-positive); }
+  &__list { display: grid; gap: $arvo-space-20; }
+  &__message { display: flex; align-items: flex-start; gap: $arvo-space-12; min-inline-size: 0; }
+  &__avatar { display: grid; flex: 0 0 auto; place-items: center; padding-block-start: $arvo-space-2; }
+  &__body { min-inline-size: 0; flex: 1; }
+  &__card { border: $arvo-border-1 solid var(--arvo-color-b-divider); border-radius: $arvo-radius-16; padding: $arvo-space-16 $arvo-space-20; background: var(--arvo-color-s-layer-02); transition: border-color $arvo-duration-fast $arvo-ease-standard, background-color $arvo-duration-fast $arvo-ease-standard; }
+  &__message:hover > &__body > &__card { border-color: var(--arvo-color-b-theme); }
+  &__card-head { display: flex; align-items: baseline; justify-content: space-between; gap: $arvo-space-12; }
+  &__card-head strong { font-size: $arvo-font-size-16; }
+  &__meta { flex: 0 0 auto; color: var(--arvo-color-t-secondary); font-size: $arvo-font-size-14; text-align: end; }
+  &__card p { margin: $arvo-space-12 0 0; color: var(--arvo-color-t-primary); font-size: $arvo-font-size-16; line-height: 1.45; }
+  &__actions { display: flex; align-items: center; flex-wrap: wrap; gap: $arvo-space-4; min-block-size: 36px; padding: $arvo-space-4 $arvo-space-12; }
+  &__action { display: inline-flex; align-items: center; justify-content: center; gap: $arvo-space-4; min-inline-size: 32px; min-block-size: 28px; border: 0; border-radius: $arvo-radius-16; padding: $arvo-space-4 $arvo-space-6; background: transparent; color: var(--arvo-color-t-secondary); cursor: pointer; font: inherit; font-size: $arvo-font-size-14; transition: color $arvo-duration-fast $arvo-ease-standard, background-color $arvo-duration-fast $arvo-ease-standard, transform $arvo-duration-fast $arvo-ease-standard; }
+  &__action:hover, &__action:focus-visible { background: var(--arvo-color-s-theme-active-1); color: var(--arvo-color-t-theme); outline: none; }
+  &__action:active { transform: scale(.94); }
+  &__reaction.is-active { background: var(--arvo-color-s-theme-active-1); color: var(--arvo-color-t-theme); }
+  &__delete:hover, &__delete:focus-visible { background: var(--arvo-color-s-negative-subtle); color: var(--arvo-color-t-negative); }
+  &__action-count { min-inline-size: .8em; font-variant-numeric: tabular-nums; }
+  &__message .arvo-msg-thread__message { margin-block-start: $arvo-space-12; padding-inline-start: $arvo-space-16; border-inline-start: $arvo-border-1 solid var(--arvo-color-b-divider); }
+  &__composer, &__reply-composer, &__edit-composer { display: grid; gap: $arvo-space-8; padding: $arvo-space-12; border: $arvo-border-1 solid var(--arvo-color-b-divider); border-radius: $arvo-radius-16; background: var(--arvo-color-s-layer-01); }
+  &__composer { margin-block-start: $arvo-space-24; }
+  &__reply-composer, &__edit-composer { margin-block: $arvo-space-8 $arvo-space-4; }
+  &__composer textarea, &__reply-composer textarea, &__edit-composer textarea { inline-size: 100%; min-inline-size: 0; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--arvo-color-t-primary); font: inherit; font-size: $arvo-font-size-14; line-height: 1.45; }
+  &__composer textarea::placeholder, &__reply-composer textarea::placeholder { color: var(--arvo-color-t-secondary); }
+  &__composer:focus-within, &__reply-composer:focus-within, &__edit-composer:focus-within { border-color: var(--arvo-color-b-focus); box-shadow: 0 0 0 $arvo-border-2 var(--arvo-color-s-theme-active-1); }
+  &__composer-actions { display: flex; justify-content: flex-end; gap: $arvo-space-8; }
+  &__send { border: $arvo-border-1 solid var(--arvo-color-b-theme); background: var(--arvo-color-s-theme); color: var(--arvo-color-t-active-inverse); }
+  &__cancel { border: 0; background: transparent; color: var(--arvo-color-t-secondary); }
+  &__send:hover, &__send:focus-visible { background: var(--arvo-color-s-theme-hover); outline: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-msg-thread__card, .arvo-msg-thread__action { transition: none; }
+}
+
+@media (max-width: 600px) {
+  .arvo-msg-thread {
+    &__heading { display: grid; }
+    &__resolve { justify-self: start; }
+    &__card { padding: $arvo-space-12; }
+    &__card-head { align-items: flex-start; flex-direction: column; gap: $arvo-space-4; }
+    &__meta { text-align: start; }
+    &__card p { margin-block-start: $arvo-space-8; font-size: $arvo-font-size-14; }
+    &__message .arvo-msg-thread__message { padding-inline-start: $arvo-space-8; }
+  }
+}

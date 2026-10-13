@@ -1,0 +1,121 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Shared calendar-nav-header mixins -- header strip rendered above ArvoCalendar
+// inside the public pickers. Per ADR-3, Calendar does NOT own its header chrome;
+// an internal CalendarNav sub-component (one per picker) composes these mixins.
+//
+// Five structural variants driven by picker mode (figma refs in parentheses):
+//   single          Full header: month/year zoom buttons + prev/today/next
+//                   (LIB 30438:60005, 320x32)
+//   range-basic     Dual month/year labels + em-dash + prev/today/next + switch
+//                   (LIB 31980:4011, 656x32)
+//   range-month     Same as basic but each label shows year-only
+//                   (LIB 31981:4855, 656x32)
+//   member          Switch moves leftmost in right cluster; today hidden;
+//                   Absolute/Rolling tab-group appended (LIB 36686:9034)
+//   rolling         Non-interactive labels; prev/next/today hidden;
+//                   only Absolute/Rolling tab-group on the right
+//                   (LIB 36749:2308)
+//
+// BEM block assumed by consuming pickers: arvo-cal-nav
+// Key BEM elements referenced by the variant mixins:
+//   .arvo-cal-nav__prev    -- previous-period icon button
+//   .arvo-cal-nav__next    -- next-period icon button
+//   .arvo-cal-nav__today   -- today/current-period icon button
+//   .arvo-cal-nav__switch  -- member-mode toggle (ArvoSwitch)
+//   .arvo-cal-nav__divider -- visual separator between button groups
+//
+// Used by: date-picker, datetime-picker, date-range-picker
+
+// CSS custom properties:
+//   --arvo-cal-nav-height           Strip height. Default: 32px.
+//   --arvo-cal-nav-gap              Gap between items. Default: $arvo-space-4.
+//   --arvo-cal-nav-label-color      Month/year button text. Default: t-primary.
+//   --arvo-cal-nav-button-color     Prev/next/today icon color. Default: i-secondary.
+
+// calendar-nav-header-base
+// Full-width flex strip shared by all 5 variants.
+// Apply to the root nav element (e.g. .arvo-cal-nav or .arvo-dp__nav).
+@mixin calendar-nav-header-base {
+  --arvo-cal-nav-height: 32px;
+  --arvo-cal-nav-gap: #{$arvo-space-4};
+  // Month/year label color per the Figma calendar header (t-secondary #303030).
+  --arvo-cal-nav-label-color: var(--arvo-color-t-secondary);
+  --arvo-cal-nav-button-color: var(--arvo-color-i-secondary);
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--arvo-cal-nav-gap);
+  height: var(--arvo-cal-nav-height);
+  box-sizing: border-box;
+}
+
+// calendar-nav-header-left
+// Left zone: month/year zoom buttons (interactive in single/range modes) or
+// non-interactive period labels (member/rolling modes).
+// Grows to fill leftover space; items in a flex row with the shared gap.
+@mixin calendar-nav-header-left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  color: var(--arvo-cal-nav-label-color);
+}
+
+// calendar-nav-header-right
+// Right zone: navigation icon buttons + optional switch + optional tab-group.
+// Shrinks to its intrinsic content width; items use the shared gap.
+@mixin calendar-nav-header-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--arvo-cal-nav-gap);
+  flex-shrink: 0;
+  color: var(--arvo-cal-nav-button-color);
+}
+
+// calendar-nav-header-range-left
+// Modifier for the LEFT panel in a dual-calendar range picker.
+// The left calendar shows only the "previous" navigation; hides "next" to
+// avoid the user skipping the right calendar's month independently.
+// Apply alongside calendar-nav-header-base on the left header instance.
+@mixin calendar-nav-header-range-left {
+  .arvo-cal-nav__next {
+    display: none;
+  }
+}
+
+// calendar-nav-header-range-right
+// Modifier for the RIGHT panel in a dual-calendar range picker.
+// The right calendar shows only the "next" navigation; hides "prev".
+// Apply alongside calendar-nav-header-base on the right header instance.
+@mixin calendar-nav-header-range-right {
+  .arvo-cal-nav__prev {
+    display: none;
+  }
+}
+
+// calendar-nav-header-member
+// Modifier for member-mode headers.
+// Hides the "today" button because member navigation is by scroll, not by
+// jump-to-today.
+@mixin calendar-nav-header-member {
+  .arvo-cal-nav__today {
+    display: none;
+  }
+}
+
+// calendar-nav-header-rolling
+// Modifier for rolling-mode headers.
+// Rolling navigation is via the Start/End steppers in the body; the header
+// contains only the period label pair + the Absolute/Rolling tab-group, so
+// prev / next / today are hidden.
+@mixin calendar-nav-header-rolling {
+  .arvo-cal-nav__prev,
+  .arvo-cal-nav__next,
+  .arvo-cal-nav__today {
+    display: none;
+  }
+}

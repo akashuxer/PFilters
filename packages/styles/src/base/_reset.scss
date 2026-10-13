@@ -1,0 +1,28 @@
+// CSS Reset / Normalize
+// Scoped to arvo components so user content outside the design system keeps
+// its native browser defaults. Resets the most common user-agent leakages
+// (lists, paragraphs, headings) that would otherwise break component layout.
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+// Reset browser default margins on list/paragraph/heading elements rendered
+// INSIDE an arvo component. The `[class^="arvo-"]` and `[class*=" arvo-"]`
+// selectors match any element whose class list starts with or contains an
+// arvo- prefixed token, which covers every component root and descendant.
+[class^="arvo-"],
+[class*=" arvo-"] {
+  ul, ol, dl,
+  p, h1, h2, h3, h4, h5, h6,
+  figure, blockquote {
+    margin: 0;
+  }
+
+  ul, ol {
+    padding-inline-start: 0;
+    list-style: none;
+  }
+}

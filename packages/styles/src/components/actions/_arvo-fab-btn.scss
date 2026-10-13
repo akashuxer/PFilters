@@ -1,0 +1,59 @@
+// FAB Button (Floating Action Button) wrapper styles
+// BEM Block: .arvo-fab-btn
+// Abbreviation: fab-btn
+// Loading Pattern: A (delegated to inner button)
+//
+// The FAB wraps an ArvoButton (with-label) or ArvoIconButton (icon-only).
+// It does NOT duplicate button variant/size logic -- only adds:
+//   - Elevated box-shadow
+//   - Configurable z-index
+//   - Disabled/loading shadow adjustments
+
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-fab-btn -----------------------------------------------------------
+
+.arvo-fab-btn {
+  display: inline-flex;
+  position: relative;
+  box-shadow: $arvo-shadow-fab;
+  // FAB is page chrome that floats above content but must sit BELOW the
+  // hub-managed overlay layer (popovers, dialogs, drawers start at
+  // --arvo-z-popover / 1000), so overlays always cover it. Consumers that
+  // need a different stacking level pass the `zIndex` prop (inline override).
+  // The `--arvo-fab-btn-z-index` variable lets layouts override the default
+  // without an inline style.
+  z-index: var(--arvo-fab-btn-z-index, 900);
+
+  // -- Disabled state shadow ------------------------------------------------
+  // Per the descriptor: when the FAB is disabled the elevated shadow stays
+  // visible but at reduced opacity (0.5), so the FAB visually deemphasizes
+  // alongside the inner button's disabled token. Inner button still owns
+  // its own disabled affordance.
+  &.is-disabled {
+    box-shadow: 0 4px 7px 2px
+      color-mix(in srgb, var(--arvo-color-s-shadow-static-1) 50%, transparent);
+  }
+
+  // -- Loading state (Pattern A, parent-cascade) ----------------------------
+  // The inner ArvoButton / ArvoIconButton owns the shimmer overlay -- the
+  // FAB wrapper only mirrors the `.loading` semantic so external parents
+  // can drive it via the loading-cascade pattern. The descriptor requires
+  // the elevated shadow to remain visible during loading, so this rule
+  // exists primarily as the cascade hook for the parent-loading selector
+  // below.
+  &.loading {
+    // shadow intentionally unchanged (descriptor: "shadow remains visible")
+  }
+
+  // -- Parent loading propagation -------------------------------------------
+  // When an ancestor sets `data-arvo-loading="true"`, the FAB picks up the
+  // `.loading` class semantics. The same attribute cascades down through the
+  // DOM so the inner ArvoButton / ArvoIconButton's own parent-cascade
+  // selector activates the inner shimmer. The `data-arvo-loading-ignore`
+  // opt-out scopes propagation away from cards / containers that should not
+  // forward state to a nested FAB.
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @extend .arvo-fab-btn, .loading;
+  }
+}

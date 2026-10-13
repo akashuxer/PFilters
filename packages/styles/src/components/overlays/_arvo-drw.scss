@@ -1,0 +1,146 @@
+@use '../../mixins/panel-shell' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-drw ----------------------------------------------------------------
+// Drawer host. Always portaled, always overlay (viewport-anchored). The
+// interior anatomy (header, sticky region, body, list, empty/skeleton
+// states, footer) is rendered by the panel-shell shared pattern with
+// parentBlock='arvo-drw' -- see _panel-shell.scss. This file owns only
+// the Drawer-specific concerns: pane wrapper, edge anchoring, side-aware
+// shadow + slide-in animation, and the optional backdrop sibling.
+//
+// Drawer differs from SidePanel on POSITIONING ONLY: always portaled,
+// always overlay, no pin button, optional backdrop / scroll lock /
+// Escape-and-mask-click dismissal.
+
+.arvo-drw {
+  // Inner anatomy from panel-shell.
+  @include panel-shell-pane('arvo-drw');
+  @include panel-shell-hdr('arvo-drw');
+  @include panel-shell-header-action('arvo-drw');
+  @include panel-shell-sticky('arvo-drw');
+  @include panel-shell-body('arvo-drw');
+  @include panel-shell-list('arvo-drw');
+  @include panel-shell-empty('arvo-drw');
+  @include panel-shell-skeleton('arvo-drw');
+  @include panel-shell-footer('arvo-drw');
+
+  // -- CSS variables (dynamic / parent-overridable only) ---------------------
+  --arvo-drw-width: 320px;
+  --arvo-drw-min-width: 280px;
+  --arvo-drw-max-width: 80vw;
+  --arvo-drw-slide-duration: 200ms;
+
+  // -- Host: viewport-anchored fixed positioning -----------------------------
+  // Left/right drawers anchor full-height between top:0 and bottom:0; top/
+  // bottom drawers anchor full-width between left:0 and right:0. The
+  // anchor edges per side are set on the side-* modifiers below.
+  position: fixed;
+  // The overlay hub sets the authoritative z-index inline on this host when
+  // the drawer opens (single source of truth for stacking). This fallback
+  // only covers the pre-registration frame and keeps the drawer within the
+  // shared overlay layer.
+  z-index: var(--arvo-z-popover, 1000);
+  display: flex;
+  // Pane sits flush against the dock edge. justify-content is set per side.
+
+  // -- __pane sizing extensions ----------------------------------------------
+  // The shared panel-shell-pane mixin already sets display: flex; flex-direction:
+  // column; height: 100%; min-height: 0;. Drawer-specific overrides below add
+  // width sizing, the layer-03 background, and the side-aware drop shadow.
+  &__pane {
+    width: var(--arvo-drw-width);
+    min-width: var(--arvo-drw-min-width);
+    max-width: var(--arvo-drw-max-width);
+    background: var(--arvo-color-s-layer-03);
+  }
+
+  // -- Side: --side-right (default) ------------------------------------------
+  &--side-right {
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: auto;
+    justify-content: flex-end;
+
+    // A right-anchored drawer casts its shadow to the LEFT (into the page).
+    .arvo-drw__pane {
+      box-shadow: $arvo-shadow-left;
+    }
+  }
+
+  // -- Side: --side-left -----------------------------------------------------
+  &--side-left {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    justify-content: flex-start;
+
+    // A left-anchored drawer casts its shadow to the RIGHT (into the page).
+    .arvo-drw__pane {
+      box-shadow: $arvo-shadow-right;
+    }
+  }
+
+
+  // -- Visibility: pane is offset until .open --------------------------------
+  // The slide-in transitions below interpolate from these offsets to
+  // translate(0,0) when the host gains .open.
+  &--side-right .arvo-drw__pane {
+    transform: translateX(100%);
+  }
+
+  &--side-left .arvo-drw__pane {
+    transform: translateX(-100%);
+  }
+
+  &.open .arvo-drw__pane {
+    transform: translate(0, 0);
+  }
+
+  // -- Slide animation (driven by @arvo/core/animation enter/exit) -----------
+  // The animation orchestrator toggles the arvo-enter-* / arvo-exit-* classes
+  // on the host. We bind the transform to the existing pane offsets above so
+  // the slide direction is automatic per side modifier. Duration is
+  // overridable via --arvo-drw-slide-duration; the easing matches the
+  // shared $arvo-motion-pane token spec.
+  &.arvo-enter-active .arvo-drw__pane,
+  &.arvo-exit-active .arvo-drw__pane {
+    transition:
+      transform var(--arvo-drw-slide-duration) $arvo-ease-standard,
+      opacity var(--arvo-drw-slide-duration) $arvo-ease-standard;
+  }
+
+  &.arvo-enter-from .arvo-drw__pane,
+  &.arvo-exit-to .arvo-drw__pane {
+    opacity: 0;
+  }
+
+  &.arvo-enter-to .arvo-drw__pane,
+  &.arvo-exit-from .arvo-drw__pane {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+
+  // -- State: is-disabled ----------------------------------------------------
+  // panel-shell writes is-disabled to the parent (__pane) via shell.disabled().
+  // Mirror the state on the host block so consumer styling can target either.
+  // Mask click and Escape are still honored when disabled (a disabled drawer
+  // must remain dismissible).
+  &.is-disabled .arvo-drw__pane,
+  .arvo-drw__pane.is-disabled {
+    opacity: $arvo-opacity-40;
+    pointer-events: none;
+  }
+}
+
+// -- Reduced motion ----------------------------------------------------------
+@media (prefers-reduced-motion: reduce) {
+  .arvo-drw {
+    &.arvo-enter-active .arvo-drw__pane,
+    &.arvo-exit-active .arvo-drw__pane {
+      transition: none;
+    }
+  }
+}

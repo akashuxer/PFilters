@@ -1,0 +1,711 @@
+{
+  "$schema": "Shared Patterns Registry — single source of truth for all reusable SCSS mixins and @arvo/utils logic shared across components. The orchestrator's pre-flight check reads this file to determine whether a pattern is ready before allowing the component pipeline to proceed.",
+
+  "patterns": {
+    "form-input-base": {
+      "status": "ready",
+      "description": "Base layout, cursor, and font styles shared by all form input components",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": ["form-input-base"]
+      },
+      "util": null,
+      "usedBy": ["textbox", "textarea", "number-input", "search", "select", "combobox", "date-picker", "time-picker", "datetime-picker", "date-range-picker"],
+      "tokens": ["--arvo-form-input-height", "--arvo-form-input-padding-inline", "--arvo-form-input-font-size", "--arvo-form-input-font-family"]
+    },
+
+    "form-input-animated-border": {
+      "status": "ready",
+      "description": "Animated bottom border that scales on focus and thickens with error/disabled/readonly variants. Production consumers wire up `form-input-animated-border-focus-only`; `form-input-animated-border-base` is the structural primitive.",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": ["form-input-animated-border-base", "form-input-animated-border-focus-only"]
+      },
+      "util": null,
+      "usedBy": ["textbox", "textarea", "number-input", "search", "select", "combobox", "multi-select"],
+      "tokens": ["--arvo-color-b-form", "--arvo-color-b-theme", "--arvo-color-b-theme-focus", "--arvo-color-b-negative", "--arvo-color-b-disabled", "--arvo-color-b-readonly"]
+    },
+
+    "form-input-hover-bg": {
+      "status": "ready",
+      "description": "Subtle background change on hover for non-disabled, non-readonly inputs",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": ["form-input-hover-bg"]
+      },
+      "util": null,
+      "usedBy": ["textbox", "textarea", "number-input", "search", "select", "combobox", "multi-select", "date-picker", "time-picker", "datetime-picker", "date-range-picker"],
+      "tokens": ["--arvo-form-input-bg-color", "--arvo-form-input-hover-bg-color"]
+    },
+
+    "form-input-disabled-bg": {
+      "status": "ready",
+      "description": "Disabled background and cursor styles for form inputs",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": ["form-input-disabled-bg"]
+      },
+      "util": null,
+      "usedBy": ["textbox", "textarea", "number-input", "search", "select", "combobox", "multi-select", "date-picker", "time-picker", "datetime-picker", "date-range-picker"],
+      "tokens": ["--arvo-form-input-disabled-bg-color", "--arvo-form-input-disabled-text-color"]
+    },
+
+    "form-input-text-colors": {
+      "status": "ready",
+      "description": "Text, placeholder, and selection color tokens for form inputs",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": ["form-input-text-colors"]
+      },
+      "util": null,
+      "usedBy": ["textbox", "textarea", "number-input", "search"],
+      "tokens": ["--arvo-form-input-text-color", "--arvo-form-input-placeholder-color", "--arvo-form-input-selection-bg"]
+    },
+
+    "form-label": {
+      "status": "ready",
+      "statusNote": "Promoted to a true atomic component (React + JS classes) during the DateTime resolution pass. The legacy `createFormLabel` util was removed; consumers initialize `ArvoFormLabel` directly from `@arvo/react` and `@arvo/js`. Default size is sm (12px); 14px is only used by selection controls (Checkbox / Radio / their groups) in their lg variant.",
+      "description": "Form field label primitive. Renders as <label> by default or <span> for the inner caption used by selection controls (Radio, Switch, Checkbox) where wrapping <label> elements cannot nest. Two sizes (sm default = 12px / lg = 14px), disabled / required / invalid states, and an optional custom requiredIndicator slot.",
+      "scss": {
+        "file": "mixins/_form-label.scss",
+        "mixins": ["form-label-base", "form-label-sm", "form-label-lg", "form-label-disabled", "form-label-invalid", "form-label-required-indicator"]
+      },
+      "util": null,
+      "react": {
+        "file": "react/src/components/FormLabel/FormLabel.tsx",
+        "exports": ["ArvoFormLabel", "ArvoFormLabelProps", "ArvoFormLabelText", "ArvoFormLabelTextProps"],
+        "note": "Public atomic component. ArvoFormLabel renders <label htmlFor>; ArvoFormLabelText renders <span> for inner-caption use (selection controls). Default size is sm (12px)."
+      },
+      "js": {
+        "file": "js/src/components/FormLabel/FormLabel.ts",
+        "exports": ["ArvoFormLabel", "ArvoFormLabelOptions", "ArvoFormLabelSize", "ArvoFormLabelAs"],
+        "note": "Public vanilla-JS class. static initialize(element, options) factory. Dual-purpose getter/setter methods: text(), size(), required(), disabled(), invalid(), for(). The `as: 'label' | 'span'` option selects the rendered tag at construction time."
+      },
+      "usedBy": ["textbox", "textarea", "number-input", "select", "combobox", "multi-select", "listbox", "checkbox", "checkbox-group", "radio", "radio-group", "switch", "date-picker", "time-picker", "datetime-picker", "date-range-picker"],
+      "tokens": ["--arvo-lbl-color", "--arvo-lbl-color-disabled", "--arvo-lbl-color-invalid", "--arvo-lbl-required-color", "--arvo-lbl-gap"]
+    },
+
+    "form-char-counter": {
+      "status": "ready",
+      "description": "Character counter display showing current/max length with zero-padded formatting",
+      "scss": {
+        "file": "mixins/_form-char-counter.scss",
+        "mixins": ["form-char-counter-base", "form-char-counter-disabled"]
+      },
+      "util": {
+        "file": "utils/src/form-char-counter.ts",
+        "exports": ["createCharCounter", "updateCharCounter", "formatCharCount"]
+      },
+      "react": null,
+      "usedBy": ["textbox", "textarea"],
+      "tokens": ["--arvo-counter-color", "--arvo-counter-color-disabled", "--arvo-counter-font-size"]
+    },
+
+    "msg-alert": {
+      "status": "ready",
+      "description": "Public `ArvoMessageAlert` component primitive (full + icon-only inline modes). Six semantic types (negative, positive, warning, info, neutral, block; renamed from error/success in Run 4b). Optional dismiss button. Replaces the previous `inline-alert` util-only pattern.",
+      "scss": {
+        "file": "mixins/_msg-alert.scss",
+        "mixins": [
+          "msg-alert-base",
+          "msg-alert-icon",
+          "msg-alert-msg",
+          "msg-alert-negative",
+          "msg-alert-positive",
+          "msg-alert-warning",
+          "msg-alert-info",
+          "msg-alert-neutral",
+          "msg-alert-block",
+          "msg-alert-inline",
+          "msg-alert-dismissable"
+        ]
+      },
+      "util": null,
+      "react": {
+        "file": "react/src/components/MessageAlert/MessageAlert.tsx",
+        "exports": ["ArvoMessageAlert", "ArvoMessageAlertProps", "ArvoMessageAlertType", "ARVO_MSG_ALERT_DEFAULT_ERROR"],
+        "note": "Public atomic component. forwardRef<HTMLDivElement, ArvoMessageAlertProps>. Static defaultErrorMessage field plus the named ARVO_MSG_ALERT_DEFAULT_ERROR export."
+      },
+      "js": {
+        "file": "js/src/components/MessageAlert/MessageAlert.ts",
+        "exports": ["ArvoMessageAlert", "ArvoMessageAlertOptions", "ArvoMessageAlertType", "ARVO_MSG_ALERT_DEFAULT_ERROR"],
+        "note": "Public vanilla-JS class. static initialize(element, options) factory. Dual-purpose getter/setter methods: type(), message(), inline(), dismissable(), icon(). Imperative dismiss() + destroy()."
+      },
+      "usedBy": [
+        "textbox",
+        "textarea",
+        "number-input",
+        "search",
+        "select",
+        "combobox",
+        "date-picker",
+        "time-picker",
+        "datetime-picker",
+        "date-range-picker",
+        "checkbox",
+        "checkbox-group",
+        "radio",
+        "radio-group",
+        "panel-shell",
+        "side-panel",
+        "drawer"
+      ],
+      "tokens": [
+        "--arvo-msg-alert-body-gap",
+        "--arvo-msg-alert-font-size",
+        "--arvo-msg-alert-icon-size",
+        "--arvo-color-t-negative",
+        "--arvo-color-i-negative",
+        "--arvo-color-t-positive",
+        "--arvo-color-i-positive",
+        "--arvo-color-t-warning",
+        "--arvo-color-i-warning",
+        "--arvo-color-t-info-dark",
+        "--arvo-color-i-info-dark",
+        "--arvo-color-t-neutral",
+        "--arvo-color-i-neutral"
+      ]
+    },
+
+    "loading-overlay-a": {
+      "status": "ready",
+      "description": "Simple shimmer overlay that covers the entire element (Pattern A for atomic components). Note: most form inputs and buttons compose `loading-element-shimmer` per-element instead; this overlay is reserved for components that cover their entire surface.",
+      "scss": {
+        "file": "mixins/_loading.scss",
+        "mixins": ["loading-overlay-a", "loading-element-shimmer"]
+      },
+      "util": null,
+      "usedBy": ["avatar", "banner-alert", "context-help"],
+      "tokens": ["--arvo-loading-bg-color", "--arvo-loading-shimmer-color", "--arvo-loading-shimmer-speed"]
+    },
+
+    "loading-skeleton-b": {
+      "status": "ready",
+      "description": "Structured skeleton that mimics content layout (Pattern B for complex components). Currently consumed transitively via the `panel-shell` shared pattern; future card/table/modal components are expected consumers.",
+      "scss": {
+        "file": "mixins/_loading.scss",
+        "mixins": ["loading-skeleton-b"]
+      },
+      "util": null,
+      "usedBy": ["panel-shell"],
+      "tokens": ["--arvo-loading-shimmer-color", "--arvo-loading-shimmer-speed"]
+    },
+
+    "panel-shell": {
+      "status": "ready",
+      "description": "Header, sticky pre-body region, scrollable body, items+filter pipeline, empty/skeleton states, and footer actions used by overlay-content components (side-panel, drawer). Parametrized on parentBlock so consumers render their own BEM block (arvo-sp, arvo-drw). Owns the closed-whitelist header-action types ('btn' | 'dropdown' | 'split' | 'switch' | 'checkbox'), the items+filter pipeline (delegating to filterItems from @arvo/core), an `ArvoBannerAlert` instance rendered inside the `__banner` slot, the no-data / no-results empty states, and Pattern B skeleton rendering when .loading is on the host block.",
+      "scss": {
+        "file": "mixins/_panel-shell.scss",
+        "mixins": [
+          "panel-shell-hdr",
+          "panel-shell-sticky",
+          "panel-shell-body",
+          "panel-shell-list",
+          "panel-shell-empty",
+          "panel-shell-skeleton",
+          "panel-shell-footer",
+          "panel-shell-header-action"
+        ]
+      },
+      "util": {
+        "file": "utils/src/panel-shell.ts",
+        "exports": [
+          "runItemFilter",
+          "formatMatchCountMessage",
+          "validateHeaderAction"
+        ]
+      },
+      "js": {
+        "file": "js/src/components/PanelShell/PanelShell.ts",
+        "exports": ["createPanelShell"],
+        "note": "Internal JS factory composing Arvo* primitives. Lives in @arvo/js (not @arvo/utils) to avoid an @arvo/js <-> @arvo/utils circular dependency; @arvo/utils holds only framework-agnostic types + pure helpers (runItemFilter / formatMatchCountMessage / validateHeaderAction). Not re-exported from the @arvo/js public index."
+      },
+      "react": {
+        "file": "react/src/components/PanelShell/PanelShell.tsx",
+        "exports": ["PanelShell", "HeaderAction"],
+        "note": "Internal component -- not re-exported from @arvo/react public index. Mirrors FormLabel / Indicator convention."
+      },
+      "usedBy": ["side-panel", "drawer", "panel"],
+      "tokens": [
+        "--arvo-color-s-layer-01",
+        "--arvo-color-t-primary",
+        "--arvo-color-t-secondary",
+        "--arvo-color-t-tertiary",
+        "--arvo-color-t-info-dark",
+        "--arvo-color-s-layer-05",
+        "--arvo-color-s-scroll"
+      ]
+    },
+
+    "inline-panel-stack": {
+      "status": "ready",
+      "description": "Layered inline panel stack inside host overlays. Manages push/pop/popAll, focus return, Escape pop, and configurable depth cap (default 5). Does not register with overlayHub.",
+      "scss": {
+        "file": "mixins/_inline-panel-stack.scss",
+        "mixins": ["inline-panel-stack"]
+      },
+      "util": {
+        "file": "core/src/overlay/inline-panel-stack.ts",
+        "exports": ["createInlinePanelStack"]
+      },
+      "react": null,
+      "js": null,
+      "usedBy": ["action-menu", "hybrid-popover"],
+      "tokens": []
+    },
+
+    "empty-state": {
+      "status": "ready",
+      "description": "Centered empty-state layout with illustration (96/124/224px), title (16px medium), message (14px regular), and optional outline action button. Figma reference: Arova Empty (37805:2250).",
+      "scss": {
+        "file": "mixins/_empty-state.scss",
+        "mixins": ["empty-state"]
+      },
+      "util": null,
+      "react": {
+        "file": "react/src/components/EmptyState/EmptyState.tsx",
+        "exports": ["ArvoEmptyState", "ARVO_EMPTY_KNOWN_ILLUSTRATIONS"],
+        "note": "Public component, re-exported from the @arvo/react index. Also consumed internally by the overlay components' emptyConfig slot. Treated as a public no-descriptor shared primitive: standalone empty-state usage is supported and a dedicated descriptor file is intentionally not authored (the shared mixin + this registry entry are the source of truth). A future remediation pass may promote it to a descriptor-driven component."
+      },
+      "js": {
+        "file": "js/src/components/EmptyState/EmptyState.ts",
+        "exports": ["ArvoEmptyState", "ARVO_EMPTY_KNOWN_ILLUSTRATIONS"],
+        "note": "Public class, re-exported from the @arvo/js index. Also consumed internally by the overlay components' emptyConfig slot. Treated as a public no-descriptor shared primitive: standalone empty-state usage is supported and a dedicated descriptor file is intentionally not authored (the shared mixin + this registry entry are the source of truth). A future remediation pass may promote it to a descriptor-driven component."
+      },
+      "usedBy": ["action-menu", "popover", "hybrid-popover"],
+      "tokens": [
+        "--arvo-empty-illus-size",
+        "--arvo-color-t-primary",
+        "--arvo-color-t-tertiary"
+      ]
+    },
+
+    "corner-host": {
+      "status": "ready",
+      "description": "Positioning context for components that embed an ArvoStatus OR ArvoBadge pinned to their top-right or bottom-right corner. A consuming component applies the `corner-host` mixin (one rule: `position: relative;`) to its BEM root so the inner component's overlay placement modifiers (`arvo-sts--top-right` / `arvo-sts--bottom-right` / `arvo-bdg--top-right` / `arvo-bdg--bottom-right`) resolve correctly. Both ArvoStatus and ArvoBadge use the same single-axis `placement: 'inline' | 'top-right' | 'bottom-right'` model and the same canonical slot config shape (`ArvoStatusConfig` / `ArvoBadgeConfig`); consuming components Pick<>-narrow these into their own `Arvo<Comp>StatusConfig` / `Arvo<Comp>BadgeConfig` and run a per-host resolver that fills in fixed values (size derivation, locked appearance, etc.). A legacy `status-host` mixin is forwarded from this file for backwards compatibility within this wave.",
+      "scss": {
+        "file": "mixins/_corner-host.scss",
+        "mixins": ["corner-host", "status-host"],
+        "note": "`status-host` is a backwards-compat alias that forwards to `corner-host` (same one-line `position: relative;` rule)."
+      },
+      "util": null,
+      "react": {
+        "file": "react/src/components/Status/Status.tsx",
+        "exports": ["ArvoStatus", "ArvoStatusProps", "ArvoStatusType", "ArvoStatusSize", "ArvoStatusPlacement", "ArvoStatusConfig", "ARVO_STATUS_TYPES", "ARVO_STATUS_TYPE_REGISTRY", "ARVO_STATUS_PLACEMENTS", "resolveStatusIcon", "resolveStatusLabel"],
+        "note": "Public component (ArvoStatus) plus the canonical slot config type (ArvoStatusConfig). The parallel ArvoBadgeConfig lives in react/src/components/Badge/Badge.tsx."
+      },
+      "js": {
+        "file": "js/src/components/Status/Status.ts",
+        "exports": ["ArvoStatus", "ArvoStatusOptions", "ArvoStatusType", "ArvoStatusSize", "ArvoStatusPlacement", "ArvoStatusConfig", "ARVO_STATUS_TYPES", "ARVO_STATUS_TYPE_REGISTRY", "ARVO_STATUS_PLACEMENTS", "resolveStatusIcon", "resolveStatusLabel"],
+        "note": "Public class twin. static initialize(element, options) factory; setType / setSize / setIcon / setTooltip / placement() dual-purpose getter+setter / destroy() methods. Same ArvoStatusConfig shape as React; drift reviewer enforces parity. The parallel ArvoBadgeConfig lives in js/src/components/Badge/Badge.ts."
+      },
+      "usedBy": ["badge", "button", "toggle-button", "chip"],
+      "tokens": [
+        "--arvo-sts-size",
+        "--arvo-sts-icon-size",
+        "--arvo-sts-bg",
+        "--arvo-sts-icon-color",
+        "--arvo-sts-radius",
+        "--arvo-sts-offset-top",
+        "--arvo-sts-offset-bottom",
+        "--arvo-sts-offset-right",
+        "--arvo-bdg-offset-top",
+        "--arvo-bdg-offset-bottom",
+        "--arvo-bdg-offset-right"
+      ],
+      "rationale": "Centralizes the host-side positioning rule and the consumer slot config shape so every component that adopts ArvoStatus / ArvoBadge exposes the same `status?: Arvo<Comp>StatusConfig | null` / `badge?: Arvo<Comp>BadgeConfig | null` props and applies the same `position: relative` anchor. New consumers add themselves to `usedBy` when they wire up an ArvoStatus or ArvoBadge slot."
+    },
+
+    "list-item": {
+      "status": "ready",
+      "description": "Base layout, typography, interactive states, leading and trailing slots, selection control, drag handle, actions cluster, and search-match highlight for list/menu items. The five trailing/leading slot mixins (list-item-selection, list-item-drag-handle, list-item-actions, list-item-actions-on-hover, list-item-trailing, list-item-search-highlight) are second-consumer extractions promoted when ArvoList + HybridPopover landed on the shared row primitive. list-item-states also gains is-dragging and is-drop-target classes for reorder workflows.",
+      "scss": {
+        "file": "mixins/_list-item.scss",
+        "mixins": [
+          "list-item-base",
+          "list-item-single-line",
+          "list-item-multi-line",
+          "list-item-states",
+          "list-item-leading",
+          "list-item-text",
+          "list-item-selection",
+          "list-item-drag-handle",
+          "list-item-actions",
+          "list-item-actions-on-hover",
+          "list-item-trailing",
+          "list-item-search-highlight"
+        ]
+      },
+      "util": null,
+      "react": null,
+      "usedBy": ["action-menu", "option-list", "list", "listbox", "tree-view"],
+      "compositionConsumers": ["sel", "combobox", "multi-sel", "dd-btn", "dd-icon-btn", "split-btn", "split-icon-btn", "time-dropdown", "datetime-picker", "date-range-picker", "hybrid-popover"],
+      "tokens": [
+        "--arvo-list-item-height-single",
+        "--arvo-list-item-height-multi",
+        "--arvo-list-item-padding-inline",
+        "--arvo-list-item-padding-block",
+        "--arvo-list-item-gap",
+        "--arvo-list-item-text-color",
+        "--arvo-list-item-text-hover-color",
+        "--arvo-list-item-secondary-color",
+        "--arvo-list-item-bg-hover"
+      ]
+    },
+
+    "list-group": {
+      "status": "ready",
+      "description": "Section headers and dividers for grouped lists, menus, and dropdown panels. The dashed variant (list-group-divider-dashed) is the 8px-tall dashed separator used between ArvoList groups; the stock 1px variant remains for Listbox/OptionList/Menu-style grouping.",
+      "scss": {
+        "file": "mixins/_list-group.scss",
+        "mixins": ["list-group-header", "list-group-divider", "list-group-divider-dashed"]
+      },
+      "util": null,
+      "react": null,
+      "usedBy": ["action-menu", "context-menu", "dropdown-tree", "option-list", "list", "listbox"],
+      "compositionConsumers": ["sel", "combobox", "multi-sel", "dd-btn", "time-dropdown", "hybrid-popover"],
+      "tokens": [
+        "--arvo-list-group-header-height",
+        "--arvo-list-group-header-color",
+        "--arvo-list-group-header-font-size"
+      ]
+    },
+
+    "form-input-default-width": {
+      "status": "ready",
+      "description": "Sets a consistent default width (300px) on form input components. Exposes --arvo-form-input-width CSS variable and a width prop (CSS value string). fullWidth is shorthand for width: 100%.",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": ["form-input-default-width"]
+      },
+      "util": null,
+      "usedBy": ["textbox", "textarea", "number-input", "search", "select", "combobox", "date-picker", "time-picker", "datetime-picker", "date-range-picker"],
+      "tokens": ["--arvo-form-input-width"]
+    },
+
+    "form-input-surface": {
+      "status": "ready",
+      "description": "Surface variants for form input fields. Filled (default) is the tinted field treatment (--arvo-color-s-layer-04); base swaps the field background to --arvo-color-s-layer-01 so the field reads as a flat extension of its host surface. Single-token override; every other state color (hover, focus, disabled, readonly, error, text, border, icon) is unchanged across the two surfaces. Apply at the BLOCK ROOT inside `&--surface-base` / `&--surface-filled` modifier selectors. Driven by the new `surface` enum prop on every consuming input component.",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": ["form-input-surface-filled", "form-input-surface-base"]
+      },
+      "util": null,
+      "usedBy": ["textbox", "textarea", "number-input", "select", "combobox", "multi-select", "date-picker", "time-picker", "datetime-picker", "date-range-picker"],
+      "tokens": ["--arvo-form-input-bg-color", "--arvo-color-s-layer-04", "--arvo-color-s-layer-01"]
+    },
+
+    "form-input-affix": {
+      "status": "ready",
+      "description": "Inline-flex affix slots (leading icon, prefix text label, prefix/input vertical separator, trailing suffix text label) shared by every form-input-style component. Replaces the per-component prefix/suffix/leading-icon scaffolding with one consistent layout, BEM contract, and token surface. All four slots are inline flex children of __field: order is `[__ico] [__prefix] [__prefix-sep] [__input (flex:1)] [...trailing actions...] [__suffix]`. No absolute positioning anywhere -- the native input/value flexes around the affix children so the field width is stable and the legacy ResizeObserver-driven --arvo-form-input-pad-l dance (NumberInput prefix overlay) is no longer required. Trailing icon-button clusters (NumberInput steppers, Combobox / Select chevron, conditional clear button) are owned by the consuming component and follow the suffix in the flex flow. State recolors (disabled, readonly) travel through CSS variables so consumers can override per-state colors without touching the slot's own rules. The separator visibility is gated on the `--arvo-form-input-affix-sep-display` CSS variable so a component can opt the separator out without re-templating.",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": [
+          "form-input-affix-ico",
+          "form-input-affix-text",
+          "form-input-affix-prefix",
+          "form-input-affix-suffix",
+          "form-input-affix-sep"
+        ]
+      },
+      "util": null,
+      "react": null,
+      "js": null,
+      "usedBy": ["textbox", "textarea", "number-input", "select", "combobox"],
+      "tokens": [
+        "--arvo-form-input-affix-icon-color",
+        "--arvo-form-input-affix-text-color",
+        "--arvo-form-input-affix-sep-color",
+        "--arvo-form-input-affix-sep-display",
+        "--arvo-color-i-secondary",
+        "--arvo-color-i-disabled",
+        "--arvo-color-i-readonly",
+        "--arvo-color-t-tertiary",
+        "--arvo-color-t-disabled",
+        "--arvo-color-t-readonly",
+        "--arvo-color-b-separator"
+      ],
+      "rationale": "Five components (textbox, textarea, number-input, select, combobox) each previously implemented (or were about to implement) their own version of the leading icon / prefix / suffix scaffolding. Centralizing the layout, slot names, token surface, and state recolors into a single pattern guarantees React/JS parity, eliminates the ResizeObserver-driven absolute prefix overlay in NumberInput, and gives every input-style component one identical BEM contract for affix slots. New affix consumers (Search, future inputs) reach for this pattern instead of reinventing the slots."
+    },
+
+    "dnd-sortable-list": {
+      "status": "ready",
+      "description": "Vertical sortable list with pointer and keyboard reorder, cross-group policy, ghost placeholder, drop-line indicator, and live-region announcements",
+      "scss": null,
+      "util": {
+        "file": "core/src/dnd/sortable-list.ts",
+        "exports": ["createSortableList"]
+      },
+      "usedBy": ["list", "tabstrip", "chip-list"],
+      "tokens": []
+    },
+
+    "resize-handle": {
+      "status": "ready",
+      "description": "Pointer-driven panel resize with corner handles, viewport-aware clamping, and directional auto-hide. The SCSS mixin owns the visual chrome (__resize positioning container, __handle per-corner modifiers, hover-reveal + focus-within reveal + .is-resizing pin) parametrized on the consumer's BEM block; the @arvo/core util owns the pointer wiring.",
+      "scss": {
+        "file": "mixins/_resize-handle.scss",
+        "mixins": ["resize-handle"]
+      },
+      "util": {
+        "file": "core/src/resize/resize-handle.ts",
+        "exports": ["createResizeHandle"]
+      },
+      "usedBy": ["hybrid-popover", "popover"],
+      "tokens": ["--arvo-color-b-divider"]
+    },
+
+    "drag-handle": {
+      "status": "ready",
+      "description": "Pointer-driven panel translation: header acts as the drag handle, target element is translated via CSS custom properties (x/y offset), viewport-aware bounds clamping, and an excludeSelector to ignore drag when the pointerdown originates inside an interactive header child (button, switch, badge, status indicator). No keyboard interaction by design -- the consumer component supplies any keyboard repositioning. Parallel to resize-handle.",
+      "scss": null,
+      "util": {
+        "file": "core/src/drag/drag-handle.ts",
+        "exports": ["createDragHandle"]
+      },
+      "usedBy": ["window"],
+      "tokens": []
+    },
+
+    "form-input-actions-overlay": {
+      "status": "ready",
+      "description": "Positions right-side dynamic actions (clear, error icon, shortcut indicator, trigger icon button) absolutely within the field so they do not shift the component width. Dynamically sets padding-right on the input via --arvo-form-input-pad-r CSS variable measured by ResizeObserver. When actions are hidden, padding resets so text fills the full width. DateTime pickers consume this pattern transitively via the `picker-field-actions` mixin; other inputs handle the trailing-action cluster with bespoke positioning today.",
+      "scss": {
+        "file": "mixins/_form-input.scss",
+        "mixins": ["form-input-actions-overlay"]
+      },
+      "util": null,
+      "usedBy": ["date-picker", "time-picker", "datetime-picker", "date-range-picker"],
+      "tokens": ["--arvo-form-input-pad-r", "--arvo-form-input-pad-l"]
+    },
+
+    "overlay-footer-actions": {
+      "status": "ready",
+      "description": "Flex layout for action rows in overlay-style component footers (popover, hybrid popover, side-panel, drawer, alert-dialog, window). Text/labeled buttons grow with `flex: 1 1 0` to share leftover space; icon-only controls (`.arvo-icon-btn`, `.arvo-fab-btn`, `.arvo-dd-icon-btn`, `.arvo-split-icon-btn`, `.arvo-btn--icon-only`, `[data-icon-only=\"true\"]`) stay at their natural width with `flex: 0 0 auto`. A variant-driven order rule keeps primary/danger rightmost regardless of source order. Consumers retain ownership of `padding` and `gap` since spacing differs across overlay surfaces. The `@arvo/utils/overlay-footer` helpers (`clampFooterActions` / `attachOverlayFooterFit`) enforce the cross-overlay 3-action cap and grow the equal-column flex basis when a button label would otherwise truncate.",
+      "scss": {
+        "file": "mixins/_overlay-footer.scss",
+        "mixins": ["overlay-footer-actions-layout"]
+      },
+      "util": {
+        "file": "utils/src/overlay-footer.ts",
+        "exports": ["clampFooterActions", "attachOverlayFooterFit"]
+      },
+      "react": null,
+      "usedBy": ["popover", "hybrid-popover", "side-panel", "drawer", "alert-dialog", "window", "date-range-picker"],
+      "tokens": ["--arvo-overlay-footer-btn-min"]
+    },
+
+    "calendar-grid": {
+      "status": "ready",
+      "description": "7-column CSS Grid used by ArvoCalendar for day cells (and the column-header row). Cells are square with a per-view fixed size set via --arvo-cal-cell-size (40px for the day view; 70px or 80px for non-day views per ADR-8, conditioned by --arvo-cal-show-weeks). Optional 8th column for the week-number gutter (60px) reserved by --arvo-cal-week-col-size. Out-of-month days are dimmed via --arvo-cal-outside-opacity. Outside the day view (month/quarter/year), the same grid container is reused as a 3- or 4-column grid via --arvo-cal-grid-cols. The mixin provides the grid container, header-row layout, square aspect rule, and dim-outside-day modifier; consumers (Calendar) own cell-state styling.",
+      "scss": {
+        "file": "mixins/_calendar-grid.scss",
+        "mixins": ["calendar-grid-base", "calendar-grid-day", "calendar-grid-month-quarter-year", "calendar-grid-week-col", "calendar-grid-outside"]
+      },
+      "util": null,
+      "react": null,
+      "usedBy": ["calendar"],
+      "tokens": [
+        "--arvo-cal-cell-size",
+        "--arvo-cal-week-col-size",
+        "--arvo-cal-grid-cols",
+        "--arvo-cal-grid-gap",
+        "--arvo-cal-outside-opacity"
+      ],
+      "rationale": "Codifies the fixed-size cell rule from ADR-8 so the popover never fluctuates in width when content swaps (legacy bug). Day cells are smaller (40px) because the day view has 7 columns; non-day views collapse to 3-4 columns and need larger cells to fill the 320px inner width."
+    },
+
+    "member-tile-grid": {
+      "status": "ready",
+      "description": "8-column CSS Grid used by the Date Range Picker's member-tile panel and the Calendar's member view. Renders all members for a frequency in compact rectangular tiles with a soft-snap 3-row vertical scroll. Distinct from the calendar grid: tiles are non-square, denser, and the panel holds the full member set (paginated by scroll, not by month).",
+      "scss": {
+        "file": "mixins/_member-tile-grid.scss",
+        "mixins": ["member-tile-grid-base", "member-tile-grid-tile", "member-tile-grid-row-snap"]
+      },
+      "util": null,
+      "react": null,
+      "usedBy": ["calendar", "date-range-picker"],
+      "tokens": [
+        "--arvo-mtg-tile-width",
+        "--arvo-mtg-tile-height",
+        "--arvo-mtg-grid-gap",
+        "--arvo-mtg-row-snap"
+      ],
+      "rationale": "Per ADR-7, the legacy member range used dual calendars; the new design uses a single scrollable tile panel. This pattern owns the soft-snap row scroll math so member-mode behavior stays consistent across rolling/absolute member sub-modes."
+    },
+
+    "calendar-nav-header": {
+      "status": "ready",
+      "description": "Shared header strip used above ArvoCalendar inside the public pickers (single and range). Two zones: left = zoom-out buttons (e.g. month/year/decade label that escalates the view scope on click), right = prev/today/next navigation. Per ADR-3, this header is NOT owned by Calendar so Calendar can be reused outside the pickers; it is implemented as a shared SCSS pattern + internal sub-component (`CalendarNav`) consumed by the picker layouts. Variants exist for single-calendar mode (full nav) and range-picker dual-calendar mode (left panel hides next, right panel hides prev) and member-range mode (zoom buttons swap for frequency label + member nav buttons).",
+      "scss": {
+        "file": "mixins/_calendar-nav-header.scss",
+        "mixins": ["calendar-nav-header-base", "calendar-nav-header-left", "calendar-nav-header-right", "calendar-nav-header-range-left", "calendar-nav-header-range-right", "calendar-nav-header-member"]
+      },
+      "util": null,
+      "react": null,
+      "usedBy": ["date-picker", "datetime-picker", "date-range-picker"],
+      "tokens": [
+        "--arvo-cal-nav-height",
+        "--arvo-cal-nav-padding-inline",
+        "--arvo-cal-nav-gap",
+        "--arvo-cal-nav-label-color",
+        "--arvo-cal-nav-button-color"
+      ],
+      "rationale": "Lets the pickers compose their own panel chrome (e.g. range picker shows two headers; member mode shows different controls) while keeping Calendar reusable headlessly per ADR-2."
+    },
+
+    "picker-field-actions": {
+      "status": "ready",
+      "description": "Wrapper around the `form-input-actions-overlay` pattern that lays out the picker-specific right-side cluster: clear button (when value && clearable && !disabled), inline error icon (when error && size==='sm'), and the trigger icon-button (calendar/clock). Ensures consistent ordering, gap, and z-index across all four pickers and integrates with the segmented input by deriving padding-right via --arvo-form-input-pad-r so segments truncate naturally rather than shifting layout. Slot order (left-to-right): [clear] [error-icon] [trigger-icon].",
+      "scss": {
+        "file": "mixins/_picker-field-actions.scss",
+        "mixins": ["picker-field-actions-layout", "picker-field-actions-trigger", "picker-field-actions-clear", "picker-field-actions-error-icon"]
+      },
+      "util": null,
+      "react": null,
+      "usedBy": ["date-picker", "time-picker", "datetime-picker", "date-range-picker"],
+      "tokens": [
+        "--arvo-picker-actions-gap",
+        "--arvo-picker-actions-padding-inline-end"
+      ],
+      "rationale": "All four pickers share the same right-side cluster shape. Centralizing the layout prevents drift and pairs naturally with `form-input-actions-overlay` for the padding-right measurement so segmented input text never overlaps the actions."
+    },
+
+    "rolling-stepper": {
+      "status": "ready",
+      "description": "Single horizontal stepper row used inside the Date Range Picker's rolling mode for the Start and End offsets. Composes ArvoNumberInput (with the ADR-6 `prefix` slot showing the rolling prefix label e.g. `Wk`) and a non-numeric `-` / `+` step pair, bounded by min/max derived from the member set. Per ADR-6, this is preferred over a bespoke stepper because the prefix-enhanced NumberInput keeps spinbutton semantics, but the pattern owns the row layout (label + prefix-input + buttons), error/disabled propagation, and the live `rolling:change` event wiring. If numeric spinbutton semantics ultimately conflict with the prefix slot during implementation, the same SCSS shell is reused for a dedicated internal stepper.",
+      "scss": {
+        "file": "mixins/_rolling-stepper.scss",
+        "mixins": ["rolling-stepper-row", "rolling-stepper-label", "rolling-stepper-input", "rolling-stepper-buttons"]
+      },
+      "util": null,
+      "react": null,
+      "usedBy": ["date-range-picker"],
+      "tokens": [
+        "--arvo-rs-row-gap",
+        "--arvo-rs-label-min-width",
+        "--arvo-rs-button-size"
+      ],
+      "rationale": "Encapsulates the rolling-time input row so the descriptor cleanly references one pattern; preserves a controlled escape hatch if the NumberInput prefix enhancement is rejected during implementation."
+    },
+
+    "inline-content": {
+      "status": "ready",
+      "description": "Shared inline rich-text contract used by `message`-shaped props in feedback / overlay components. Components accept either a plain string or an `InlineNode[]` describing a small AST: text, em, strong, link, code, kbd (basic profile) plus abbr, time, sup, sub, br (extended profile). Validation, normalization, and link sanitization live in `@arvo/core/inline-content`; a DOM adapter is published from the same module for vanilla JS, and a React adapter is published from `@arvo/react/utils/inline-content.tsx`. SCSS owns the visual styling of the published `.arvo-inline__*` classes via the argument-free `inline-content` mixin, emitted ONCE globally from `base/_global.scss` (the rules are identical for every consumer and use relative `em` sizing, so they are not duplicated per host block). Raw HTML strings, event handlers, arbitrary attributes, and block-level markup are NOT representable; the contract is the security guarantee.",
+      "scss": {
+        "file": "mixins/_inline-content.scss",
+        "mixins": ["inline-content"]
+      },
+      "util": {
+        "file": "core/src/inline-content/index.ts",
+        "exports": [
+          "validateInlineContent",
+          "sanitizeLink",
+          "normalizeInlineContent",
+          "renderInlineContent",
+          "domInlineAdapter",
+          "renderInlineContentToDOM",
+          "replaceInlineContentInElement",
+          "BASIC_INLINE_NODES",
+          "EXTENDED_INLINE_NODES",
+          "getAllowedNodeTypes"
+        ]
+      },
+      "react": {
+        "file": "react/src/utils/inline-content.tsx",
+        "exports": ["reactInlineAdapter", "renderInlineContentReact"]
+      },
+      "usedBy": ["toast", "banner-alert", "alert-dialog", "message-alert"],
+      "tokens": [
+        "--arvo-color-t-info-dark",
+        "--arvo-color-t-primary",
+        "--arvo-color-s-layer-02",
+        "--arvo-color-b-default",
+        "--arvo-color-b-theme-focus"
+      ],
+      "rationale": "Centralizes inline emphasis / link / code / kbd rendering across the four feedback components instead of re-implementing per component. Profiles narrow the allow-list per consumer (`basic-inline` for compact messages, `extended-inline` for richer descriptions). Adapters keep React and DOM output identical so JS playground stories visually match React stories."
+    },
+
+    "title-truncation-tooltip": {
+      "status": "ready",
+      "description": "Wires a tooltip onto a title element that activates ONLY when the element's content is truncated by a CSS line-clamp / text-overflow rule. Composes `connectTooltip` from `@arvo/core/tooltip` with `autoOnTruncation: true` and a `ResizeObserver` so the truncation check stays accurate across viewport changes. Returns a disposer that detaches the connector and observer.",
+      "scss": null,
+      "util": {
+        "file": "utils/src/title-truncation.ts",
+        "exports": ["attachTitleTruncationTooltip"]
+      },
+      "react": null,
+      "usedBy": ["toast", "banner-alert", "accordion-item", "button", "list", "list-item", "action-menu", "option-list"],
+      "tokens": [],
+      "rationale": "Multiple components clamp content to one or two lines and need a tooltip fallback; centralizing the wiring keeps tooltip suppression logic identical and ensures every consumer cleans up its observer on unmount."
+    },
+
+    "overlay-mask": {
+      "status": "ready",
+      "description": "Single overlay scrim primitive for modal-style overlays (Drawer, Alert Dialog). Replaces per-component backdrop divs and the legacy `createBackdropManager`. Owns the `.arvo-overlay__mask` element, `--blur` and `--visible` modifiers, click-outside dismissal, and animated show/hide. Both Drawer and Alert Dialog instantiate one mask per overlay and tie its visibility to the open/closed state of the host. The component layer never paints its own scrim.",
+      "scss": null,
+      "util": {
+        "file": "core/src/mask/mask.ts",
+        "exports": ["createMask"]
+      },
+      "react": null,
+      "usedBy": ["drawer", "alert-dialog"],
+      "tokens": [],
+      "rationale": "Runs 4-5 of the feedback/overlays refactor standardize masked overlays on this primitive. New overlays that need a scrim should reach for `createMask` rather than implementing their own; new variants are added by extending this primitive's options instead of forking it."
+    },
+
+    "tree-nav": {
+      "status": "ready",
+      "description": "Keyboard navigation for hierarchical tree components (ArvoTreeView). Wraps `createArrowNav` and adds tree-specific Right/Left arrow semantics: Right opens a closed parent, moves focus into the first child of an open parent, or no-ops on a leaf; Left closes an open parent, moves focus to the parent of a leaf or closed child, or no-ops at the root. Home/End move to the first/last visible (non-disabled) row. Type-ahead and disabled-skip behave the same as `createArrowNav`. The DOM element list represents the currently visible (rendered) tree rows in display order; collapse/expand re-builds the list. Includes a thin React `useTreeNavigation` hook on top.",
+      "scss": null,
+      "util": {
+        "file": "core/src/keyboard/tree-nav.ts",
+        "exports": ["createTreeNav", "type TreeNav", "type TreeNavOptions"]
+      },
+      "react": {
+        "file": "react/src/hooks/useTreeNavigation.ts",
+        "exports": ["useTreeNavigation", "type UseTreeNavigationOptions", "type UseTreeNavigationReturn"]
+      },
+      "usedBy": ["tree-view"],
+      "tokens": [],
+      "rationale": "Tree navigation differs from list navigation in that Right/Left arrows have expand/collapse semantics. Implementing this once in core (and surfacing a React hook) keeps the JS and React tree parity-safe and avoids per-component reinvention of the WAI-ARIA Tree View keyboard pattern."
+    },
+
+    "horizontal-overflow": {
+      "status": "ready",
+      "description": "Framework-agnostic horizontal overflow manager (`createOverflowManager` from @arvo/core) for components that lay items inline and need to collapse the clipped tail into an overflow menu. The manager watches the container with `ResizeObserver`, runs a two-pass measurement that reserves space for an overflow trigger, applies inline `visibility: hidden; position: absolute; pointer-events: none` to hidden items, and emits the new hidden id Set whenever it changes. Supports pinned items (never hidden) and a promoted id (typically the currently selected item; the manager swaps it with the last visible non-pinned item so the selection stays in view). React consumers use the `useHorizontalOverflow` adapter hook in @arvo/react/src/hooks. The hidden items are rendered into an ArvoActionMenu anchored to an ArvoIconButton trigger — both React and JS twins follow this contract so the markup, ARIA wiring, and keyboard semantics stay parity-safe.",
+      "scss": null,
+      "util": {
+        "file": "core/src/overflow/overflow-manager.ts",
+        "exports": ["createOverflowManager", "type OverflowManager", "type OverflowManagerOptions", "type OverflowItem"]
+      },
+      "react": {
+        "file": "react/src/hooks/useHorizontalOverflow.ts",
+        "exports": ["useHorizontalOverflow", "type UseHorizontalOverflowOptions", "type UseHorizontalOverflowReturn"],
+        "note": "Internal hook -- not re-exported from the @arvo/react public index. Wires the core manager to React refs + state and re-runs the manager when its `deps` or `enabled` flag changes."
+      },
+      "js": null,
+      "usedBy": ["button-group", "tabstrip"],
+      "tokens": [],
+      "rationale": "Both ArvoButtonGroup and ArvoTabstrip implemented the same overflow detection by hand (measure items, hide clipped tail, swap the selected item back into view, render a menu of hidden items). Centralizing the logic into @arvo/core removes the duplicated ResizeObserver + raf + two-pass measurement code, gives drag-and-drop-friendly callers a single `refresh()` entry point to call after a reorder, and ensures both consumers always share the same trigger-width reservation + promotion rules. Future inline-overflow consumers (chip lists, breadcrumbs, toolbars) should adopt this pattern instead of reinventing the wheel."
+    },
+
+    "trigger-anchor-binding": {
+      "status": "ready",
+      "description": "Standardized trigger/anchor binding contract used by every overlay component that attaches to a consumer-provided trigger element. The OverlaySurface engine writes aria-haspopup, aria-controls, and aria-expanded onto the trigger and manages return-focus on close. React components accept a triggerRef prop; JS components accept the trigger element as a constructor argument or via setTrigger().",
+      "scss": null,
+      "util": {
+        "file": "core/src/overlay/overlay-surface.ts",
+        "exports": ["createOverlaySurface"]
+      },
+      "react": {
+        "file": "react/src/hooks/useOverlaySurface.ts",
+        "exports": ["useOverlaySurface"],
+        "note": "Internal hook -- not re-exported from @arvo/react public index. Returns triggerAriaProps for renderTrigger consumers and writes ARIA directly for bring-your-own-trigger consumers."
+      },
+      "usedBy": ["sel", "multi-sel", "combobox", "action-menu", "dd-btn", "dd-icon-btn", "split-btn", "split-icon-btn", "date-picker", "time-picker", "datetime-picker", "date-range-picker", "popover", "alert-dialog", "drawer", "side-panel"],
+      "tokens": [],
+      "rationale": "Every overlay component previously hand-rolled its own trigger ARIA writes, return-focus, and anchor-rect resolution. The engine centralizes these into a single contract so new overlays get correct ARIA and focus management for free."
+    }
+  }
+}

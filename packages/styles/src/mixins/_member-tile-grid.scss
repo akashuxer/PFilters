@@ -1,0 +1,78 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Shared member-tile-grid mixins -- 8-column tile grid used by the Date Range
+// Picker's member-tile panel (ADR-7). Members for a given frequency are
+// displayed as compact rectangular tiles (8 per row), scrollable vertically
+// with a soft-snap to 3-row increments. A sticky header and footer frame the
+// scrollable area.
+//
+// Figma refs: LIB 36686:9034 (week frequency), LIB 36749:2104 (year frequency).
+// Panel body: 668px wide x 240px visible (3 rows x 80px), with an 8px
+// Arvo Scrollbar at the right edge (consumed by the picker's panel container).
+//
+// Used by: date-range-picker
+
+// CSS custom properties (parent picker overrides as needed):
+//   --arvo-mtg-tile-width    Tile width. Default: 83.5px (668 / 8).
+//   --arvo-mtg-tile-height   Tile height. Default: 80px.
+//   --arvo-mtg-grid-gap      Gap between tiles. Default: 0px (flush).
+//   --arvo-mtg-row-snap      Visible scroll height (3 rows). Default: 240px.
+
+// member-tile-grid-base
+// 8-column CSS Grid container for the flat tile area. Total visible width:
+// 8 x 83.5px = 668px. Apply to the grid element (e.g. .arvo-drp__mtg-grid).
+// Row-start cells (every 8th child) receive scroll-snap-align: start so the
+// scroll container can snap to whole-row boundaries.
+@mixin member-tile-grid-base {
+  --arvo-mtg-tile-width: 83.5px;
+  --arvo-mtg-tile-height: 80px;
+  --arvo-mtg-grid-gap: 0px;
+  --arvo-mtg-row-snap: 240px;
+
+  display: grid;
+  grid-template-columns: repeat(8, var(--arvo-mtg-tile-width));
+  grid-auto-rows: var(--arvo-mtg-tile-height);
+  gap: var(--arvo-mtg-grid-gap);
+  box-sizing: border-box;
+
+  // Snap targets land on every 3rd row's first tile so each "page" of
+  // the panel reveals a fresh trio of rows. Tiles 1, 25, 49, ... (24n + 1).
+  // Combined with `member-tile-grid-row-snap` which uses `scroll-snap-type:
+  // y mandatory`, the scroll engine always settles on a 3-row boundary.
+  > *:nth-child(24n + 1) {
+    scroll-snap-align: start;
+  }
+}
+
+// member-tile-grid-tile
+// Individual tile. Flex column so the primary label and optional date-range
+// subtitle stack vertically. Apply to each tile cell (e.g. .arvo-drp__mtg-tile).
+@mixin member-tile-grid-tile {
+  width: var(--arvo-mtg-tile-width);
+  height: var(--arvo-mtg-tile-height);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+}
+
+// member-tile-grid-row-snap
+// Scroll container that wraps the tile grid. Shows exactly 3 rows of tiles
+// at a time. Uses `scroll-snap-type: y proximity` so the engine only nudges
+// to the nearest snap target when the user releases near one -- scrolling
+// through tiles never blocks or has to "settle" before the next gesture.
+// `scroll-behavior: smooth` keeps programmatic scrollTo() / prev/next nav
+// transitions smooth. Apply to the wrapper element around the grid (e.g.
+// .arvo-drp__mtg-scroll).
+@mixin member-tile-grid-row-snap {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: var(--arvo-mtg-row-snap, 240px);
+  scroll-snap-type: y proximity;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+}

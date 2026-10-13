@@ -1,0 +1,415 @@
+@use '../../mixins/typography' as *;
+@use '../../mixins/loading' as *;
+@use '../../mixins/overlay-footer' as *;
+@use '../../mixins/resize-handle' as *;
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-popover ------------------------------------------------------------
+
+.arvo-popover {
+  // -- Root layout ------------------------------------------------------------
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: column;
+  width: var(--arvo-popover-width, auto);
+  min-width: $arvo-popover-wmin;
+  max-width: $arvo-popover-wmax;
+  // The positioner writes `--arvo-popover-max-height` so collision-driven
+  // height clamping is reachable from CSS (e.g. hpop's `min-height` uses it
+  // via `min()` so the comfort floor yields when the boundary is tight).
+  // Defaults to the existing static cap when no inline value is set.
+  max-height: var(--arvo-popover-max-height, $arvo-popover-hmax);
+  background-color: var(--arvo-color-s-layer-03, white);
+  box-shadow: $arvo-shadow-down;
+  z-index: var(--arvo-z-popover, 1000);
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // Enter / exit animation. Direction-aware -- the popup slides toward
+  // its resting position from the side opposite the trigger. Positioning
+  // uses the standalone `translate` CSS property (not `transform`) so
+  // `transform` is free for this animation. See `popup-animation` mixin.
+  @include popup-animation;
+
+  // -- State: open ------------------------------------------------------------
+  &.open {
+    display: flex;
+  }
+
+  // -- __arrow ----------------------------------------------------------------
+  &__arrow {
+    display: none;
+    position: absolute;
+    left: var(--arvo-popover-arrow-x, 0);
+    top: var(--arvo-popover-arrow-y, 0);
+    width: 8px;
+    height: 8px;
+    background-color: var(--arvo-color-s-layer-03, white);
+    transform: rotate(45deg);
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  // -- __header ---------------------------------------------------------------
+  &__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 40px;
+    gap: $arvo-space-8;
+    padding: $arvo-space-8 $arvo-space-12;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+
+  // -- __header-left ----------------------------------------------------------
+  &__header-left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex: 1;
+    min-width: 0;
+  }
+
+  // -- __header-actions -------------------------------------------------------
+  &__header-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-4;
+    flex-shrink: 0;
+  }
+
+  // -- __title ----------------------------------------------------------------
+  &__title {
+    @include arvo-font-h16-m;
+    font-family: var(--o9-font-family);
+    color: var(--arvo-color-t-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // -- __back-btn -------------------------------------------------------------
+  &__back-btn {
+    flex-shrink: 0;
+  }
+
+  // -- __close-btn ------------------------------------------------------------
+  &__close-btn {
+    flex-shrink: 0;
+  }
+
+  // -- __header-action --------------------------------------------------------
+  &__header-action {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  &__header-action-trigger {
+    position: relative;
+    display: inline-flex;
+  }
+
+  &__header-action .arvo-sw {
+    --arvo-sw-track-width: 28px;
+    --arvo-sw-track-height: 16px;
+  }
+
+  // -- __alert-ico -----------------------------------------------------------
+  // Optional decorative alert icon in header-left (slot 2: between back
+  // button and leading icon). 20x20 bare glyph; color follows `alertType`.
+  // The icon glyph itself is set by the consumer via the o9con-* utility
+  // class on the rendered element -- this rule owns size + color only.
+  &__alert-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 1;
+
+    &--positive {
+      color: var(--arvo-color-i-positive);
+    }
+
+    &--warning {
+      color: var(--arvo-color-i-warning);
+    }
+
+    &--negative {
+      color: var(--arvo-color-i-negative);
+    }
+
+    // 'block' uses the static negative palette so the icon reads the same
+    // in both light and dark modes (per spec section 6: --arvo-color-i-
+    // negative-static).
+    &--block {
+      color: var(--arvo-color-i-negative-static);
+    }
+
+    &--info {
+      color: var(--arvo-color-i-info-dark);
+    }
+  }
+
+  // -- __lead-ico ------------------------------------------------------------
+  // Optional leading icon in header-left (slot 3: after back button and
+  // alert icon, before the title). 20x20 bare glyph that inherits
+  // currentColor (defaults to --arvo-color-t-primary via the title row).
+  &__lead-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--arvo-color-t-primary);
+  }
+
+  // -- __status --------------------------------------------------------------
+  // Layout slot for the optional inline ArvoStatus indicator (after the
+  // title). ArvoStatus paints itself; this wrapper only contributes
+  // flex sizing so the inner status renders at its natural size.
+  &__status {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  // -- __badge ---------------------------------------------------------------
+  // Layout slot for the optional inline ArvoBadge (after the status
+  // indicator). ArvoBadge paints itself; this wrapper only contributes
+  // flex sizing so the inner badge renders at its natural size.
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  // -- __sticky-header --------------------------------------------------------
+  &__sticky-header {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    box-sizing: border-box;
+    z-index: 1;
+  }
+
+  // -- __body -----------------------------------------------------------------
+  // Padding changes here are mirrored across HybridPopover automatically
+  // via composition.
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding: $arvo-space-8 $arvo-space-12 $arvo-space-12;
+    box-sizing: border-box;
+  }
+
+  // -- __footer ---------------------------------------------------------------
+  // Outer footer row owns layout + padding. The optional __footer-left slot
+  // sits at the start; the right action cluster (__footer-actions) is
+  // pushed to the end via `margin-inline-start: auto` so the cluster pins
+  // right even when no footer-left is rendered.
+  &__footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: $arvo-space-12;
+    padding: $arvo-space-4 $arvo-space-12 $arvo-space-12;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+
+  // -- __footer-left ----------------------------------------------------------
+  // Consumer-owned slot for helper text, links, ArvoStatus, progress, or
+  // any low-emphasis secondary affordance that should NOT visually compete
+  // with the right-aligned action cluster.
+  &__footer-left {
+    display: flex;
+    align-items: center;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  // -- __footer-actions -------------------------------------------------------
+  // Right action cluster. Layout owned by the shared
+  // `overlay-footer-actions-layout` mixin: text buttons grow to share
+  // leftover space, icon-only controls stay at their natural width. Keeps
+  // the popover's 6px gap. `margin-inline-start: auto` pins this cluster
+  // to the trailing edge regardless of whether __footer-left is rendered.
+  &__footer-actions {
+    @include overlay-footer-actions-layout;
+    gap: $arvo-space-6;
+    flex: 0 1 auto;
+    margin-inline-start: auto;
+  }
+
+  // -- Modifier: --edge -------------------------------------------------------
+  &--edge &__body {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  // -- Modifier: --with-arrow -------------------------------------------------
+  &--with-arrow &__arrow {
+    display: block;
+  }
+
+  // -- Modifier: --inline -----------------------------------------------------
+  //
+  // Nested inline popover dimensions
+  // ---------------------------------
+  // Inline popovers render in-place inside an inline-panel-stack layer of an
+  // overlay parent (action-menu, hybrid-popover). Default dimensions follow
+  // the design-system contract:
+  //
+  // - WIDTH: aligns with the parent overlay (`100%`). Lets the nested view
+  //   match the trigger panel's chrome. Override via the `width` config
+  //   on the inline popover -- it populates `--arvo-popover-width`, which
+  //   wins over `100%`.
+  // - HEIGHT: natural content (`auto`). The nested popover sizes to its
+  //   own header + body + footer. Override via the `height` config (or
+  //   `--arvo-popover-height` from the host).
+  //
+  // PARENT-SPECIFIC OVERRIDES
+  // - Action menu's FIRST inline layer drops to natural width AND height
+  //   so the menu collapses to the popover's intrinsic dimensions (see
+  //   `_arvo-action-menu.scss` `& &__inline-panel__layer > * > .arvo-popover--inline`).
+  //   Nested layers (depth 2+, e.g. an inline popover inside an inline
+  //   hybrid popover inside the menu) fall back to the defaults below.
+  // - Hybrid popover honors the parent-width default. Hpop's own panel
+  //   adapts to the nested popover via `.arvo-hpop:has(.arvo-hpop__inline-panel.open)`
+  //   (min-height drop + chrome hide) when the user has NOT resized the
+  //   hpop manually. After a user resize, the hpop keeps its dragged
+  //   dimensions and the nested popover fills via `[data-arvo-resized="true"]`.
+  //
+  // Min/max constraints are dropped so the inline panel can absorb size
+  // changes from the parent without re-anchoring (the parent owns the
+  // anchor; the inline child grows or shrinks within it). Box-shadow is
+  // removed because the parent overlay already paints the shadow.
+  &--inline {
+    position: static;
+    width: var(--arvo-popover-width, 100%);
+    height: var(--arvo-popover-height, auto);
+    max-width: none;
+    min-width: 0;
+    max-height: none;
+    box-shadow: none;
+  }
+
+  // Inline panels never animate transform (no position) -- only opacity.
+  // Suppress the enter/exit transform interpolation by overriding the
+  // position-related styles set by the animation classes.
+  &--inline.arvo-enter-from,
+  &--inline.arvo-exit-to,
+  &--inline.arvo-enter-to,
+  &--inline.arvo-exit-from {
+    transform: none;
+  }
+
+  // -- Modifier: --closable ---------------------------------------------------
+  &:not(&--closable) &__close-btn {
+    display: none;
+  }
+
+  // -- Resize handle (shared with HybridPopover) -----------------------------
+  // Emits __resize positioning context, __handle per-corner modifiers,
+  // hover-reveal + --with-resize focus-within reveal, and .is-resizing pin.
+  // Pointer wiring is owned by the `createResizeHandle` util from @arvo/core;
+  // the consumer (Popover.tsx / Popover.ts) mounts the handle inside __resize
+  // when isResizable is true.
+  @include resize-handle('arvo-popover');
+
+  // -- Loading skeleton mixin (Pattern B) -----------------------------------
+  @mixin _popover-loading-skeleton {
+    pointer-events: none;
+
+    .arvo-popover__footer {
+      display: none;
+    }
+
+    .arvo-popover__title {
+      position: relative;
+      color: transparent;
+      overflow: hidden;
+      border-radius: 3px;
+      width: 60%;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: var(--arvo-color-s-disabled, #f0f0f0);
+        border-radius: 3px;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--arvo-loading-shimmer-color, rgba(255, 255, 255, 0.4)) 50%,
+          transparent 100%
+        );
+        animation: arvo-shimmer var(--arvo-loading-shimmer-speed, 1.5s) infinite linear;
+        border-radius: 3px;
+      }
+    }
+
+    .arvo-popover__body {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: $arvo-space-12;
+
+      > * {
+        display: none;
+      }
+
+      &::before,
+      &::after {
+        content: '';
+        display: block;
+        height: 16px;
+        border-radius: 3px;
+        background-color: var(--arvo-color-s-disabled, #f0f0f0);
+        position: relative;
+        overflow: hidden;
+      }
+
+      &::before {
+        width: 80%;
+      }
+
+      &::after {
+        width: 60%;
+      }
+    }
+  }
+
+  // -- State: loading (Pattern B -- structured skeleton) ----------------------
+  &.loading {
+    @include _popover-loading-skeleton;
+  }
+
+  // Parent-controlled loading
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _popover-loading-skeleton;
+  }
+}

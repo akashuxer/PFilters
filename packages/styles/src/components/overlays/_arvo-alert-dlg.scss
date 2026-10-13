@@ -1,0 +1,357 @@
+@use '../../mixins/typography' as *;
+@use '../../mixins/loading' as *;
+@use '../../mixins/overlay-footer' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-alert-dlg ----------------------------------------------------------
+
+.arvo-alert-dlg {
+  --arvo-alert-dlg-icon-color: var(--arvo-color-i-warning);
+  --arvo-alert-title-color: var(--arvo-color-t-primary);
+
+  // Root is unconditionally present-while-mounted (React unmounts on close;
+  // JS appends/removes the root). The OverlaySurface engine drives `open` +
+  // `arvo-enter-*`/`arvo-exit-*` on __panel only (for transitions).
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  // The overlay hub is the source of truth for stacking. AlertDialog
+  // registers its __panel as the surface AND attaches this root as a
+  // wrapper element via `hub.attachWrapperElement`, so the hub keeps the
+  // root's inline `z-index` pinned to the panel's hub-assigned value on
+  // every stack change. That hoists the entire dialog stacking context to
+  // the consumer-configured layer (`overlayHub.configure({ zIndexBase })`)
+  // and lets a dropdown/select opened from inside the dialog stack above
+  // it (it registers later -> higher z, applied to both panel and root).
+  // This fallback only covers the brief pre-registration frame and keeps
+  // the dialog within the shared overlay layer (>= page content) until
+  // the hub paints the authoritative value.
+  z-index: var(--arvo-z-popover, 1000);
+
+  // -- __panel --------------------------------------------------------------
+  // Dimensions are token-driven (no sm/md/lg size modifier). The dialog
+  // is a fixed 500px wide (`$arvo-alertdialog-wmax`, with `max-width:
+  // 100%` so narrow viewports still fit) and grows vertically with its
+  // own content between `$arvo-alertdialog-hmin` (164px) and
+  // `$arvo-alertdialog-hmax` (320px). When body content exceeds the
+  // available area inside the cap, the `__body` scrolls vertically.
+  //
+  // The shared `@arvo/core/mask` overlay primitive paints the scrim;
+  // this component never renders its own backdrop element.
+  &__panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    width: $arvo-alertdialog-wmin;
+    max-width: calc(100% - #{$arvo-space-32});
+    min-height: $arvo-alertdialog-hmin;
+    max-height: $arvo-alertdialog-hmax;
+    height: auto;
+    background-color: var(--arvo-color-s-layer-03, #fff);
+    // Figma "o9-shadow-lg-64": inner ambient halo + outer dropped shadow.
+    // The static shadow CSS vars are mode-aware so light vs dark resolves
+    // the correct tint at runtime (per _effects.scss authoring pattern).
+    box-shadow: 0px 0px 8px 0px var(--arvo-color-s-shadow-static-1),
+      0px 32px 64px 0px var(--arvo-color-s-shadow-static-1);
+    box-sizing: border-box;
+    z-index: 1;
+  }
+
+  // Panel scale transitions
+  &__panel.arvo-enter-from {
+    opacity: 0;
+    transform: scale(0.96) translate(-50%, -50%);
+  }
+
+  &__panel.arvo-enter-active {
+    transition: $arvo-transition-dialog;
+  }
+
+  &__panel.arvo-enter-to {
+    opacity: 1;
+    transform: scale(1) translate(-50%, -50%);
+  }
+
+  &__panel.arvo-exit-from {
+    opacity: 1;
+    transform: scale(1) translate(-50%, -50%);
+  }
+
+  &__panel.arvo-exit-active {
+    transition: $arvo-transition-dialog;
+  }
+
+  &__panel.arvo-exit-to {
+    opacity: 0;
+    transform: scale(0.96) translate(-50%, -50%);
+  }
+
+  // -- __header -------------------------------------------------------------
+  &__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-4;
+    height: 40px;
+    padding: $arvo-space-10 $arvo-space-12 $arvo-space-10 $arvo-space-16;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  // -- __ico ----------------------------------------------------------------
+  .arvo-alert-dlg__ico {
+    flex: 0 0 auto;
+    font-family: $o9con;
+    font-size: $arvo-icon-20;
+    width: $arvo-icon-20;
+    height: $arvo-icon-20;
+    color: var(--arvo-alert-dlg-icon-color);
+    line-height: 1;
+  }
+
+  // -- __title --------------------------------------------------------------
+  &__title {
+    @include arvo-font-h16-m;
+    font-family: var(--o9-font-family);
+    color: var(--arvo-alert-title-color);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  // -- __close-btn ----------------------------------------------------------
+  &__close-btn {
+    flex-shrink: 0;
+    display: none;
+  }
+
+  &--closable &__close-btn {
+    display: flex;
+  }
+
+  // -- __body ---------------------------------------------------------------
+  &__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-16;
+    padding: $arvo-space-16;
+    overflow-y: auto;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+
+  // -- __msg ----------------------------------------------------------------
+  &__msg {
+    @include arvo-font-l14-r;
+    font-family: var(--o9-font-family);
+    color: var(--arvo-color-t-secondary);
+    margin: 0;
+  }
+
+  // -- __banner -------------------------------------------------------------
+  // Optional ArvoBannerAlert rendered between header and body when a
+  // `bannerAlert` prop is passed. The slot has zero margin so the banner
+  // visually attaches to the bottom of the header.
+  &__banner {
+    flex-shrink: 0;
+    padding: $arvo-space-8 $arvo-space-16 0;
+  }
+
+  // -- __confirm-input ------------------------------------------------------
+  &__confirm-input {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-4;
+  }
+
+  // Inline error from the `validate` callback's string return.
+  &__confirm-error {
+    margin: 0;
+    color: var(--arvo-color-t-negative);
+    font-size: $arvo-font-size-12;
+  }
+
+  // -- __footer -------------------------------------------------------------
+  &__footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-8;
+    padding: $arvo-space-8 $arvo-space-16 $arvo-space-16;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+
+  // -- __dont-show ----------------------------------------------------------
+  &__dont-show {
+    flex-shrink: 0;
+  }
+
+  // -- __actions ------------------------------------------------------------
+  // Uses the shared overlay-footer-actions-layout mixin so AlertDialog
+  // joins the rest of the overlay family (Popover, SidePanel, Drawer,
+  // Window, HybridPopover) on the same equal-shrink / equal-grow
+  // contract: 112px-default basis per labeled button, uniform shrink
+  // when too narrow, right-aligned primary/danger.
+  &__actions {
+    @include overlay-footer-actions-layout;
+    flex: 1 1 auto;
+  }
+
+  // -- Variant: --warning (default) -----------------------------------------
+  &--warning {
+    --arvo-alert-dlg-icon-color: var(--arvo-color-i-warning);
+    --arvo-alert-title-color: var(--arvo-color-t-warning);
+
+    .arvo-alert-dlg__ico::before {
+      content: '\ed72'; // o9con-exclamation-triangle-filled
+    }
+  }
+
+  // -- Variant: --info ------------------------------------------------------
+  &--info {
+    --arvo-alert-dlg-icon-color: var(--arvo-color-i-info-dark);
+    --arvo-alert-title-color: var(--arvo-color-t-info-dark);
+
+    .arvo-alert-dlg__ico::before {
+      content: '\ed71'; // o9con-info-circle-filled
+    }
+  }
+
+  // -- Variant: --positive ---------------------------------------------------
+  &--positive {
+    --arvo-alert-dlg-icon-color: var(--arvo-color-i-positive);
+    --arvo-alert-title-color: var(--arvo-color-t-positive);
+
+    .arvo-alert-dlg__ico::before {
+      content: '\ec1b'; // o9con-check-circle
+    }
+  }
+
+  // -- Variant: --negative ----------------------------------------------------
+  &--negative {
+    --arvo-alert-dlg-icon-color: var(--arvo-color-i-negative);
+    --arvo-alert-title-color: var(--arvo-color-t-negative);
+
+    .arvo-alert-dlg__ico::before {
+      content: '\edd9'; // o9con-blocker-action-filled-alt
+    }
+  }
+
+  // -- Variant: --block -----------------------------------------------------
+  &--block {
+    --arvo-alert-dlg-icon-color: var(--arvo-color-i-negative);
+    --arvo-alert-title-color: var(--arvo-color-t-negative);
+
+    .arvo-alert-dlg__ico::before {
+      content: '\ed75'; // o9con-blocker-action-filled
+    }
+  }
+
+  // The dialog is content-driven within the token-defined width / height
+  // envelope (no sm/md/lg modifier). Use `confirmInput.size` to swap the
+  // inner input size when needed.
+
+  // -- Loading skeleton (Pattern B) -----------------------------------------
+  @mixin _alert-dlg-loading-skeleton {
+    pointer-events: none;
+
+    .arvo-alert-dlg__title {
+      position: relative;
+      color: transparent;
+      overflow: hidden;
+      border-radius: 3px;
+      width: 60%;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: var(--arvo-color-s-disabled, #f0f0f0);
+        border-radius: 3px;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--arvo-loading-shimmer-color, rgba(255, 255, 255, 0.4)) 50%,
+          transparent 100%
+        );
+        animation: arvo-shimmer var(--arvo-loading-shimmer-speed, 1.5s) infinite linear;
+        border-radius: 3px;
+      }
+    }
+
+    .arvo-alert-dlg__body {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: $arvo-space-12;
+
+      > * {
+        display: none;
+      }
+
+      &::before,
+      &::after {
+        content: '';
+        display: block;
+        height: 16px;
+        border-radius: 3px;
+        background-color: var(--arvo-color-s-disabled, #f0f0f0);
+        position: relative;
+        overflow: hidden;
+      }
+
+      &::before {
+        width: 80%;
+      }
+
+      &::after {
+        width: 60%;
+      }
+    }
+
+    .arvo-alert-dlg__dont-show {
+      display: none;
+    }
+
+    .arvo-alert-dlg__actions {
+      pointer-events: none;
+      opacity: $arvo-opacity-40;
+    }
+  }
+
+  &.loading {
+    @include _alert-dlg-loading-skeleton;
+  }
+
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _alert-dlg-loading-skeleton;
+  }
+}
+
+// -- Reduced motion ----------------------------------------------------------
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-alert-dlg__panel {
+    &.arvo-enter-active,
+    &.arvo-exit-active {
+      transition: none;
+    }
+  }
+}

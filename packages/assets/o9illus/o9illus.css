@@ -1,0 +1,161 @@
+/* o9 Design System -- Illustration utility classes */
+
+.o9illus {
+  display: block;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.o9illus-64 {
+  width: 4rem;
+  height: 4rem;
+}
+
+.o9illus-96 {
+  width: 6rem;
+  height: 6rem;
+}
+
+.o9illus-124 {
+  width: 7.75rem;
+  height: 7.75rem;
+}
+
+.o9illus-224 {
+  width: 14rem;
+  height: 14rem;
+}
+
+.o9illus-300 {
+  width: 18.75rem;
+  height: 18.75rem;
+}
+
+:not([data-mode="dark"]) .o9illus-dashboard {
+  background-image: url("./light/o9illus-light-dashboard.svg");
+}
+
+[data-mode="dark"] .o9illus-dashboard {
+  background-image: url("./dark/o9illus-dark-dashboard.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-document {
+  background-image: url("./light/o9illus-light-document.svg");
+}
+
+[data-mode="dark"] .o9illus-document {
+  background-image: url("./dark/o9illus-dark-document.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-favorites {
+  background-image: url("./light/o9illus-light-favorites.svg");
+}
+
+[data-mode="dark"] .o9illus-favorites {
+  background-image: url("./dark/o9illus-dark-favorites.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-help {
+  background-image: url("./light/o9illus-light-help.svg");
+}
+
+[data-mode="dark"] .o9illus-help {
+  background-image: url("./dark/o9illus-dark-help.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-filter-results {
+  background-image: url("./light/o9illus-light-no-filter-results.svg");
+}
+
+[data-mode="dark"] .o9illus-no-filter-results {
+  background-image: url("./dark/o9illus-dark-no-filter-results.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-filters-found {
+  background-image: url("./light/o9illus-light-no-filters-found.svg");
+}
+
+[data-mode="dark"] .o9illus-no-filters-found {
+  background-image: url("./dark/o9illus-dark-no-filters-found.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-form-configured {
+  background-image: url("./light/o9illus-light-no-form-configured.svg");
+}
+
+[data-mode="dark"] .o9illus-no-form-configured {
+  background-image: url("./dark/o9illus-dark-no-form-configured.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-notifications {
+  background-image: url("./light/o9illus-light-no-notifications.svg");
+}
+
+[data-mode="dark"] .o9illus-no-notifications {
+  background-image: url("./dark/o9illus-dark-no-notifications.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-post {
+  background-image: url("./light/o9illus-light-no-post.svg");
+}
+
+[data-mode="dark"] .o9illus-no-post {
+  background-image: url("./dark/o9illus-dark-no-post.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-report {
+  background-image: url("./light/o9illus-light-no-report.svg");
+}
+
+[data-mode="dark"] .o9illus-no-report {
+  background-image: url("./dark/o9illus-dark-no-report.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-results-found {
+  background-image: url("./light/o9illus-light-no-results-found.svg");
+}
+
+[data-mode="dark"] .o9illus-no-results-found {
+  background-image: url("./dark/o9illus-dark-no-results-found.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-slides {
+  background-image: url("./light/o9illus-light-no-slides.svg");
+}
+
+[data-mode="dark"] .o9illus-no-slides {
+  background-image: url("./dark/o9illus-dark-no-slides.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-no-tasks {
+  background-image: url("./light/o9illus-light-no-tasks.svg");
+}
+
+[data-mode="dark"] .o9illus-no-tasks {
+  background-image: url("./dark/o9illus-dark-no-tasks.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-restricted-access {
+  background-image: url("./light/o9illus-light-restricted-access.svg");
+}
+
+[data-mode="dark"] .o9illus-restricted-access {
+  background-image: url("./dark/o9illus-dark-restricted-access.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-server-error {
+  background-image: url("./light/o9illus-light-server-error.svg");
+}
+
+[data-mode="dark"] .o9illus-server-error {
+  background-image: url("./dark/o9illus-dark-server-error.svg");
+}
+
+:not([data-mode="dark"]) .o9illus-settings {
+  background-image: url("./light/o9illus-light-settings.svg");
+}
+
+[data-mode="dark"] .o9illus-settings {
+  background-image: url("./dark/o9illus-dark-settings.svg");
+}

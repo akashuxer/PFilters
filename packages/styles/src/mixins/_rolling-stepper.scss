@@ -1,0 +1,87 @@
+@use '../../../tokens/src/scss/all' as *;
+
+// Shared rolling-stepper mixins -- horizontal Start/End offset row inside
+// ArvoDateRangePicker's rolling mode. Per ADR-6, the number input with the
+// optional prefix slot (e.g. "CW") is the preferred composition over a
+// bespoke stepper because it preserves spinbutton semantics and reuses
+// NumberInput's focus, keyboard, and error-icon plumbing.
+//
+// The rolling-time-setting block (figma RT 12018:17602) contains:
+//   - rolling-stepper-row: side-by-side "Start" and "End" blocks (54h, 16px gap)
+//   - Each block: rolling-stepper-label (14h) + rolling-stepper-input (32h)
+//   - rolling-stepper-buttons: decrement / separator / increment inside input
+//
+// BEM element expected by consuming pickers: arvo-drp__rolling-row
+//
+// Used by: date-range-picker
+
+// CSS custom properties:
+//   --arvo-rs-row-gap          Gap between the two stepper blocks. Default: 16px.
+//   --arvo-rs-label-min-width  Min width of each "Start" / "End" label. Default: 79px.
+//   --arvo-rs-button-size      Icon button size for decrement/increment. Default: 24px.
+
+// rolling-stepper-row
+// Flex row that holds the two side-by-side stepper blocks (Start and End).
+// Apply to the container element (e.g. .arvo-drp__rolling-row).
+@mixin rolling-stepper-row {
+  --arvo-rs-row-gap: #{$arvo-space-16};
+  --arvo-rs-label-min-width: 79px;
+  --arvo-rs-button-size: #{$arvo-space-24};
+
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--arvo-rs-row-gap);
+  box-sizing: border-box;
+}
+
+// rolling-stepper-label
+// Text label above each stepper input ("Start" / "End").
+// Apply to the label element (e.g. .arvo-drp__rolling-lbl).
+@mixin rolling-stepper-label {
+  min-width: var(--arvo-rs-label-min-width);
+  font-family: var(--arvo-font-family);
+  font-size: $arvo-font-size-12;
+  font-weight: $arvo-regular;
+  color: var(--arvo-color-t-secondary);
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+}
+
+// rolling-stepper-input
+// Container for each individual Start/End block: label above, input below.
+// The ArvoNumberInput instance (with prefix slot) fills the available width.
+// Apply to the block wrapper (e.g. .arvo-drp__rolling-block).
+@mixin rolling-stepper-input {
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// rolling-stepper-buttons
+// The decrement / separator / increment cluster that goes into the
+// ArvoNumberInput's actions slot. Buttons are 24x24 Arvo IconButtons
+// (figma B4). Apply to the wrapper around the three stepper controls
+// (e.g. .arvo-drp__rolling-btns).
+@mixin rolling-stepper-buttons {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--arvo-rs-button-size);
+
+  // Separator between the two icon buttons inherits the form input border
+  // color token and uses a vertical rule style.
+  > [role="separator"],
+  > .arvo-drp__rolling-sep {
+    display: inline-block;
+    width: $arvo-border-1;
+    height: $arvo-space-16;
+    background-color: var(--arvo-color-b-form);
+    flex-shrink: 0;
+    align-self: center;
+  }
+}

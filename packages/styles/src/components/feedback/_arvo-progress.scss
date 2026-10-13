@@ -1,0 +1,40 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/typography' as *;
+
+.arvo-progress {
+  --arvo-progress-value: 0%;
+  --arvo-progress-color: var(--arvo-color-i-theme);
+  --arvo-progress-track: var(--arvo-color-s-layer-02);
+  display: inline-flex;
+  position: relative;
+  color: var(--arvo-color-t-primary);
+  gap: $arvo-space-8;
+  min-width: 180px;
+}
+.arvo-progress--sm { --arvo-progress-height: 4px; --arvo-progress-ring-size: 48px; --arvo-progress-font: #{$arvo-font-size-12}; }
+.arvo-progress--md { --arvo-progress-height: 8px; --arvo-progress-ring-size: 96px; --arvo-progress-font: #{$arvo-font-size-14}; }
+.arvo-progress--lg { --arvo-progress-height: 12px; --arvo-progress-ring-size: 144px; --arvo-progress-font: #{$arvo-font-size-16}; }
+.arvo-progress--success { --arvo-progress-color: var(--arvo-color-i-positive); }
+.arvo-progress--warning { --arvo-progress-color: var(--arvo-color-i-warning); }
+.arvo-progress--error { --arvo-progress-color: var(--arvo-color-i-negative); }
+.arvo-progress--linear { flex-direction: column; width: min(100%, 420px); }
+.arvo-progress__track { width: 100%; height: var(--arvo-progress-height); overflow: hidden; border-radius: $arvo-radius-circle; background: var(--arvo-progress-track); }
+.arvo-progress__fill { width: var(--arvo-progress-value); height: 100%; border-radius: inherit; background: var(--arvo-progress-color); transition: width $arvo-motion-progress-linear; }
+.arvo-progress__meta { display: flex; justify-content: space-between; align-items: center; gap: $arvo-space-8; font-size: var(--arvo-progress-font); line-height: 1.3; }
+.arvo-progress__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.arvo-progress__value { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.arvo-progress--circular, .arvo-progress--gauge { width: var(--arvo-progress-ring-size); height: var(--arvo-progress-ring-size); min-width: 0; align-items: center; justify-content: center; }
+.arvo-progress--gauge { height: calc(var(--arvo-progress-ring-size) * .65); }
+.arvo-progress__ring { width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg); }
+.arvo-progress--gauge .arvo-progress__ring { transform: none; }
+.arvo-progress__ring-track, .arvo-progress__ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; }
+.arvo-progress__ring-track { stroke: var(--arvo-progress-track); }
+.arvo-progress__ring-fill { stroke: var(--arvo-progress-color); stroke-dasharray: var(--arvo-progress-value) 100; transition: stroke-dasharray $arvo-motion-progress-circular; }
+.arvo-progress--gauge .arvo-progress__ring-fill { stroke-dasharray: var(--arvo-progress-value) 100; }
+.arvo-progress__content { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: $arvo-space-4; font-size: var(--arvo-progress-font); text-align: center; }
+.arvo-progress--gauge .arvo-progress__content { inset: auto 0 0; }
+.arvo-progress.is-indeterminate .arvo-progress__fill { width: 40%; animation: arvo-progress-linear $arvo-motion-progress-linear-indeterminate; }
+.arvo-progress.is-indeterminate .arvo-progress__ring-fill { stroke-dasharray: 28 100; animation: arvo-progress-ring $arvo-motion-progress-circular-indeterminate; }
+@keyframes arvo-progress-linear { 0% { transform: translateX(-120%); } 100% { transform: translateX(280%); } }
+@keyframes arvo-progress-ring { to { transform: rotate(360deg); transform-origin: 50% 50%; } }
+@media (prefers-reduced-motion: reduce) { .arvo-progress__fill, .arvo-progress__ring-fill, .arvo-progress.is-indeterminate .arvo-progress__fill, .arvo-progress.is-indeterminate .arvo-progress__ring-fill { animation: none; transition: none; } }

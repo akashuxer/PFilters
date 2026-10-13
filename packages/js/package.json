@@ -1,0 +1,64 @@
+{
+  "name": "@arvo/js",
+  "version": "2.2.5",
+  "description": "Arvo Design System vanilla JS component library",
+  "license": "UNLICENSED",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://o9git.pkgs.visualstudio.com/_packaging/o9UI/npm/registry/"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js",
+      "require": "./dist/plugin.cjs"
+    },
+    "./auto": {
+      "types": "./dist/auto.d.ts",
+      "import": "./dist/auto.js",
+      "require": "./dist/auto.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "./dist/auto.js",
+    "./dist/auto.cjs"
+  ],
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@arvo/core": "workspace:*",
+    "@arvo/styles": "workspace:*",
+    "@arvo/tokens": "workspace:*",
+    "@arvo/utils": "workspace:*"
+  },
+  "peerDependencies": {
+    "jquery": "^3.7.0"
+  },
+  "devDependencies": {
+    "@types/jquery": "^3.5.0",
+    "axe-core": "^4.11.4",
+    "jquery": "^3.7.0",
+    "typescript": "^5.5.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}

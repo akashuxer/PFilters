@@ -1,0 +1,353 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/corner-host' as *;
+
+// ArvoToggleButton component styles
+// BEM Block: .arvo-toggle-btn
+// Abbreviation: toggle-btn
+// Loading Pattern: A (simple overlay shimmer)
+
+@keyframes arvo-toggle-grow {
+  0%   { transform: scale(1); }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+// --- .arvo-toggle-btn -------------------------------------------------------
+
+.arvo-toggle-btn {
+  // -- CSS custom properties (secondary / md defaults) ----------------------
+  --arvo-toggle-btn-height: 32px;
+  --arvo-toggle-btn-padding-block: #{$arvo-space-6};
+  --arvo-toggle-btn-padding-inline: #{$arvo-space-12};
+  --arvo-toggle-btn-gap: #{$arvo-space-4};
+  --arvo-toggle-btn-font-size: #{$arvo-font-size-14};
+  --arvo-toggle-btn-icon-size: #{$arvo-icon-20};
+  --arvo-toggle-btn-bg-color: var(--arvo-color-s-layer-05);
+  --arvo-toggle-btn-text-color: var(--arvo-color-t-secondary);
+  --arvo-toggle-btn-icon-color: var(--arvo-color-i-secondary);
+  --arvo-toggle-btn-border-color: transparent;
+
+  // -- Layout / appearance -------------------------------------------------
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arvo-toggle-btn-gap);
+  height: var(--arvo-toggle-btn-height);
+  padding-block: var(--arvo-toggle-btn-padding-block);
+  padding-inline: var(--arvo-toggle-btn-padding-inline);
+  max-width: $arvo-btn-wmax;
+
+  font-size: var(--arvo-toggle-btn-font-size);
+  font-weight: var(--arvo-toggle-btn-font-weight, #{$arvo-regular});
+  line-height: normal;
+  font-family: var(--o9-font-family);
+  white-space: nowrap;
+  text-decoration: none;
+
+  background-color: var(--arvo-toggle-btn-bg-color);
+  color: var(--arvo-toggle-btn-text-color);
+  border: 1px solid var(--arvo-toggle-btn-border-color);
+  border-radius: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  vertical-align: middle;
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+  outline: none;
+  transition: background-color $arvo-duration-medium $arvo-ease-simple;
+  // Corner-host slot integration. `position: relative` is already set
+  // above; the include is idempotent and documents that the toggle
+  // participates in the same badge/status anchoring contract as
+  // ArvoButton and ArvoIconButton.
+  @include corner-host;
+
+  // Icon glyph
+  &__ico,
+  [class^="o9con-"],
+  [class*=" o9con-"] {
+    font-size: var(--arvo-toggle-btn-icon-size);
+    color: var(--arvo-toggle-btn-icon-color);
+    flex-shrink: 0;
+    line-height: normal;
+  }
+
+  // Inner wrapper: groups icon + label as a single animation target.
+  // `min-width: 0` lets the wrapper shrink so `__lbl` can truncate.
+  &__inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--arvo-toggle-btn-gap);
+    min-width: 0;
+  }
+
+  // Label element
+  &__lbl {
+    color: var(--arvo-toggle-btn-text-color);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // -- Focus --------------------------------------------------------------
+  &:focus-visible {
+    outline: 1px solid var(--arvo-color-b-theme-focus);
+    outline-offset: $arvo-space-2;
+    --arvo-toggle-btn-bg-color: var(--arvo-color-s-theme-hover-2);
+    --arvo-toggle-btn-text-color: var(--arvo-color-t-theme-hover);
+    --arvo-toggle-btn-icon-color: var(--arvo-color-i-theme-hover);
+  }
+
+  &.focus-border:focus-visible {
+    outline-offset: -1px;
+  }
+
+  // -- Disabled -----------------------------------------------------------
+  &:disabled,
+  &.is-disabled {
+    --arvo-toggle-btn-bg-color: var(--arvo-color-s-disabled);
+    --arvo-toggle-btn-text-color: var(--arvo-color-t-disabled);
+    --arvo-toggle-btn-icon-color: var(--arvo-color-i-disabled);
+    --arvo-toggle-btn-border-color: transparent;
+    cursor: not-allowed;
+    pointer-events: auto;
+  }
+
+  // -- Sizes --------------------------------------------------------------
+  &--sm {
+    --arvo-toggle-btn-height: 24px;
+    --arvo-toggle-btn-padding-block: #{$arvo-space-4};
+    --arvo-toggle-btn-padding-inline: #{$arvo-space-8};
+    --arvo-toggle-btn-gap: #{$arvo-space-4};
+    --arvo-toggle-btn-icon-size: #{$arvo-icon-16};
+    --arvo-toggle-btn-font-size: #{$arvo-font-size-12};
+  }
+
+  &--md {
+    --arvo-toggle-btn-height: 32px;
+    --arvo-toggle-btn-padding-block: #{$arvo-space-6};
+    --arvo-toggle-btn-padding-inline: #{$arvo-space-12};
+    --arvo-toggle-btn-gap: #{$arvo-space-4};
+    --arvo-toggle-btn-icon-size: #{$arvo-icon-20};
+    --arvo-toggle-btn-font-size: #{$arvo-font-size-14};
+  }
+
+  &--lg {
+    --arvo-toggle-btn-height: 40px;
+    --arvo-toggle-btn-padding-block: #{$arvo-space-10};
+    --arvo-toggle-btn-padding-inline: #{$arvo-space-12};
+    --arvo-toggle-btn-gap: #{$arvo-space-6};
+    --arvo-toggle-btn-icon-size: #{$arvo-icon-24};
+    --arvo-toggle-btn-font-size: #{$arvo-font-size-16};
+  }
+
+  // -- Layout: icon-only (no label) --------------------------------------
+  // Square dimensions, no label element, no horizontal gap. Each size
+  // collapses inline padding so width = height. Mirrors the per-size
+  // padding values used by `.arvo-icon-btn`.
+  &--icon-only {
+    --arvo-toggle-btn-gap: 0;
+    --arvo-toggle-btn-font-size: 0;
+    --arvo-toggle-btn-padding-inline: var(--arvo-toggle-btn-padding-block);
+
+    width: var(--arvo-toggle-btn-height);
+    min-width: var(--arvo-toggle-btn-height);
+  }
+
+  &--icon-only#{&}--sm {
+    --arvo-toggle-btn-padding-block: #{$arvo-space-4};
+    --arvo-toggle-btn-padding-inline: #{$arvo-space-4};
+  }
+
+  &--icon-only#{&}--md {
+    --arvo-toggle-btn-padding-block: #{$arvo-space-6};
+    --arvo-toggle-btn-padding-inline: #{$arvo-space-6};
+  }
+
+  &--icon-only#{&}--lg {
+    --arvo-toggle-btn-padding-block: #{$arvo-space-10};
+    --arvo-toggle-btn-padding-inline: #{$arvo-space-10};
+  }
+
+  // -- Slot overflow relaxation -------------------------------------------
+  // When an overlay badge or status sits inside the toggle, relax the
+  // `overflow: hidden` set on the root so the overlay can half-overhang
+  // the toggle edge (matches the Button / IconButton overlay contract).
+  // (Badge is top-right only; Status retains both corners.)
+  &:has(.arvo-bdg--top-right),
+  &:has(.arvo-sts--top-right),
+  &:has(.arvo-sts--bottom-right) {
+    overflow: visible;
+  }
+
+  // -- Loading State ------------------------------------------------------
+  // Pattern A (Simple Overlay). Inlined here -- the existing `btn-loading`
+  // mixin targets `.arvo-btn__*` selectors; the toggle uses its own
+  // `__ico` / `__lbl` selectors so we replicate the same visual without
+  // reaching across blocks.
+  &.loading,
+  [data-arvo-loading="true"] & {
+    pointer-events: none;
+    cursor: default;
+    color: transparent;
+    border-width: 0;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background-color: var(--arvo-color-s-pulse-light);
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-color-s-pulse-dark) 50%,
+        transparent 100%
+      );
+      transform: translateX(-100%);
+      animation: arvo-skeleton-shimmer 1.5s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    .arvo-toggle-btn__lbl,
+    .arvo-toggle-btn__ico,
+    [class^="o9con-"],
+    [class*=" o9con-"] {
+      opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::before { animation: none; }
+    }
+  }
+
+  [data-arvo-loading="true"] &[data-arvo-loading-ignore="true"] {
+    pointer-events: auto;
+    cursor: pointer;
+    color: var(--arvo-toggle-btn-text-color);
+
+    &::before,
+    &::after {
+      display: none;
+    }
+
+    .arvo-toggle-btn__lbl,
+    .arvo-toggle-btn__ico,
+    [class^="o9con-"],
+    [class*=" o9con-"] {
+      opacity: 1;
+    }
+  }
+
+  // -- Variant: Secondary (default) ---------------------------------------
+  // Mirrors `arvo-btn--secondary` resting / hover / active palettes; the
+  // toggled-on (.active) palette is the same `s-theme-active-2` /
+  // `t-theme-active` / `i-theme-active` triple that `arvo-btn--secondary`
+  // surfaces today.
+  &--secondary {
+    --arvo-toggle-btn-bg-color: var(--arvo-color-s-layer-05);
+    --arvo-toggle-btn-text-color: var(--arvo-color-t-secondary);
+    --arvo-toggle-btn-icon-color: var(--arvo-color-i-secondary);
+    --arvo-toggle-btn-border-color: transparent;
+
+    @include hover {
+      &:where(:not(:disabled):not(.is-disabled):not(:active):not(.active)):hover {
+        --arvo-toggle-btn-bg-color: var(--arvo-color-s-theme-hover-2);
+        --arvo-toggle-btn-text-color: var(--arvo-color-t-theme-hover);
+        --arvo-toggle-btn-icon-color: var(--arvo-color-i-theme-hover);
+      }
+    }
+
+    &:where(:not(:disabled):not(.is-disabled)):active,
+    &:where(:not(:disabled):not(.is-disabled)).active {
+      --arvo-toggle-btn-bg-color: var(--arvo-color-s-theme-active-1);
+      --arvo-toggle-btn-text-color: var(--arvo-color-t-active-inverse);
+      --arvo-toggle-btn-icon-color: var(--arvo-color-i-active-inverse);
+    }
+  }
+
+  // -- Variant: Tertiary --------------------------------------------------
+  &--tertiary {
+    --arvo-toggle-btn-bg-color: transparent;
+    --arvo-toggle-btn-text-color: var(--arvo-color-t-secondary);
+    --arvo-toggle-btn-icon-color: var(--arvo-color-i-secondary);
+    --arvo-toggle-btn-border-color: transparent;
+
+    @include hover {
+      &:where(:not(:disabled):not(.is-disabled):not(:active):not(.active)):hover {
+        --arvo-toggle-btn-bg-color: var(--arvo-color-s-theme-hover-2);
+        --arvo-toggle-btn-text-color: var(--arvo-color-t-theme-hover);
+        --arvo-toggle-btn-icon-color: var(--arvo-color-i-theme);
+      }
+    }
+
+    &:where(:not(:disabled):not(.is-disabled)):active,
+    &:where(:not(:disabled):not(.is-disabled)).active {
+      --arvo-toggle-btn-bg-color: transparent;
+      --arvo-toggle-btn-text-color: var(--arvo-color-t-secondary);
+      --arvo-toggle-btn-icon-color: var(--arvo-color-i-theme-active);
+    }
+
+    // Disabled tertiary keeps the transparent surface.
+    &:disabled,
+    &.is-disabled {
+      --arvo-toggle-btn-bg-color: transparent;
+      --arvo-toggle-btn-border-color: transparent;
+    }
+  }
+
+  // -- Variant: Outline ---------------------------------------------------
+  &--outline {
+    --arvo-toggle-btn-bg-color: transparent;
+    --arvo-toggle-btn-text-color: var(--arvo-color-t-theme);
+    --arvo-toggle-btn-icon-color: var(--arvo-color-i-theme);
+    --arvo-toggle-btn-border-color: var(--arvo-color-b-theme);
+
+    @include hover {
+      &:where(:not(:disabled):not(.is-disabled):not(:active):not(.active)):hover {
+        --arvo-toggle-btn-bg-color: var(--arvo-color-s-theme-hover-2);
+        --arvo-toggle-btn-text-color: var(--arvo-color-t-theme-hover);
+        --arvo-toggle-btn-icon-color: var(--arvo-color-i-theme);
+        --arvo-toggle-btn-border-color: transparent;
+      }
+    }
+
+    &:where(:not(:disabled):not(.is-disabled)):active,
+    &:where(:not(:disabled):not(.is-disabled)).active {
+      --arvo-toggle-btn-bg-color: var(--arvo-color-s-theme-active-1);
+      --arvo-toggle-btn-text-color: var(--arvo-color-t-active-inverse);
+      --arvo-toggle-btn-icon-color: var(--arvo-color-i-active-inverse);
+      --arvo-toggle-btn-border-color: transparent;
+    }
+
+    &:disabled,
+    &.is-disabled {
+      --arvo-toggle-btn-border-color: var(--arvo-color-b-disabled);
+    }
+  }
+
+  // -- Toggle motion (scale-grow on the icon) ----------------------------
+  // The icon scales 1 -> 1.12 -> 1 once each time the toggle flips on.
+  // The animation runs on `.active` so it fires when the consumer flips
+  // `isSelected` (controlled) AND when the user clicks (uncontrolled).
+  // Honors `prefers-reduced-motion`.
+  &.active &__inner {
+    animation: arvo-toggle-grow $arvo-duration-medium $arvo-ease-emphasized;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &.active &__inner {
+      animation: none;
+    }
+  }
+}

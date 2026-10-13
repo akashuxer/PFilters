@@ -1,0 +1,291 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/typography' as *;
+@use '../../mixins/loading' as *;
+
+// Banner Alert component styles
+// BEM Block: .arvo-bnr-alert
+// Abbreviation: bnr-alert
+// Category: Feedback
+//
+// Persistent inline alert banner. Six semantic types (positive, info, neutral,
+// warning, negative, block) controlling left-border color, background tint,
+// title/icon color, and icon glyph. Two layout modes: default (title + multi-
+// line message + optional link) and --compact (message only, tighter padding).
+// Optionally dismissible via a 16px bespoke close button on the right.
+//
+// See descriptors/banner-alert.json for the full spec.
+//
+// Loading Pattern: A (single shimmer overlay across the entire banner).
+
+.arvo-bnr-alert {
+  // -- Dynamic CSS variables (per-type only) ---------------------------------
+  // Defaults match the `info` type. Each type modifier overrides all four.
+  --arvo-bnr-alert-bg: var(--arvo-color-s-info-subtle);
+  --arvo-bnr-alert-border-color: var(--arvo-color-b-info);
+  --arvo-bnr-alert-title-color: var(--arvo-color-t-info-dark);
+  --arvo-bnr-alert-icon-color: var(--arvo-color-i-info-dark);
+
+  // -- Base layout -----------------------------------------------------------
+  position: relative; // anchor for loading overlay
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: var(--arvo-bnr-alert-bg);
+  border-left: $arvo-border-2 solid var(--arvo-bnr-alert-border-color);
+  padding-inline-end: $arvo-space-12;
+
+  // -- Dismiss animation -----------------------------------------------------
+  // The banner collapses from bottom to top on dismiss: opacity fades, the
+  // host slides slightly upward, and the host's max-height (locked to its
+  // current pixel height by the JS/React layer just before the .is-closing
+  // class is applied) transitions to 0 so surrounding layout reflows
+  // smoothly into the freed space.
+  overflow: hidden;
+  transition:
+    $arvo-motion-feedback,
+    max-height $arvo-duration-medium $arvo-ease-simple;
+
+  &.is-closing {
+    opacity: 0;
+    transform: $arvo-transform-banner-dismiss-exit;
+    pointer-events: none;
+  }
+
+  // -- Loading state (Pattern A) ---------------------------------------------
+  // Mixin self-wraps in `&.loading` and applies the shimmer overlay,
+  // pointer-events: none, position: relative, and overflow: hidden.
+  @include loading-overlay-a;
+
+  // -- Elements --------------------------------------------------------------
+
+  &__ico {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    padding-block: $arvo-space-12;
+    padding-inline-start: calc($arvo-space-16 - $arvo-space-2);
+    padding-inline-end: $arvo-space-4;
+
+    &::before {
+      font-family: $o9con;
+      font-size: 16px;
+      line-height: 1;
+      color: var(--arvo-bnr-alert-icon-color);
+    }
+  }
+
+  &__content {
+    flex: 1 1 auto;
+    min-width: 0; // allow children to truncate inside flex row
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-16;
+    padding-block: $arvo-space-12;
+  }
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-4;
+    min-width: 0;
+  }
+
+  &__title {
+    @include arvo-font-h14-m;
+    color: var(--arvo-bnr-alert-title-color);
+    margin: 0;
+    // 2-line clamp with ellipsis. Tooltip on truncation is wired by the
+    // `attachTitleTruncationTooltip` shared util in @arvo/utils.
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+  }
+
+  &__msg {
+    @include arvo-font-p12-r;
+    color: var(--arvo-color-t-secondary);
+    margin: 0;
+    word-break: break-word;
+  }
+
+  // Action row: outline button + inline link, side by side. Only rendered
+  // in default (non-compact) mode when at least one of `button` / `link`
+  // is configured.
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: $arvo-space-16;
+  }
+
+  &__btn {
+    flex: 0 0 auto;
+    align-self: flex-start;
+  }
+
+  &__link {
+    @include arvo-font-l12-ru;
+    color: var(--arvo-color-t-info-dark);
+    align-items: center;
+  }
+
+  &__close {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    margin-block-start: $arvo-space-12;
+    margin-inline-start: $arvo-space-8;
+    margin-inline-end: $arvo-space-12;
+
+    @include hover {
+      &:hover:where(:not(:disabled):not(.is-disabled)) {
+        --arvo-btn-bg-color: transparent;
+        --arvo-btn-icon-color: var(--arvo-color-i-primary);
+      }
+    }
+  }
+
+  // When the close button IS rendered, the close button owns the right
+  // inset; suppress the container right padding so the layout stays
+  // visually consistent across dismissible / non-dismissible variants.
+  &:has(> .arvo-bnr-alert__close) {
+    padding-inline-end: 0;
+  }
+
+  // Multi-line content rebalancing: when the content is taller than a
+  // single line (title + msg, or msg + actions), pin the icon to the
+  // top of the row so the glyph aligns with the title rather than
+  // floating in the middle of the column.
+  &:has(.arvo-bnr-alert__title),
+  &:has(.arvo-bnr-alert__actions) {
+    align-items: flex-start;
+  }
+
+  // -- Type modifiers --------------------------------------------------------
+
+  &--positive {
+    --arvo-bnr-alert-bg: var(--arvo-color-s-positive-subtle);
+    --arvo-bnr-alert-border-color: var(--arvo-color-b-positive);
+    --arvo-bnr-alert-title-color: var(--arvo-color-t-positive);
+    --arvo-bnr-alert-icon-color: var(--arvo-color-i-positive);
+
+    .arvo-bnr-alert__ico::before {
+      content: '\ec1b'; // o9con-check-circle
+    }
+  }
+
+  &--info {
+    --arvo-bnr-alert-bg: var(--arvo-color-s-info-subtle);
+    --arvo-bnr-alert-border-color: var(--arvo-color-b-info);
+    --arvo-bnr-alert-title-color: var(--arvo-color-t-info-dark);
+    --arvo-bnr-alert-icon-color: var(--arvo-color-i-info-dark);
+
+    .arvo-bnr-alert__ico::before {
+      content: '\ed71'; // o9con-info-circle-filled
+    }
+  }
+
+  &--neutral {
+    --arvo-bnr-alert-bg: var(--arvo-color-s-layer-04);
+    --arvo-bnr-alert-border-color: var(--arvo-color-b-neutral);
+    --arvo-bnr-alert-title-color: var(--arvo-color-t-neutral);
+    --arvo-bnr-alert-icon-color: var(--arvo-color-i-neutral);
+
+    .arvo-bnr-alert__ico::before {
+      content: '\ebe2'; // o9con-speaker (matches Badge + Toast)
+    }
+  }
+
+  &--warning {
+    --arvo-bnr-alert-bg: var(--arvo-color-s-warning-subtle);
+    --arvo-bnr-alert-border-color: var(--arvo-color-b-warning);
+    --arvo-bnr-alert-title-color: var(--arvo-color-t-warning);
+    --arvo-bnr-alert-icon-color: var(--arvo-color-i-warning);
+
+    .arvo-bnr-alert__ico::before {
+      content: '\ed72'; // o9con-exclamation-triangle-filled
+    }
+  }
+
+  &--negative {
+    --arvo-bnr-alert-bg: var(--arvo-color-s-negative-subtle);
+    --arvo-bnr-alert-border-color: var(--arvo-color-b-negative);
+    --arvo-bnr-alert-title-color: var(--arvo-color-t-negative);
+    --arvo-bnr-alert-icon-color: var(--arvo-color-i-negative);
+
+    .arvo-bnr-alert__ico::before {
+      content: '\edd9'; // o9con-blocker-action-filled-alt
+    }
+  }
+
+  &--block {
+    // Shares negative's color tokens, distinct icon glyph + smaller size.
+    --arvo-bnr-alert-bg: var(--arvo-color-s-negative-subtle);
+    --arvo-bnr-alert-border-color: var(--arvo-color-b-negative);
+    --arvo-bnr-alert-title-color: var(--arvo-color-t-negative);
+    --arvo-bnr-alert-icon-color: var(--arvo-color-i-negative);
+
+    .arvo-bnr-alert__ico::before {
+      content: '\ed75'; // o9con-blocker-action-filled
+    }
+  }
+
+  &.has-icon-override .arvo-bnr-alert__ico::before {
+    content: none;
+  }
+
+  .arvo-bnr-alert__ico > i {
+    font-size: 16px;
+    line-height: 1;
+    color: var(--arvo-bnr-alert-icon-color);
+  }
+
+  // -- Compact layout modifier -----------------------------------------------
+  // Structural padding overrides only -- colors and type behavior are
+  // unaffected. In compact mode the consumer renders __msg directly inside
+  // __content (no __copy, __title, or __link).
+
+  &--compact {
+
+    .arvo-bnr-alert__ico {
+      padding-block: $arvo-space-8;
+    }
+    .arvo-bnr-alert__ico::before {
+      font-size: $arvo-icon-14;
+    }
+
+    .arvo-bnr-alert__content {
+      gap: 0;
+      padding-block: $arvo-space-8;
+    }
+
+    .arvo-bnr-alert__close {
+      margin-block-start: $arvo-space-8;
+    }
+
+  }
+
+  // -- No-title modifier ----------------------------------------------------
+  // When there is no title (compact always, or non-compact with title omitted),
+  // nudge the message down 1px so the text baseline aligns with the icon glyph.
+
+  &--no-title:not(.arvo-bnr-alert--compact) {
+    .arvo-bnr-alert__msg {
+      padding-top: 1px;
+    }
+  }
+
+  // -- Reduced motion --------------------------------------------------------
+  // Skip the dismiss transition; the banner is removed instantly when the
+  // .is-closing class is added (the JS/React layer short-circuits the
+  // transitionend wait and detaches the element synchronously in this case).
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}

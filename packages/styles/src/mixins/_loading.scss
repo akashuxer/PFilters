@@ -1,0 +1,136 @@
+// Shared loading state mixins. Consult SHARED-PATTERNS-REGISTRY.json `usedBy`
+// entries on the `loading-overlay-a` / `loading-skeleton-b` patterns for the
+// canonical consumer list.
+//
+// Many simple components prefer the per-element `loading-element-shimmer`
+// mixin below (applied to __field / __lbl / etc.) instead of pulling in the
+// full `loading-overlay-a`; the skeleton variant is currently consumed via
+// `panel-shell` only.
+//
+// Parent propagation: [data-arvo-loading="true"] on a container element triggers
+// loading on all descendant arvo components unless opted out via
+// [data-arvo-loading-ignore="true"].
+
+@use '../../../tokens/src/scss/all' as *;
+
+// ---------------------------------------------------------------------------
+// loading-overlay-a
+// Shimmer overlay covering the full component for atomic/simple components.
+// Include in the component block selector. The .loading class triggers the overlay.
+//
+// Consumers may override these CSS custom properties on their block selector:
+//   --arvo-loading-bg-color       (default: var(--arvo-color-s-disabled))
+//   --arvo-loading-shimmer-color  (default: rgba(255, 255, 255, 0.3))
+//   --arvo-loading-shimmer-speed  (default: 1.5s)
+// ---------------------------------------------------------------------------
+
+@keyframes arvo-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+// Reusable shimmer pseudo-element mixin for per-element loading.
+// Apply to any element that needs its own shimmer overlay (e.g. __field, __lbl).
+// Uses will-change + translateZ(0) for GPU-composited animation.
+@mixin loading-element-shimmer {
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-color: var(--arvo-loading-bg-color, var(--arvo-color-s-disabled));
+    border-radius: inherit;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--arvo-loading-shimmer-color, rgba(255, 255, 255, 0.3)) 50%,
+      transparent 100%
+    );
+    animation: arvo-shimmer var(--arvo-loading-shimmer-speed, 1.5s) infinite linear;
+    will-change: transform;
+    transform: translateZ(0);
+    border-radius: inherit;
+  }
+}
+
+@mixin loading-overlay-a {
+  &.loading {
+    position: relative;
+    pointer-events: none;
+    overflow: hidden;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-color: var(--arvo-loading-bg-color, var(--arvo-color-s-disabled));
+      border-radius: inherit;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--arvo-loading-shimmer-color, rgba(255, 255, 255, 0.3)) 50%,
+        transparent 100%
+      );
+      animation: arvo-shimmer var(--arvo-loading-shimmer-speed, 1.5s) infinite linear;
+      will-change: transform;
+      transform: translateZ(0);
+      border-radius: inherit;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// loading-skeleton-b
+// Structured skeleton for complex components. Replaces __body content with
+// shimmer rows while hiding __sticky and __footer. Activated by .loading on
+// the host block. Currently consumed via the `panel-shell` shared pattern.
+// ---------------------------------------------------------------------------
+
+@mixin loading-skeleton-b($block) {
+  &.loading {
+    pointer-events: none;
+
+    .#{$block}__skeleton {
+      display: flex;
+      flex-direction: column;
+      gap: $arvo-space-8;
+      padding: $arvo-space-16 $arvo-space-12;
+
+      &__row {
+        height: 16px;
+        border-radius: 4px;
+        @include loading-element-shimmer;
+
+        &--wide {
+          width: 80%;
+        }
+
+        &--medium {
+          width: 60%;
+        }
+
+        &--narrow {
+          width: 40%;
+        }
+      }
+    }
+  }
+}

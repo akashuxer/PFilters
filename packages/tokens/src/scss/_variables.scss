@@ -1,0 +1,11 @@
+// SCSS variables only -- no CSS output.
+// Use this when you need token values at compile time but don't want :root CSS emitted.
+@forward './colors';
+@forward './spacing';
+@forward './typography';
+@forward './widths';
+@forward './animation';
+@forward './borders';
+@forward './effects';
+@forward './icon-size';
+@forward './illustration-size';

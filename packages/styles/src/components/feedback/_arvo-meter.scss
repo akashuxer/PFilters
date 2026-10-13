@@ -1,0 +1,43 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/typography' as *;
+
+.arvo-meter {
+  --arvo-meter-height: 8px;
+  --arvo-meter-gap: #{$arvo-space-8};
+  --arvo-meter-fill: var(--arvo-color-i-theme);
+  --arvo-meter-track: var(--arvo-color-s-layer-02);
+  --arvo-meter-label-color: var(--arvo-color-t-primary);
+  --arvo-meter-value-color: var(--arvo-color-t-secondary);
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--arvo-meter-gap);
+  color: var(--arvo-meter-label-color);
+
+  &--sm { --arvo-meter-height: 6px; --arvo-meter-gap: #{$arvo-space-6}; }
+  &--md { --arvo-meter-height: 8px; --arvo-meter-gap: #{$arvo-space-8}; }
+  &--lg { --arvo-meter-height: 12px; --arvo-meter-gap: #{$arvo-space-10}; }
+  &--theme { --arvo-meter-fill: var(--arvo-color-i-theme); }
+  &--positive { --arvo-meter-fill: var(--arvo-color-i-positive); }
+  &--warning { --arvo-meter-fill: var(--arvo-color-i-warning); }
+  &--negative { --arvo-meter-fill: var(--arvo-color-i-negative); }
+  &--inline { flex-direction: row; align-items: center; }
+  &--inline &__header { flex: 0 1 42%; }
+  &__header { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: #{$arvo-space-8}; }
+  &__label { @include arvo-font-p14-r; min-width: 0; overflow: hidden; color: var(--arvo-meter-label-color); text-overflow: ellipsis; white-space: nowrap; }
+  &__value { @include arvo-font-p14-r; flex: 0 0 auto; color: var(--arvo-meter-value-color); font-variant-numeric: tabular-nums; }
+  &__track { position: relative; flex: 1 1 auto; min-width: 72px; height: var(--arvo-meter-height); overflow: hidden; border-radius: $arvo-radius-circle; background: var(--arvo-meter-track); }
+  &__fill { display: block; height: 100%; border-radius: inherit; background: var(--arvo-meter-fill); transition: width 240ms ease; }
+  &.is-indeterminate &__fill { width: 42% !important; animation: arvo-meter-indeterminate $arvo-motion-progress-linear-indeterminate; }
+  &--sm &__label, &--sm &__value { @include arvo-font-p12-r; }
+  &--lg &__label, &--lg &__value { @include arvo-font-p16-r; }
+}
+
+@keyframes arvo-meter-indeterminate {
+  0% { transform: translateX(-110%); }
+  55%, 100% { transform: translateX(250%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arvo-meter__fill { animation: none !important; transition: none; }
+}

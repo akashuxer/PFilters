@@ -1,0 +1,133 @@
+@use '../../../tokens/src/scss/all' as *;
+@use 'hover' as *;
+
+// Shared resize-handle mixin -- corner resize grip(s) for overlay panels that
+// support pointer-driven resize. Composes the `createResizeHandle` utility
+// from @arvo/core (the consumer mounts the handle elements via that util) and
+// owns ONLY the visual chrome:
+//
+//   - `__resize` positioning container (absolute inset:0 overlay on the panel)
+//   - `__handle` element + per-corner `--br / --bl / --tr / --tl` modifiers
+//   - hover-reveal + focus-within reveal (--with-resize) + `.is-resizing` pin
+//
+// The mixin is parametrized on the consumer's BEM `$block` so each consumer
+// renders its own block-scoped selectors (e.g. `.arvo-popover__handle`,
+// `.arvo-hpop__handle`). Visibility (auto-hide near viewport edge) is driven
+// by `createResizeHandle.updateVisibility()` setting inline `style.display`.
+//
+// CONTRACT
+// --------
+// Call `@include resize-handle($block)` INSIDE the consumer's BEM block so the
+// `&--with-resize` rule and `&.is-resizing` rule resolve against the host
+// (`.{block}`). The mixin emits both the bare `__resize` / `__handle` rules
+// AND the `--with-resize` reveal + `.is-resizing` pin.
+//
+// EXAMPLE
+// -------
+//   .arvo-popover {
+//     @include resize-handle('arvo-popover');
+//   }
+//
+@mixin resize-handle($block) {
+  // -- __resize ------------------------------------------------------------
+  &__resize {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  // -- __handle ------------------------------------------------------------
+  // The createResizeHandle util writes the SVG with `stroke="currentColor"`
+  // so the handle picks up `color: var(--arvo-color-b-divider)` for both
+  // light and dark modes. The bottom-right corner is the source orientation;
+  // other corners flip via SVG transform so we ship one path geometry.
+  &__handle {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 11px;
+    height: 11px;
+    pointer-events: auto;
+    z-index: 2;
+    opacity: 0;
+    color: var(--arvo-color-b-divider);
+    transition: opacity $arvo-duration-fast $arvo-ease-simple;
+
+    > svg {
+      width: 11px;
+      height: 11px;
+      pointer-events: none;
+      display: block;
+    }
+
+    &--br {
+      bottom: 2px;
+      right: 2px;
+      cursor: nwse-resize;
+    }
+
+    &--bl {
+      bottom: 2px;
+      left: 2px;
+      cursor: nesw-resize;
+
+      > svg {
+        transform: scaleX(-1);
+      }
+    }
+
+    &--tr {
+      top: 2px;
+      right: 2px;
+      cursor: nesw-resize;
+
+      > svg {
+        transform: scaleY(-1);
+      }
+    }
+
+    &--tl {
+      top: 2px;
+      left: 2px;
+      cursor: nwse-resize;
+
+      > svg {
+        transform: scale(-1, -1);
+      }
+    }
+
+    // Visibility (auto-hide near viewport edge) is controlled by
+    // createResizeHandle setting inline `style.display = 'none'`.
+  }
+
+  @include hover {
+    &:hover .#{$block}__handle {
+      opacity: 1;
+    }
+  }
+
+  // Keyboard discoverability: when the panel is keyboard-focused (or
+  // explicitly opted into resize via --with-resize) reveal handles so they
+  // are not hover-only. Mirrors :hover behavior above.
+  &--with-resize:focus-within .#{$block}__handle {
+    opacity: 1;
+  }
+
+  // -- State: is-resizing --------------------------------------------------
+  &.is-resizing {
+    user-select: none;
+
+    .#{$block}__handle {
+      opacity: 1;
+    }
+
+    .#{$block}__handle--bl {
+      cursor: nesw-resize;
+    }
+
+    .#{$block}__handle--br {
+      cursor: nwse-resize;
+    }
+  }
+}

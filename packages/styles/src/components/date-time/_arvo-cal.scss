@@ -1,0 +1,460 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/calendar-grid' as cal-grid;
+@use '../../mixins/member-tile-grid' as mtg;
+@use '../../mixins/list-item' as li;
+@use '../../mixins/hover' as *;
+
+// Calendar component styles
+// BEM Block: .arvo-cal
+// Abbreviation: cal
+// Category: DateTime
+// Loading Pattern: none (composed inside loading-capable parent overlays)
+//
+// Internal calendar grid that renders one view at a time (days / months /
+// quarters / years / member tiles). Calendar OWNS NO HEADER CHROME --
+// prev/next/today/zoom/switch live in CalendarNav, the parent picker's header
+// sub-component (ADR-3). Fixed-dimension cells per ADR-8 keep the popover
+// width constant across view modes.
+
+// --- .arvo-cal ---------------------------------------------------------------
+
+.arvo-cal {
+
+  // -- CSS variable defaults --------------------------------------------------
+  // Cells
+  --arvo-cal-day-cell-w: 40px;
+  --arvo-cal-day-cell-h: 40px;
+  --arvo-cal-period-cell-w: 70px; // 80px when --show-weeks is active
+  --arvo-cal-period-cell-h: 70px; // 80px when --show-weeks is active
+  --arvo-cal-member-tile-w: 83.5px;
+  --arvo-cal-member-tile-h: 80px;
+
+  // Grid (body) -- sized for the worst-case day view: 1 weekday header row +
+  // 6 day rows at 40px each = 280px. Non-day views render fewer / shorter
+  // rows so the body soaks up the difference as whitespace at the bottom,
+  // keeping the popover dimensions constant across mode switches (ADR-8).
+  --arvo-cal-body-h: 280px;
+  --arvo-cal-body-w: 280px; // days w/o weeks. Modifiers override below.
+
+  // Today / current-member indicator (6x6 square below the day text, per
+  // the Date-tile figma node 30438:60192). Filled with theme color on
+  // unselected cells, inverse color on selected cells so it stays visible.
+  --arvo-cal-cell-today-size: 6px;
+  --arvo-cal-cell-today-offset: 4px;
+
+  // Color -- tokens bound to the Figma date-tile node (30438:60192) and the
+  // range calendar-wrapper (31981:24624): default text t-secondary, selected
+  // tile s-theme-active-1 + t-inverse, in-range tile s-theme-active-4.
+  --arvo-cal-cell-text-color: var(--arvo-color-t-secondary);
+  --arvo-cal-cell-bg: transparent;
+  --arvo-cal-cell-bg-hover: var(--arvo-color-s-theme-hover-3);
+  --arvo-cal-cell-bg-selected: var(--arvo-color-s-theme-active-1);
+  --arvo-cal-cell-bg-range: var(--arvo-color-s-theme-active-4);
+  --arvo-cal-cell-text-selected: var(--arvo-color-t-inverse);
+  --arvo-cal-cell-today-color: var(--arvo-color-s-theme);
+  --arvo-cal-cell-today-color-selected: var(--arvo-color-s-direct);
+
+  // -- Root layout ------------------------------------------------------------
+  display: inline-block;
+  box-sizing: border-box;
+  width: var(--arvo-cal-body-w);
+  font-family: var(--o9-font-family);
+
+  // -- __grid (outer grid container) -----------------------------------------
+  &__grid {
+    @include cal-grid.calendar-grid-base;
+    height: var(--arvo-cal-body-h);
+    // Pin rows to the top so non-day views (which render fewer rows than
+    // days) leave the extra space as whitespace at the bottom rather than
+    // distributing it between rows.
+    align-content: start;
+  }
+
+  // -- __row (week / period / tile row) --------------------------------------
+  // ARIA-only row wrapper. calendar-grid-base also targets > [role="row"], but
+  // we duplicate the rule on the className so consumers using __row without
+  // role="row" still get the pass-through.
+  &__row {
+    display: contents;
+  }
+
+  // -- __weekday-hdr (Su/Mo/Tu... header cell, days view only) ---------------
+  // Figma calendar-wrapper (31980:21304): 14px regular, t-secondary, NOT
+  // uppercased -- the labels are already 2-character mixed-case (Su, Mo, ...).
+  &__weekday-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: var(--arvo-cal-day-cell-w);
+    height: var(--arvo-cal-day-cell-h);
+    color: var(--arvo-color-t-secondary);
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-regular;
+    user-select: none;
+  }
+
+  // -- __week (week-number column cell, days view + showWeeks) ---------------
+  // Row cells show the week number at 12px; the header cell (--hdr) shows the
+  // "Week" label at 14px to align with the weekday header row. Both t-placeholder.
+  &__week {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: var(--arvo-cal-day-cell-w);
+    height: var(--arvo-cal-day-cell-h);
+    color: var(--arvo-color-t-placeholder);
+    font-size: $arvo-font-size-12;
+    font-weight: $arvo-regular;
+    user-select: none;
+
+    &--hdr {
+      font-size: $arvo-font-size-14;
+    }
+  }
+
+  // -- __cell (selectable cell) ----------------------------------------------
+  // State matrix (background / text color / today indicator / edge / focus
+  // outline). All values are token-bound; ordering matters because state
+  // selectors share specificity (later rules win on cascade). The
+  // key-highlight "edge" is a 1px inset box-shadow rather than a real border
+  // so the cell layout box never shifts when the class toggles.
+  //   default                 transparent / t-secondary  / s-theme   / -                / -
+  //   hover                   s-theme-hover-3 / t-primary / t-primary / -               / -
+  //   focus-visible           transparent / t-theme-hover / s-theme  / -                / 1px b-theme-focus, -2px
+  //   selected                s-theme-active-1 / t-inverse / s-direct / -               / -
+  //   selected + hover        s-theme-hover-1 / t-inverse / s-direct / -                / -
+  //   selected + focus        s-theme-active-1 / t-inverse / s-direct / -               / 1px b-focus-inverse, -2px
+  //   in-range                s-theme-active-4 / t-secondary / s-theme / -              / -
+  //   disabled                transparent / t-disabled / s-theme    / -                 / -
+  //   key-highlight           default     + 1px b-divider edge
+  //   key-highlight + hover   s-theme-hover-3 / t-primary / s-theme / 1px b-theme-hover / -
+  //   key-highlight + focus   s-theme-hover-3 / t-primary / s-theme / 1px b-theme-hover / 1px b-theme-focus, -1px (day) | -3px (non-day)
+  //   in-range + key-highlight in-range bg / t-secondary / s-theme / 1px b-divider      / -
+  &__cell {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    // Cell dimensions adopt --arvo-cal-cell-size, owned by calendar-grid.
+    // Day view = 40px (mixin default); non-day views set it to
+    // var(--arvo-cal-period-cell-w) on the grid (70px / 80px); members view
+    // overrides width/height again via member-tile-grid-tile.
+    width: var(--arvo-cal-cell-size);
+    height: var(--arvo-cal-cell-size);
+    color: var(--arvo-cal-cell-text-color);
+    background-color: var(--arvo-cal-cell-bg);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color $arvo-duration-fast $arvo-ease-simple;
+
+    // Hover -- hover-capable devices only (not disabled, not already selected).
+    // Hover repaints background AND text color, plus a darker today/current
+    // indicator so the dot stays visible against the lighter hover wash.
+    @include hover {
+      &:not(.is-disabled):not(.selected):hover {
+        background-color: var(--arvo-cal-cell-bg-hover);
+        color: var(--arvo-color-t-primary);
+      }
+
+      &.today:not(.is-disabled):not(.selected):hover::after,
+      &.current-member:not(.is-disabled):not(.selected):hover::after {
+        background-color: var(--arvo-color-t-primary);
+      }
+    }
+
+    // Keyboard focus ring -- drawn INSIDE the cell so the layout box never
+    // shifts when focus moves across the grid (roving tabindex).
+    &:focus-visible {
+      outline: 1px solid var(--arvo-color-b-theme-focus);
+      outline-offset: -2px;
+    }
+
+    // Focus-visible text color shifts to t-theme-hover for non-selected,
+    // non-disabled cells so the focused day reads as the active focus target.
+    &:focus-visible:not(.selected):not(.is-disabled) {
+      color: var(--arvo-color-t-theme-hover);
+    }
+
+    // ---- Cell state classes (bare, applied on .arvo-cal__cell) -------------
+
+    &.selected {
+      background-color: var(--arvo-cal-cell-bg-selected);
+      color: var(--arvo-cal-cell-text-selected);
+
+      // Selected day text is Medium weight per the Figma date-tile (30438:60203).
+      .arvo-cal__cell-label { font-weight: $arvo-medium; }
+    }
+
+    // Selected hover -- distinct theme-hover-1 wash so hovering a selected
+    // endpoint feels reactive even though the base color is already filled.
+    @include hover {
+      &.selected:not(.is-disabled):hover {
+        background-color: var(--arvo-color-s-theme-hover-1);
+      }
+    }
+
+    // Selected focus -- inverse focus ring color so the outline stays visible
+    // against the dark selected fill.
+    &.selected:focus-visible {
+      outline-color: var(--arvo-color-b-focus-inverse);
+    }
+
+    &.in-range {
+      // No border, no text-color override -- intentional per descriptor.
+      background-color: var(--arvo-cal-cell-bg-range);
+    }
+
+    // Range endpoints keep the .selected look; the --range behavior modifier
+    // flattens the inside edge so endpoints visually merge with .in-range
+    // neighbors. See &--range block below for the radius zero-outs.
+    &.range-start {
+      border-start-end-radius: 0;
+      border-end-end-radius: 0;
+    }
+
+    &.range-end {
+      border-start-start-radius: 0;
+      border-end-start-radius: 0;
+    }
+
+    // Adjacent-month day spillover -- dimmed via the shared mixin opacity.
+    &.outside-month {
+      @include cal-grid.calendar-grid-outside;
+    }
+
+    // Today / current-member: a 6x6 square indicator centred horizontally
+    // below the day text (Date-tile figma node 30438:60192). Implemented as
+    // an absolutely positioned ::after so it adds no layout cost and stacks
+    // cleanly with `.selected` (where the square flips to the inverse color
+    // so it stays visible against the dark selected background).
+    &.today::after,
+    &.current-member::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: var(--arvo-cal-cell-today-offset);
+      transform: translateX(-50%);
+      width: var(--arvo-cal-cell-today-size);
+      height: var(--arvo-cal-cell-today-size);
+      background-color: var(--arvo-cal-cell-today-color);
+      pointer-events: none;
+    }
+
+    &.selected.today::after,
+    &.selected.current-member::after {
+      background-color: var(--arvo-cal-cell-today-color-selected);
+    }
+
+    // ---- Key-highlight ----------------------------------------------------
+    // Outlines tiles whose date matches a member's keyDate (days view, and
+    // months view when frequency is quarter or year). Drawn with an inset
+    // box-shadow rather than a real border so the cell content/indicator
+    // positioning never shifts when the class toggles.
+    &.key-highlight:not(.selected):not(.is-disabled) {
+      box-shadow: inset 0 0 0 1px var(--arvo-color-b-divider);
+    }
+
+    // Key-highlight hover -- background and text color match the default
+    // hover; the simulated border darkens to b-theme-hover.
+    @include hover {
+      &.key-highlight:not(.selected):not(.is-disabled):hover {
+        background-color: var(--arvo-cal-cell-bg-hover);
+        color: var(--arvo-color-t-primary);
+        box-shadow: inset 0 0 0 1px var(--arvo-color-b-theme-hover);
+      }
+    }
+
+    // Key-highlight focus -- same hover wash + darker simulated border, plus
+    // the focus outline (color inherited from &:focus-visible). Day-tile
+    // offset is -1px so the 1px outline tucks just inside the 1px shadow.
+    // Non-day tiles get -3px below for visual breathing room (set per
+    // view-mode modifier).
+    &.key-highlight:not(.selected):not(.is-disabled):focus-visible {
+      background-color: var(--arvo-cal-cell-bg-hover);
+      color: var(--arvo-color-t-primary);
+      box-shadow: inset 0 0 0 1px var(--arvo-color-b-theme-hover);
+      outline-offset: -1px;
+    }
+
+    // In-range + key-highlight: keep the in-range background/text but show
+    // the divider edge (NOT the b-theme-hover variant -- the cell is not
+    // being hovered, just sitting between range endpoints).
+    &.in-range.key-highlight:not(.selected):not(.is-disabled) {
+      box-shadow: inset 0 0 0 1px var(--arvo-color-b-divider);
+    }
+
+    // ---- Disabled (placed AFTER selected/in-range so it overrides cascade) -
+
+    // Disabled cells flatten to t-disabled text on a transparent background.
+    // The today indicator stays s-theme (overridden below to beat the
+    // selected.today rule's s-direct). pointer-events:none keeps hover
+    // styles from triggering even before the :not(.is-disabled) guards.
+    &.is-disabled {
+      background-color: transparent;
+      color: var(--arvo-color-t-disabled);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    // Disabled today indicator -- forces s-theme regardless of selected.
+    // Same specificity as &.selected.today::after; placed AFTER it so the
+    // cascade resolves in disabled's favor when both classes are present.
+    &.is-disabled.today::after,
+    &.is-disabled.current-member::after {
+      background-color: var(--arvo-color-s-theme);
+    }
+
+    // Range hover preview -- ghost background matches .in-range color
+    // (intentional; the preview reads as a tentative range extension).
+    &.preview:not(.selected) {
+      background-color: var(--arvo-cal-cell-bg-range);
+    }
+  }
+
+  // -- __cell-label (primary text in cell) -----------------------------------
+  &__cell-label {
+    font-size: $arvo-font-size-14;
+    font-weight: $arvo-regular;
+    line-height: 1;
+  }
+
+  // -- __cell-sublabel (secondary text, e.g. member-week date range) ---------
+  &__cell-sublabel {
+    margin-top: 2px;
+    font-size: $arvo-font-size-10;
+    line-height: 1;
+    color: var(--arvo-color-t-secondary);
+  }
+
+  // -- View-mode modifiers ----------------------------------------------------
+
+  // Day view: 7 cols x 40px cells, 6 implicit rows = 240px body.
+  &--days {
+    .arvo-cal__grid {
+      @include cal-grid.calendar-grid-day;
+    }
+  }
+
+  // Months view: 4 cols x 3 rows of period cells (70px / 80px).
+  &--months {
+    .arvo-cal__grid {
+      @include cal-grid.calendar-grid-month-quarter-year;
+      --arvo-cal-cell-size: var(--arvo-cal-period-cell-w);
+    }
+  }
+
+  // Quarters view: 4 cols x 1 row of period cells.
+  &--quarters {
+    .arvo-cal__grid {
+      @include cal-grid.calendar-grid-month-quarter-year;
+      --arvo-cal-cell-size: var(--arvo-cal-period-cell-w);
+    }
+  }
+
+  // Years view: 4 cols x 3 rows of period cells.
+  &--years {
+    .arvo-cal__grid {
+      @include cal-grid.calendar-grid-month-quarter-year;
+      --arvo-cal-cell-size: var(--arvo-cal-period-cell-w);
+    }
+  }
+
+  // Non-day key-highlight focus offset -- larger tiles (month/quarter/year/
+  // member) carry a -3px outline-offset for visual breathing room. The day
+  // tile keeps the -1px offset defined on &__cell.key-highlight:focus-visible.
+  // (Per descriptor, key-highlight is only applied in days view and months
+  // view with frequency=quarter|year, but the offset rule is written
+  // defensively for all non-day tile sizes.)
+  &--months .arvo-cal__cell.key-highlight:not(.selected):not(.is-disabled):focus-visible,
+  &--quarters .arvo-cal__cell.key-highlight:not(.selected):not(.is-disabled):focus-visible,
+  &--years .arvo-cal__cell.key-highlight:not(.selected):not(.is-disabled):focus-visible,
+  &--members .arvo-cal__cell.key-highlight:not(.selected):not(.is-disabled):focus-visible {
+    outline-offset: -3px;
+  }
+
+  // Members view: 8-col tile grid (8 x 83.5px = 668px) with 3-row soft-snap.
+  // The grid element doubles as the scroll container -- the two mtg mixins
+  // (base + row-snap) compose without conflict on the same node.
+  &--members {
+    --arvo-cal-body-w: 668px;
+
+    .arvo-cal__grid {
+      // Wire the calendar's member-tile vars to the shared mtg vars so the
+      // base mixin builds the 8-col grid at the calendar's tile dimensions
+      // and the row-snap height tracks the calendar body height.
+      --arvo-mtg-tile-width: var(--arvo-cal-member-tile-w);
+      --arvo-mtg-tile-height: var(--arvo-cal-member-tile-h);
+      --arvo-mtg-row-snap: var(--arvo-cal-body-h);
+      @include mtg.member-tile-grid-base;
+      @include mtg.member-tile-grid-row-snap;
+    }
+
+    .arvo-cal__cell {
+      // Route the list-item hover styles through the calendar's hover var so
+      // the member tile and other cells share one hover color.
+      --arvo-list-item-bg-hover: var(--arvo-cal-cell-bg-hover);
+      --arvo-list-item-text-hover-color: inherit;
+      @include mtg.member-tile-grid-tile;
+      @include li.list-item-states;
+    }
+  }
+
+  // -- Layout modifier --------------------------------------------------------
+
+  // Show-weeks (ADR-8):
+  //   Days view  -> prepends an 8th column for the week number (320px body).
+  //   Non-day    -> period cells widen 70 -> 80 (320px body).
+  //   Members    -> not a valid combination; React/JS layer enforces.
+  &--show-weeks {
+    --arvo-cal-period-cell-w: 80px;
+    --arvo-cal-period-cell-h: 80px;
+    --arvo-cal-body-w: 320px;
+
+    &.arvo-cal--days .arvo-cal__grid {
+      @include cal-grid.calendar-grid-week-col;
+    }
+  }
+
+  // -- Behavior modifier ------------------------------------------------------
+
+  // Range selection visual mode -- flattens the inside edges of the range
+  // endpoints so endpoint + in-range cells read as one contiguous bar.
+  // (No-op until a baseline border-radius is added to .selected; the rule
+  // exists so the radius treatment is wired up for any future endpoint
+  // styling without re-touching the BEM contract.)
+  &--range {
+    .arvo-cal__cell.selected.range-start {
+      border-start-end-radius: 0;
+      border-end-end-radius: 0;
+    }
+
+    .arvo-cal__cell.selected.range-end {
+      border-start-start-radius: 0;
+      border-end-start-radius: 0;
+    }
+  }
+
+  // -- Root state classes -----------------------------------------------------
+
+  &.is-disabled {
+    pointer-events: none;
+    opacity: $arvo-opacity-40;
+  }
+
+  // Read-only: cells remain focusable for keyboard nav but lose pointer
+  // affordances. Hover background is suppressed.
+  &.is-readonly {
+    .arvo-cal__cell {
+      cursor: default;
+    }
+
+    .arvo-cal__cell:hover {
+      background-color: transparent;
+    }
+  }
+}

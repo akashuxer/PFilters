@@ -1,0 +1,314 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+
+// ButtonGroup component styles
+// BEM Block: .arvo-btn-grp
+// Abbreviation: btn-grp
+// Loading Pattern: C (group disables pointer-events + aria-busy; children show Pattern A shimmer)
+
+// --- .arvo-btn-grp ----------------------------------------------------------
+
+.arvo-btn-grp {
+  // -- CSS custom properties ----------------------------------------------
+  --arvo-btn-grp-height: 32px;
+
+  // Active fill colors (primary variant default; overridden by --secondary)
+  --arvo-btn-grp-active-bg: var(--arvo-color-s-theme-active-1);
+  --arvo-btn-grp-active-text: var(--arvo-color-t-inverse);
+  --arvo-btn-grp-active-icon: var(--arvo-color-i-inverse);
+
+  // Active hover fill (primary default; overridden by --secondary)
+  --arvo-btn-grp-active-bg-hover: var(--arvo-color-s-theme-hover-1);
+
+  // Focus-ring colour for the SELECTED segment (primary default = white,
+  // since the fill is dark; overridden by --secondary back to theme-focus).
+  --arvo-btn-grp-active-focus-ring: var(--arvo-color-b-focus-inverse);
+
+  // In single-select the sliding indicator provides the active fill, so
+  // active buttons stay transparent. Multi-select overrides this back to
+  // the real active-bg because each segment carries its own background.
+  --_active-btn-bg: transparent;
+
+  // -- Base layout ------------------------------------------------------
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: var(--arvo-btn-grp-height);
+  position: relative;
+  box-sizing: border-box;
+
+  // -- Child button overrides -------------------------------------------
+  // Override child ArvoButton / ArvoIconButton CSS variables within group scope
+  .arvo-btn,
+  .arvo-icon-btn {
+    --arvo-btn-bg-color: transparent;
+    --arvo-btn-text-color: var(--arvo-color-t-secondary);
+    --arvo-btn-icon-color: var(--arvo-color-i-secondary);
+    --arvo-btn-font-weight: $arvo-regular;
+    --arvo-btn-border-color: transparent;
+
+    border-radius: 0;
+    min-width: auto;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+
+    // Segment colour transitions only -- never width or transform.
+    // Width changes are reserved for the expand-on-select modifier.
+    transition:
+      background-color $arvo-duration-fast $arvo-ease-simple,
+      color $arvo-duration-fast $arvo-ease-simple;
+
+    // Selected segment
+    &.active {
+      --arvo-btn-bg-color: var(--_active-btn-bg);
+      --arvo-btn-text-color: var(--arvo-btn-grp-active-text);
+      --arvo-btn-icon-color: var(--arvo-btn-grp-active-icon);
+      --arvo-btn-font-weight: $arvo-medium;
+    }
+
+    // Inset focus ring on every segment so it doesn't clip against neighbours.
+    &:focus-visible {
+      outline-offset: -$arvo-space-2;
+      outline-color: var(--arvo-color-b-theme-focus);
+      // Focus mirrors the hover treatment for unselected segments
+      --arvo-btn-bg-color: var(--arvo-color-s-theme-hover-2);
+      --arvo-btn-text-color: var(--arvo-color-t-theme-hover);
+      --arvo-btn-icon-color: var(--arvo-color-i-theme-hover);
+    }
+
+    // Selected segment focus: ring switches to the active-focus-ring colour
+    // (white on dark primary fill; theme-focus on light secondary fill) and
+    // we keep the active fill rather than swapping in the hover-unselected
+    // tint.
+    &.active:focus-visible {
+      outline-color: var(--arvo-btn-grp-active-focus-ring);
+      --arvo-btn-bg-color: var(--arvo-btn-grp-active-bg);
+      --arvo-btn-text-color: var(--arvo-btn-grp-active-text);
+      --arvo-btn-icon-color: var(--arvo-btn-grp-active-icon);
+    }
+
+    @include hover {
+      // Hover: non-active items
+      &:not(:disabled):not(.active):hover {
+        --arvo-btn-bg-color: var(--arvo-color-s-theme-hover-2);
+        --arvo-btn-text-color: var(--arvo-color-t-theme-hover);
+        --arvo-btn-icon-color: var(--arvo-color-i-theme-hover);
+      }
+
+      // Hover: active items
+      &:not(:disabled).active:hover {
+        --arvo-btn-bg-color: var(--arvo-btn-grp-active-bg-hover);
+      }
+    }
+
+    // Disabled items within non-disabled group
+    &:disabled {
+      --arvo-btn-bg-color: transparent;
+      --arvo-btn-text-color: var(--arvo-color-t-disabled);
+      --arvo-btn-icon-color: var(--arvo-color-i-disabled);
+      --arvo-btn-border-color: transparent;
+      cursor: not-allowed;
+    }
+  }
+
+  // -- Sliding indicator (single-select) --------------------------------
+  &__ind {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: var(--arvo-btn-grp-ind-w, 0);
+    transform: translateX(var(--arvo-btn-grp-ind-x, 0));
+    background: var(--arvo-btn-grp-active-bg);
+    pointer-events: none;
+    z-index: 0;
+    transition: $arvo-motion-segmented-control;
+  }
+
+  // -- Size: Small (24px) ----------------------------------------------
+  &--sm {
+    --arvo-btn-grp-height: 24px;
+  }
+
+  // -- Size: Large / default (32px) ------------------------------------
+  &--lg {
+    --arvo-btn-grp-height: 32px;
+  }
+
+  // -- Variant: Secondary ----------------------------------------------
+  // Secondary inverts the primary palette: tinted-blue fill (#e3f2ff) +
+  // theme-active text (#2758ba). Selected hover darkens the tint to
+  // theme-hover-2 (#bbddff). Selected focus uses the standard theme-focus
+  // ring colour (#3d6dcc) since the fill is light.
+  &--secondary {
+    --arvo-btn-grp-active-bg: var(--arvo-color-s-theme-active-2);
+    --arvo-btn-grp-active-text: var(--arvo-color-t-theme-active);
+    --arvo-btn-grp-active-icon: var(--arvo-color-i-theme-active);
+    --arvo-btn-grp-active-bg-hover: var(--arvo-color-s-theme-hover-2);
+    --arvo-btn-grp-active-focus-ring: var(--arvo-color-b-theme-focus);
+  }
+
+  // -- Variant: Outline ------------------------------------------------
+  // Outline reuses primary's segment palette and adds a 1 px neutral border
+  // around the entire row. The border has radius:0 to match the segment
+  // edges; segments themselves draw no extra border.
+  &--outline {
+    border: $arvo-border-1 solid var(--arvo-color-b-divider);
+    border-radius: 0;
+  }
+
+  // -- Modifier: icon-only ---------------------------------------------
+  &--icon-only {
+    .arvo-btn {
+      --arvo-btn-padding-inline: #{$arvo-space-6};
+    }
+  }
+
+  // -- Modifier: multi-select ------------------------------------------
+  // No sliding indicator -- each segment carries its own active fill,
+  // which fades in/out via the base segment colour transition.
+  &--multi {
+    --_active-btn-bg: var(--arvo-btn-grp-active-bg);
+  }
+
+  // -- Modifier: overflow ----------------------------------------------
+  // The root stays `inline-flex` (content-sized) so the visible segments
+  // and the overflow trigger always sit flush together with no internal
+  // whitespace. `max-width: 100%` caps the group at the parent's width
+  // so overflow can actually engage when the parent shrinks; `overflow:
+  // hidden` clips any items that haven't been hidden by the manager yet
+  // (single-frame safety net for the very first paint). The detection
+  // itself measures items against the PARENT's right edge (passed as
+  // `boundary` to the @arvo/core overflow manager), which is why this
+  // works without forcing the group to fill its parent: the manager hides
+  // items based on parent space, the group then sizes to the remaining
+  // visible segments + trigger and grows/shrinks naturally as the parent
+  // resizes -- exactly when another segment can fit.
+  //
+  // Segments stay `flex-shrink: 0` (from the base rule above) so each
+  // one keeps its measured intrinsic width; the manager hides whole
+  // items, it never visually compresses them.
+  &--overflow {
+    max-width: 100%;
+    overflow: hidden;
+    flex-wrap: nowrap;
+  }
+
+  // -- Overflow trigger ------------------------------------------------
+  // Sits flush against the last visible segment. `flex-shrink: 0` keeps
+  // the trigger from being compressed when the parent is narrow.
+  &__overflow {
+    flex-shrink: 0;
+  }
+
+  // -- Modifier: expand-label-on-select --------------------------------
+  // Inactive segments show only the icon; the selected segment expands to
+  // reveal its label. ALL items render as ArvoButton (never swap to
+  // ArvoIconButton) so the label element stays in the DOM and CSS
+  // transitions can animate max-width, opacity, margin, and padding.
+  &--expand-lbl {
+    // Compact padding for inactive segments (matches icon-button sizing).
+    // Active segment restores the size-specific default.
+    .arvo-btn {
+      padding-inline: $arvo-space-6;
+      transition:
+        background-color $arvo-duration-fast $arvo-ease-simple,
+        color $arvo-duration-fast $arvo-ease-simple,
+        padding $arvo-duration-medium $arvo-ease-emphasized;
+    }
+
+    .arvo-btn.active {
+      padding-inline: var(--arvo-btn-padding-inline);
+    }
+
+    // Label: hidden by default, revealed on the active segment.
+    // Negative margin eats the parent flex gap so the collapsed label
+    // contributes zero width to the button.
+    //
+    // The expanded `max-width` is sourced per-button from
+    // `--arvo-btn-grp-lbl-w`, which is stamped by the component
+    // (React/JS) at the label's measured natural width (scrollWidth +
+    // small buffer for the medium-weight active state). Pegging
+    // max-width to the actual content width keeps the segment-width
+    // transition in lockstep with the opacity fade -- otherwise the
+    // 200px fallback ceiling spends most of the easing curve above
+    // the content width, so the deactivating label fades out while
+    // the segment stays full-width and snaps shut at the very end
+    // (visible stutter), and the group temporarily bloats during the
+    // cross-segment swap. The fallback (`200px`) is only used before
+    // the component has measured or on a host without the script
+    // attached.
+    .arvo-btn__lbl {
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      margin-inline-start: calc(-1 * var(--arvo-btn-gap));
+      transition:
+        max-width $arvo-duration-medium $arvo-ease-emphasized,
+        opacity $arvo-duration-medium $arvo-ease-simple,
+        margin $arvo-duration-medium $arvo-ease-emphasized;
+    }
+
+    .arvo-btn.active .arvo-btn__lbl {
+      max-width: var(--arvo-btn-grp-lbl-w, 200px);
+      opacity: 1;
+      margin-inline-start: 0;
+    }
+
+    // Indicator: ResizeObserver on all child buttons drives width in
+    // real-time as labels expand/collapse; only position transitions.
+    .arvo-btn-grp__ind {
+      transition: transform $arvo-duration-medium $arvo-ease-standard;
+    }
+  }
+
+  // -- State: disabled -------------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+
+    .arvo-btn,
+    .arvo-icon-btn {
+      --arvo-btn-text-color: var(--arvo-color-t-disabled);
+      --arvo-btn-icon-color: var(--arvo-color-i-disabled);
+      cursor: not-allowed;
+    }
+
+    // Unselected disabled segments: transparent fill
+    .arvo-btn:not(.active),
+    .arvo-icon-btn:not(.active) {
+      --arvo-btn-bg-color: transparent;
+    }
+
+    // Selected disabled segments keep a non-transparent fill so the
+    // "currently chosen" affordance is preserved even when blocked.
+    .arvo-btn.active,
+    .arvo-icon-btn.active {
+      --arvo-btn-bg-color: var(--arvo-color-s-disabled);
+    }
+
+    .arvo-btn-grp__ind {
+      background: var(--arvo-color-s-disabled);
+    }
+  }
+
+  // -- Loading state (Pattern C) ---------------------------------------
+  &.loading {
+    pointer-events: none;
+    user-select: none;
+  }
+
+  // The overflow trigger opens a shared ArvoActionMenu that owns its own
+  // panel chrome (arvo-action-menu).
+
+  // -- Reduced motion ---------------------------------------------------
+  @media (prefers-reduced-motion: reduce) {
+    &__ind,
+    .arvo-btn,
+    .arvo-icon-btn,
+    &--expand-lbl .arvo-btn__lbl {
+      transition: none;
+    }
+  }
+}

@@ -1,0 +1,271 @@
+@use '../../mixins/form-input' as *;
+@use '../../mixins/hover' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-combobox ----------------------------------------------------------
+// Filterable single-select form field. Label, field container, text input,
+// trailing actions cluster (clear + separator + optional error icon), chevron,
+// animated border, and validation states. The floating ArvoOptionList panel
+// (option rows, groups, dividers, empty, skeleton) is styled in
+// overlays/_arvo-option-list.scss -- no panel BEM lives under arvo-combobox.
+//
+// Custom properties set by JS at runtime (do NOT hardcode here):
+//   --arvo-combobox-pad-r  right padding for actions overlay (ResizeObserver)
+
+.arvo-combobox {
+  // -- CSS custom properties (only dynamic values that change per size) -----
+  --arvo-form-input-height: 32px;
+  --arvo-form-input-font-size: #{$arvo-font-size-14};
+  --arvo-form-input-bg-color: var(--arvo-color-s-layer-04);
+  --arvo-form-input-hover-bg-color: var(--arvo-color-s-theme-hover-4);
+  --arvo-form-input-affix-sep-height: 20px;
+
+  // -- Root layout ------------------------------------------------------------
+  @include form-input-default-width;
+  display: inline-flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+  gap: $arvo-space-8;
+  font-family: var(--o9-font-family);
+
+  // -- Modifier: --full-width -------------------------------------------------
+  &--full-width {
+    --arvo-form-input-width: 100%;
+  }
+
+  // -- Modifier: --surface-* (filled default | base) --------------------------
+  // Swaps the at-rest field background between tinted (filled) and host
+  // surface (base) via the shared form-input-surface pattern. The compound
+  // selector outranks the block-root --arvo-form-input-bg-color declaration
+  // above, so `&--surface-base` cleanly overrides it.
+  &--surface-filled { @include form-input-surface-filled; }
+  &--surface-base { @include form-input-surface-base; }
+
+  // -- Size: --sm -------------------------------------------------------------
+  &--sm {
+    --arvo-form-input-height: 24px;
+    --arvo-form-input-font-size: #{$arvo-font-size-12};
+    --arvo-form-input-affix-sep-height: 16px;
+  }
+
+  // -- Size: --lg (default) ---------------------------------------------------
+  &--lg {
+    --arvo-form-input-height: 32px;
+    --arvo-form-input-font-size: #{$arvo-font-size-14};
+  }
+
+  // -- __lbl ------------------------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS).
+
+  // -- __field ----------------------------------------------------------------
+  &__field {
+    @include form-input-base;
+    @include form-input-hover-bg;
+    @include form-input-disabled-bg;
+
+    flex-direction: row;
+    gap: $arvo-space-4;
+    width: 100%;
+    overflow: hidden;
+    padding: $arvo-space-4 $arvo-space-4 $arvo-space-4 $arvo-space-8;
+  }
+
+  &.is-disabled &__field {
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  &.is-disabled &__chevron {
+    pointer-events: none;
+    opacity: 0.4;
+  }
+
+  // (border disabled state handled by the shared focus-only border mixin)
+
+  // -- State: readonly (shared readonly treatment) --------------------------
+  // Dashed border via form-input-readonly-border; field uses
+  // form-input-readonly-field (cursor: not-allowed while allowing text
+  // highlight); chevron is inert and muted via form-input-readonly-action.
+  // Clear button + separator are already gated by the .has-value:not(.is-
+  // readonly) rules below.
+  &.is-readonly &__field {
+    @include form-input-readonly-field;
+  }
+
+  &.is-readonly &__chevron {
+    @include form-input-readonly-action;
+  }
+
+  &.is-readonly &__border {
+    @include form-input-readonly-border;
+  }
+
+  // -- __input (native text input) --------------------------------------------
+  &__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--arvo-color-t-form-value);
+    font-size: var(--arvo-form-input-font-size, #{$arvo-font-size-14});
+    font-family: var(--o9-font-family);
+    outline: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+    padding-right: var(--arvo-combobox-pad-r, 0);
+    width: 100%;
+
+    &::placeholder {
+      color: var(--arvo-color-t-placeholder);
+    }
+
+    .is-disabled & {
+      color: var(--arvo-color-t-disabled);
+      cursor: not-allowed;
+    }
+
+    .is-readonly & {
+      cursor: not-allowed;
+    }
+  }
+
+  // -- __actions (right-side cluster: clear + sep + optional error icon) -----
+  // Absolutely positioned via the form-input-actions-overlay pattern. A
+  // ResizeObserver in JS measures this cluster and writes --arvo-combobox-pad-r
+  // on the field so the __input never sits under the actions. The chevron is a
+  // sibling so it stays visible while typing (not gated on has-value).
+  &__actions {
+    position: absolute;
+    right: calc(28px + #{$arvo-space-4});
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-4;
+    pointer-events: auto;
+  }
+
+  // -- __clear ----------------------------------------------------------------
+  &__clear {
+    display: none;
+  }
+
+  &.has-value:not(.is-disabled):not(.is-readonly):not(.loading) &__clear {
+    display: inline-flex;
+  }
+
+  // -- __err-ico (slot for in-field <ArvoMessageAlert isInline /> child) ----
+  // Icon glyph + color come from the child .arvo-msg-alert; this slot only
+  // controls visibility based on the parent's .has-error.error-tooltip state.
+  &__err-ico {
+    display: none;
+    flex: 0 0 auto;
+  }
+
+  &.has-error.error-tooltip &__err-ico {
+    display: inline-flex;
+  }
+
+  // -- __sep (vertical separator between clear and chevron) -------------------
+  &__sep {
+    display: none;
+    width: 1px;
+    align-self: stretch;
+    margin-block: $arvo-space-4;
+    background-color: var(--arvo-color-b-divider);
+    flex-shrink: 0;
+  }
+
+  &.has-value:not(.is-disabled):not(.is-readonly):not(.loading) &__sep {
+    display: block;
+  }
+
+  // -- Affix slots (shared `form-input-affix` pattern) -----------------------
+  // Leading icon, leading text prefix, and separator render as inline flex
+  // children of __field before the editable input. State recolors travel
+  // through the shared CSS-variable cascade -- no per-state selectors needed.
+  &__ico { @include form-input-affix-ico; }
+  &__prefix { @include form-input-affix-prefix; }
+  &__prefix-sep { @include form-input-affix-sep; }
+
+  // -- Modifier: --has-prefix (presence marker) ------------------------------
+  // Pure selector hook so parents / consumers can target the prefix-enabled
+  // layout without prop-sniffing. Layout itself is driven by the inline-flex
+  // __prefix slot above.
+  &--has-prefix {}
+
+  // -- __chevron (dropdown indicator icon button) ----------------------------
+  // Rotates 180deg when the panel is open.
+  &__chevron {
+    flex: 0 0 auto;
+  }
+
+  &__chevron .arvo-btn__ico {
+    transition: transform $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  &.open &__chevron .arvo-btn__ico {
+    transform: rotate(180deg);
+  }
+
+  &.open &__chevron {
+    --arvo-btn-bg-color: var(--arvo-color-s-theme-active-2);
+  }
+
+  // -- __border ---------------------------------------------------------------
+  &__border {
+    @include form-input-animated-border-base;
+  }
+
+  // -- Loading pattern C: spinner replaces chevron ----------------------------
+  @mixin _combobox-loading {
+    pointer-events: none;
+
+    .arvo-combobox__field {
+      cursor: default;
+    }
+
+    .arvo-combobox__chevron {
+      display: none;
+    }
+
+    .arvo-combobox__input {
+      pointer-events: none;
+    }
+
+    .arvo-combobox__field::after {
+      content: "";
+      flex: 0 0 auto;
+      display: block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--arvo-color-b-disabled);
+      border-top-color: var(--arvo-color-b-theme);
+      border-radius: 50%;
+      animation: arvo-spin 0.7s linear infinite;
+    }
+  }
+
+  &.loading {
+    @include _combobox-loading;
+  }
+
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _combobox-loading;
+  }
+
+  // -- Parent override: inside arvo-form-field --------------------------------
+  .arvo-form-field & {
+    --arvo-form-input-width: 100%;
+  }
+}
+
+// --- Spinner keyframe ---------------------------------------------------------
+@keyframes arvo-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

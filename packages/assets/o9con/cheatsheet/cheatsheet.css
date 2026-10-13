@@ -1,0 +1,311 @@
+/* ============================================================================
+ * o9con cheatsheet UI
+ *
+ * Plain CSS. Auto light/dark via prefers-color-scheme. Designed to open via
+ * the file:// protocol (no fetch, no build step). Edit directly.
+ * ========================================================================== */
+
+:root {
+  --bg:           #fafafa;
+  --surface:      #ffffff;
+  --surface-2:   #f3f4f6;
+  --border:       #e5e7eb;
+  --text:         #111827;
+  --text-muted:   #6b7280;
+  --primary:      #2864ff;
+  --primary-fg:   #ffffff;
+  --accent:       #f59e0b;
+  --alias-tag:    #9ca3af;
+  --new-tag:      #10b981;
+  --tile-shadow:  0 1px 2px rgba(0, 0, 0, 0.04);
+  --toast-bg:     #111827;
+  --toast-fg:     #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:          #0b1020;
+    --surface:     #121830;
+    --surface-2:   #182144;
+    --border:      #232b4d;
+    --text:        #e5e7eb;
+    --text-muted:  #9aa3b2;
+    --primary:     #6593ff;
+    --primary-fg:  #0b1020;
+    --accent:      #fbbf24;
+    --alias-tag:   #6b7280;
+    --new-tag:     #10b981;
+    --tile-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --toast-bg:    #f9fafb;
+    --toast-fg:    #111827;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  min-height: 100vh;
+}
+
+/* ---------------- header ---------------- */
+.header {
+  background: var(--primary);
+  color: var(--primary-fg);
+  padding: 36px 24px 24px;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.header__sub {
+  margin: 6px 0 0;
+  opacity: 0.85;
+  font-size: 13px;
+}
+
+.controls {
+  margin: 20px auto 0;
+  max-width: 720px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1 1 280px;
+  min-width: 200px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary-fg);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* ---------------- main / groups ---------------- */
+.main {
+  padding: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.loading,
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 60px 0;
+}
+
+.group {
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.group__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+
+.group__header:hover {
+  background: color-mix(in srgb, var(--surface-2) 70%, var(--primary) 8%);
+}
+
+.group__caret {
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.group.collapsed .group__caret {
+  transform: rotate(-90deg);
+}
+
+.group__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1 1 auto;
+  text-transform: capitalize;
+}
+
+.group__count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.group__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 18px;
+}
+
+.group.collapsed .group__grid {
+  display: none;
+}
+
+/* ---------------- tile ---------------- */
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 8px 10px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--tile-shadow);
+  transition: transform 0.1s ease, border-color 0.1s ease, background 0.1s ease;
+  position: relative;
+}
+
+.tile:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--surface) 92%, var(--primary) 8%);
+}
+
+.tile:active {
+  transform: translateY(0);
+}
+
+.tile__icon {
+  font-size: 28px;
+  color: var(--text);
+  display: block;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.tile__name {
+  font-size: 11px;
+  color: var(--text);
+  word-break: break-word;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  line-height: 1.3;
+}
+
+.tile__code {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.tile__tag {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.tile__tag--alias {
+  background: var(--alias-tag);
+}
+
+.tile__tag--new {
+  background: var(--new-tag);
+}
+
+/* ---------------- toast ---------------- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ---------------- footer ---------------- */
+.footer {
+  border-top: 1px solid var(--border);
+  margin-top: 32px;
+  padding: 16px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.footer code {
+  background: var(--surface-2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* ---------------- responsive ---------------- */
+@media (max-width: 600px) {
+  .header { padding: 24px 16px 18px; }
+  .header h1 { font-size: 22px; }
+  .group__grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .tile__icon { font-size: 24px; }
+}

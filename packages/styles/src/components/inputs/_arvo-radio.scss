@@ -1,0 +1,250 @@
+// Radio component styles
+// BEM Block: .arvo-radio
+// Abbreviation: radio
+// Loading Pattern: A (overlay shimmer)
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// --- .arvo-radio -------------------------------------------------------------
+
+.arvo-radio {
+  // -- CSS custom properties (only dynamic values that change per size) -----
+  --arvo-radio-circle-size: #{$arvo-radio-large};
+  --arvo-radio-dot-size: 10px;
+
+  // -- Root layout ----------------------------------------------------------
+  display: inline-flex;
+  flex-direction: column;
+  position: relative;
+  user-select: none;
+
+  // -- Size: lg (default) ---------------------------------------------------
+  // Label typography comes from the shared .arvo-form-lbl primitive; the
+  // React/JS layers pass size={componentSize} to ArvoFormLabel(Text) so the
+  // caption scales with the control (sm=12px, lg=14px).
+  &--lg {
+    --arvo-radio-circle-size: #{$arvo-radio-large};
+    --arvo-radio-dot-size: 10px;
+  }
+
+  // -- Size: sm -------------------------------------------------------------
+  &--sm {
+    --arvo-radio-circle-size: #{$arvo-radio-small};
+    --arvo-radio-dot-size: 8px;
+  }
+
+  // -- __field (click/hover area wrapping input + control + text) -----------
+  // Top-aligned so the circle stays anchored at the first line of text when
+  // the label or description wraps to multiple lines.
+  &__field {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: $arvo-space-8;
+    cursor: pointer;
+  }
+
+  // -- __input-wrapper (control container, top-aligned with first text line)
+  &__input-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    width: var(--arvo-radio-circle-size);
+    height: calc(var(--arvo-radio-circle-size) + #{$arvo-space-1});
+    padding-top: $arvo-space-1;
+    box-sizing: content-box;
+  }
+
+  // -- __input (native radio, visually hidden) ------------------------------
+  &__input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  // -- __control (visual circle, inner dot via ::after) ---------------------
+  &__control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: var(--arvo-radio-circle-size);
+    height: var(--arvo-radio-circle-size);
+    border-radius: 50%;
+    border: 1px solid var(--arvo-color-b-form);
+    background-color: transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    box-sizing: border-box;
+
+    &::after {
+      content: '';
+      width: var(--arvo-radio-dot-size);
+      height: var(--arvo-radio-dot-size);
+      border-radius: 50%;
+      background-color: var(--arvo-color-s-theme-active-1);
+      transform: scale(0);
+      opacity: 0;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+  }
+
+  // -- __text-container (label + description, top-aligned with control) -----
+  &__text-container {
+    display: flex;
+    flex-direction: column;
+    gap: $arvo-space-4;
+    min-width: 0;
+  }
+
+  // Per-size text-container padding -- mirrors Checkbox so the first text
+  // line aligns with the optical center of the circle.
+  &--sm &__text-container {
+    padding-top: $arvo-space-2;
+  }
+
+  &--lg &__text-container {
+    padding-top: $arvo-space-1;
+  }
+
+  // -- __text (visible label text) ------------------------------------------
+  // Font size + sizing modifier + color come from .arvo-form-lbl (set via
+  // the React/JS size prop on ArvoFormLabel(Text)). No color override --
+  // the shared primitive's --arvo-color-t-form-label is the spec value.
+
+  // -- __desc (optional description below label) ---------------------------
+  &__desc {
+    font-family: var(--arvo-font-family);
+    font-size: $arvo-font-size-12;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--arvo-color-t-placeholder);
+    word-break: break-word;
+  }
+
+  // -- State: checked -------------------------------------------------------
+  &__input:checked ~ &__control {
+    background-color: transparent;
+    border-color: var(--arvo-color-b-theme-active);
+  }
+
+  &__input:checked ~ &__control::after {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  // -- State: focus ---------------------------------------------------------
+  &__input:focus-visible ~ &__control {
+    outline: 1px solid var(--arvo-color-b-theme-focus);
+    outline-offset: 1px;
+  }
+
+  // -- State: disabled ------------------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+
+    .arvo-radio__field {
+      cursor: not-allowed;
+    }
+
+    .arvo-radio__control {
+      background-color: transparent;
+      border-color: var(--arvo-color-s-disabled);
+    }
+
+    .arvo-radio__text {
+      color: var(--arvo-color-t-disabled);
+    }
+
+    .arvo-radio__desc {
+      color: var(--arvo-color-t-disabled);
+    }
+  }
+
+  &.is-disabled .arvo-radio__input:checked ~ .arvo-radio__control {
+    background-color: transparent;
+    border-color: var(--arvo-color-b-disabled);
+  }
+
+  &.is-disabled .arvo-radio__input:checked ~ .arvo-radio__control::after {
+    background-color: var(--arvo-color-s-disabled);
+  }
+
+  // -- State: error ---------------------------------------------------------
+  &.has-error .arvo-radio__control {
+    border-color: var(--arvo-color-b-negative);
+  }
+
+  &.has-error .arvo-radio__input:checked ~ .arvo-radio__control {
+    background-color: transparent;
+    border-color: var(--arvo-color-b-negative);
+  }
+
+  &.has-error .arvo-radio__input:checked ~ .arvo-radio__control::after {
+    background-color: var(--arvo-color-s-negative);
+  }
+
+  &.has-error .arvo-radio__input:focus-visible ~ .arvo-radio__control {
+    outline-color: var(--arvo-color-b-negative);
+  }
+
+  // -- State: readonly ------------------------------------------------------
+  &.is-readonly {
+    .arvo-radio__field {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .arvo-radio__control {
+      border-style: dashed;
+      border-color: var(--arvo-color-b-readonly);
+    }
+  }
+
+  // -- Below-field error message --------------------------------------------
+  // Rendered by the consumer as a child <ArvoMessageAlert />; the alert's own
+  // SCSS provides icon/text styles. We only attach the spacing offset here.
+  .arvo-msg-alert {
+    margin-top: $arvo-space-4;
+  }
+
+  // -- Loading state (per-element shimmer on __control + __text + __desc) ---
+  &.loading,
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    pointer-events: none;
+
+    .arvo-radio__control {
+      @include loading-element-shimmer;
+    }
+
+    .arvo-radio__text {
+      @include loading-element-shimmer;
+    }
+
+    .arvo-radio__desc {
+      @include loading-element-shimmer;
+    }
+  }
+}
+
+// -- Hover state (hover-capable devices only, not disabled, not readonly) ----
+
+@include hover {
+  .arvo-radio:not(.is-disabled):not(.is-readonly):hover {
+    .arvo-radio__control {
+      border-color: var(--arvo-color-b-theme-hover);
+    }
+
+    .arvo-radio__input:checked ~ .arvo-radio__control {
+      border-color: var(--arvo-color-b-theme-hover-2);
+      background-color: transparent;
+    }
+
+    .arvo-radio__input:checked ~ .arvo-radio__control::after {
+      background-color: var(--arvo-color-s-theme-hover-1);
+    }
+  }
+}

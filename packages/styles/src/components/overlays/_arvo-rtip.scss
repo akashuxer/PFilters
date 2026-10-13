@@ -1,0 +1,312 @@
+@use '../../mixins/typography' as *;
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-rtip --------------------------------------------------------------
+//
+// Mid-weight informational overlay. Sits between ArvoTooltip and ArvoPopover.
+// Built on the same @arvo/core OverlaySurface engine as Popover, but with
+// role="tooltip", no focus trap, and a 12-placement optional nubbin pointer.
+//
+// SCSS tokens are used directly for spacing / sizing / typography / shadows
+// (the spec text referred to `--arvo-space-*` style CSS variables, but those
+// are SCSS variables in this codebase). Only genuinely dynamic per-instance
+// values (max-width override) get a CSS custom property.
+// -----------------------------------------------------------------------------
+
+.arvo-rtip {
+  // -- Root layout ----------------------------------------------------------
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: $arvo-popover-wmin; // 270px
+  max-width: var(--arvo-rtip-max-width, $arvo-popover-wmax); // 700px default
+  background-color: var(--arvo-color-s-layer-03, #fff);
+  box-shadow: $arvo-shadow-center;
+  z-index: var(--arvo-z-popover, 1000);
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // Direction-aware popup enter / exit animation. Positioning uses the
+  // standalone `translate` property (not `transform`) so this animation
+  // is free to use `transform`. See `popup-animation` mixin.
+  @include popup-animation;
+
+  // -- State: open ----------------------------------------------------------
+  &.open {
+    display: flex;
+  }
+
+  // -- __hdr ----------------------------------------------------------------
+  &__hdr {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-8;
+    padding: $arvo-space-8 $arvo-space-12;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    // Header clips overflowing children so the title ellipsis works without
+    // pushing the status / badge cluster off the right edge.
+    overflow: clip;
+  }
+
+  &__title {
+    @include arvo-font-h14-m;
+    color: var(--arvo-color-t-primary);
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__hdr-meta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $arvo-space-8;
+    flex-shrink: 0;
+  }
+
+  // -- __bdy ----------------------------------------------------------------
+  &__bdy {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: $arvo-space-4;
+    padding: $arvo-space-8 $arvo-space-12 $arvo-space-12;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+
+  &__banner {
+    width: 100%;
+    box-sizing: border-box;
+
+    // BannerAlert renders its own block (`arvo-bnr-alert`). Stretch the
+    // embedded instance to the full body width regardless of its default
+    // styling.
+    > .arvo-bnr-alert {
+      width: 100%;
+    }
+  }
+
+  &__msg {
+    @include arvo-font-p12-r;
+    color: var(--arvo-color-t-secondary);
+    margin: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  &__slot {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  // -- __ftr ----------------------------------------------------------------
+  // Left-aligned wrap layout for intrinsic-width navigation primitives. The
+  // shared `overlay-footer-actions-layout` mixin is NOT used here because
+  // that mixin grows labeled buttons to share leftover row space and
+  // right-aligns primary/danger -- the opposite of what RichTooltip wants.
+  &__ftr {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    row-gap: $arvo-space-4;
+    column-gap: $arvo-space-8;
+    padding: $arvo-space-4 $arvo-space-12 $arvo-space-12;
+    flex-shrink: 0;
+    box-sizing: border-box;
+
+    // Footer children render at their intrinsic width. The inline button has
+    // baseline alignment quirks vs the link / button-link, so we level them
+    // to the row's center alignment.
+    > * {
+      flex: 0 0 auto;
+    }
+  }
+
+  // -- __pointer ------------------------------------------------------------
+  // Single shared CSS-rotated square. Each placement modifier writes the
+  // correct top/left/right/bottom + rotation. `$arvo-shadow-up` matches the
+  // spec's `arvo-shadow-up` registered style. The pointer is aria-hidden by
+  // the component so screen readers skip it.
+  &__pointer {
+    display: none;
+    position: absolute;
+    width: $arvo-space-8;
+    height: $arvo-space-8;
+    background-color: var(--arvo-color-s-layer-03, #fff);
+    transform: rotate(45deg);
+    box-shadow: $arvo-shadow-up;
+    pointer-events: none;
+    flex-shrink: 0;
+    z-index: -1; // tuck behind the surface so the half overlapped by the
+                 // surface stays hidden -- only the protruding triangle shows
+  }
+
+  &--with-pointer &__pointer {
+    display: block;
+  }
+
+  // -- Placement modifiers (pointer positioning) ---------------------------
+  // The pointer is rotated 45deg, so a 8x8 square shows a 11.3px diagonal.
+  // Offset by `-$arvo-space-4` (4px) so half the square peeks past the edge.
+  // Corner-aligned placements honor the spec's mandatory 12px corner gap.
+
+  $rtip-pointer-corner-offset: $arvo-space-12;
+
+  &--top-start &__pointer {
+    top: -$arvo-space-4;
+    left: $rtip-pointer-corner-offset;
+  }
+
+  &--top-center &__pointer {
+    top: -$arvo-space-4;
+    left: 50%;
+    margin-left: -$arvo-space-4;
+  }
+
+  &--top-end &__pointer {
+    top: -$arvo-space-4;
+    right: $rtip-pointer-corner-offset;
+  }
+
+  &--bottom-start &__pointer {
+    bottom: -$arvo-space-4;
+    left: $rtip-pointer-corner-offset;
+  }
+
+  &--bottom-center &__pointer {
+    bottom: -$arvo-space-4;
+    left: 50%;
+    margin-left: -$arvo-space-4;
+  }
+
+  &--bottom-end &__pointer {
+    bottom: -$arvo-space-4;
+    right: $rtip-pointer-corner-offset;
+  }
+
+  &--left-start &__pointer {
+    left: -$arvo-space-4;
+    top: $rtip-pointer-corner-offset;
+  }
+
+  &--left-center &__pointer {
+    left: -$arvo-space-4;
+    top: 50%;
+    margin-top: -$arvo-space-4;
+  }
+
+  &--left-end &__pointer {
+    left: -$arvo-space-4;
+    bottom: $rtip-pointer-corner-offset;
+  }
+
+  &--right-start &__pointer {
+    right: -$arvo-space-4;
+    top: $rtip-pointer-corner-offset;
+  }
+
+  &--right-center &__pointer {
+    right: -$arvo-space-4;
+    top: 50%;
+    margin-top: -$arvo-space-4;
+  }
+
+  &--right-end &__pointer {
+    right: -$arvo-space-4;
+    bottom: $rtip-pointer-corner-offset;
+  }
+
+  // -- Modifier: --with-footer ---------------------------------------------
+  // Cosmetic hook so composing components can target the footer presence.
+  // The footer itself is conditionally rendered by the component.
+
+  // -- Loading skeleton mixin (Pattern B) ----------------------------------
+  @mixin _rtip-loading-skeleton {
+    pointer-events: none;
+
+    .arvo-rtip__ftr {
+      display: none;
+    }
+
+    .arvo-rtip__title {
+      position: relative;
+      color: transparent;
+      overflow: hidden;
+      border-radius: 3px;
+      width: 60%;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: var(--arvo-color-s-disabled, #f0f0f0);
+        border-radius: 3px;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--arvo-loading-shimmer-color, rgba(255, 255, 255, 0.4)) 50%,
+          transparent 100%
+        );
+        animation: arvo-shimmer var(--arvo-loading-shimmer-speed, 1.5s) infinite linear;
+        border-radius: 3px;
+      }
+    }
+
+    .arvo-rtip__bdy {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: $arvo-space-8;
+
+      > * {
+        display: none;
+      }
+
+      &::before,
+      &::after {
+        content: '';
+        display: block;
+        height: 16px;
+        border-radius: 3px;
+        background-color: var(--arvo-color-s-disabled, #f0f0f0);
+        position: relative;
+        overflow: hidden;
+      }
+
+      &::before {
+        width: 80%;
+      }
+
+      &::after {
+        width: 60%;
+      }
+    }
+  }
+
+  // -- State: loading (Pattern B -- structured skeleton) -------------------
+  &.loading {
+    @include _rtip-loading-skeleton;
+  }
+
+  // Parent-controlled loading
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _rtip-loading-skeleton;
+  }
+}

@@ -1,0 +1,144 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+
+// DisclosureButton component styles
+// BEM Block: .arvo-disc-btn
+// Abbreviation: disc-btn
+// Loading Pattern: none (no public loading state -- consumers render
+// `<ArvoSkeleton variant="rectangle">` next to or in place of the button)
+//
+// Text-only, surface-less button that toggles `aria-expanded`. One visual
+// appearance, three sizes (sm/md/lg), and an optional internally-owned
+// chevron. The chevron always renders as `o9con-angle-down`; when the host
+// button carries `aria-expanded="true"` it rotates 180deg via CSS to match
+// the open/closed state (mirrors the ArvoCombobox dropdown indicator).
+
+.arvo-disc-btn {
+  // -- CSS custom properties (dynamic only) ---------------------------------
+  // Only properties that change per size or per state are exposed as
+  // component-level CSS variables. Font-family, font-weight, line-height,
+  // and the focus-ring width resolve to a single token across every state,
+  // so they reference the SCSS token directly.
+  --arvo-disc-btn-font-size: #{$arvo-font-size-14};
+  --arvo-disc-btn-chevron-size: #{$arvo-icon-16};
+  --arvo-disc-btn-gap: #{$arvo-space-4};
+  --arvo-disc-btn-text-color: var(--arvo-color-t-info-dark);
+  --arvo-disc-btn-icon-color: var(--arvo-color-i-info-dark);
+
+  // -- Layout ---------------------------------------------------------------
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arvo-disc-btn-gap);
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  vertical-align: baseline;
+  -webkit-appearance: none;
+          appearance: none;
+  white-space: nowrap;
+
+  // -- Typography -----------------------------------------------------------
+  font-family: var(--o9-font-family);
+  font-weight: $arvo-regular;
+  font-size: var(--arvo-disc-btn-font-size);
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--arvo-disc-btn-text-color);
+  text-decoration: none;
+  // Smooth color transitions between rest, hover, and focus.
+  transition: $arvo-motion-link;
+
+  // -- Label ----------------------------------------------------------------
+  &__lbl {
+    color: inherit;
+    transition: $arvo-motion-link;
+  }
+
+  // -- Chevron --------------------------------------------------------------
+  // o9con icon font glyph. Width / height match the chevron container, and
+  // the glyph's own `font-size` mirrors the container so the icon fills it.
+  // The glyph is always `angle-down`; rotation handles the expanded state so
+  // the icon swap animates smoothly (the shared `$arvo-motion-link` transition
+  // covers both color and transform).
+  &__chev {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--arvo-disc-btn-chevron-size);
+    height: var(--arvo-disc-btn-chevron-size);
+    font-size: var(--arvo-disc-btn-chevron-size);
+    line-height: 1;
+    color: var(--arvo-disc-btn-icon-color);
+    transition: $arvo-motion-link;
+  }
+
+  // -- Expanded: rotate chevron 180deg -------------------------------------
+  // The button itself carries `aria-expanded`, so the attribute selector
+  // drives the rotation without needing a state class.
+  &[aria-expanded='true'] &__chev {
+    transform: rotate(180deg);
+  }
+
+  // -- Size: Small ----------------------------------------------------------
+  // The Figma source ships a 14px chevron container for the sm default state
+  // and a 16px chevron container for sm hover/focus. That is a Figma
+  // authoring inconsistency -- we use 14px in ALL sm states so the chevron
+  // does not grow between rest and hover and so it does not exceed the label
+  // cap height.
+  &--sm {
+    --arvo-disc-btn-font-size: #{$arvo-font-size-12};
+    --arvo-disc-btn-chevron-size: #{$arvo-icon-14};
+    --arvo-disc-btn-gap: #{$arvo-space-4};
+  }
+
+  // -- Size: Medium (default) -----------------------------------------------
+  &--md {
+    --arvo-disc-btn-font-size: #{$arvo-font-size-14};
+    --arvo-disc-btn-chevron-size: #{$arvo-icon-16};
+    --arvo-disc-btn-gap: #{$arvo-space-4};
+  }
+
+  // -- Size: Large ----------------------------------------------------------
+  &--lg {
+    --arvo-disc-btn-font-size: #{$arvo-font-size-16};
+    --arvo-disc-btn-chevron-size: #{$arvo-icon-20};
+    --arvo-disc-btn-gap: #{$arvo-space-6};
+  }
+
+  // -- Hover (hover-capable devices only) -----------------------------------
+  // Hover is a pure color shift. The Figma source ships NO text-decoration on
+  // hover -- the spec is explicit, and the implementation must not add one.
+  @include hover {
+    &:hover {
+      --arvo-disc-btn-text-color: var(--arvo-color-t-theme-hover);
+      --arvo-disc-btn-icon-color: var(--arvo-color-i-theme-hover);
+    }
+  }
+
+  // -- Focus (keyboard-only) ------------------------------------------------
+  // 1px solid focus ring drawn 2px outside the content edge via outline +
+  // outline-offset. Outline does not affect flow so the button never shifts
+  // its surroundings. Mirrors the existing ArvoLink convention.
+  &:focus-visible {
+    --arvo-disc-btn-text-color: var(--arvo-color-t-theme-hover);
+    --arvo-disc-btn-icon-color: var(--arvo-color-i-theme-hover);
+    outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+    outline-offset: $arvo-space-2;
+  }
+
+  // -- Reduced motion -------------------------------------------------------
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    &__lbl,
+    &__chev {
+      transition: none;
+    }
+  }
+}

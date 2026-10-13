@@ -1,0 +1,12 @@
+// Backwards-compat shim for the renamed `corner-host` pattern.
+//
+// The shared pattern that establishes a `position: relative` context for
+// absolutely positioned ArvoStatus / ArvoBadge overlays moved to
+// `_corner-host.scss` to reflect that it is shared between both
+// components (and any future corner-anchored slot consumer).
+//
+// Existing consumers that import this file (`@use '../../mixins/status-host' as *;`
+// followed by `@include status-host;`) continue to work via this
+// forward.
+
+@forward 'corner-host';

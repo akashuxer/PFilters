@@ -1,0 +1,224 @@
+// Number Input component styles
+// BEM Block: .arvo-number-input
+// Abbreviation: number-input
+// Loading Pattern: A (overlay shimmer)
+// Sizes: sm (24px), lg (32px, default)
+
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/form-input' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// --- .arvo-number-input ------------------------------------------------------
+
+.arvo-number-input {
+  // Only dynamic values that change per size modifier
+  --arvo-form-input-height: 32px;
+  --arvo-form-input-font-size: #{$arvo-font-size-14};
+  --arvo-form-input-affix-sep-height: 20px;
+
+  // -- Root layout ---------------------------------------------------------
+  @include form-input-default-width;
+  display: inline-flex;
+  flex-direction: column;
+  gap: $arvo-space-8;
+  position: relative;
+
+  // Full-width modifier
+  &--full-width {
+    --arvo-form-input-width: 100%;
+  }
+
+  // Surface modifiers -- swap the at-rest field background between
+  // tinted (filled, default) and host surface (base) via the shared
+  // form-input-surface pattern. Every other state color is unchanged.
+  &--surface-filled { @include form-input-surface-filled; }
+  &--surface-base { @include form-input-surface-base; }
+
+  // -- __lbl (form label) --------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS).
+
+  // -- __field (flex container for input + steppers) ------------------------
+  &__field {
+    @include form-input-base;
+    @include form-input-hover-bg;
+    @include form-input-disabled-bg;
+
+    gap: $arvo-space-8;
+    height: var(--arvo-form-input-height, 32px);
+    width: 100%;
+    padding-inline-end: $arvo-space-4;
+  }
+
+  // -- __input (native <input type="number">) -------------------------------
+  &__input {
+    @include form-input-text-colors;
+
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    // Logical-property right padding reserves room for the trailing actions
+    // overlay (inline error icon). The prefix is now an inline flex sibling
+    // (see __prefix below) so no leading padding contract is needed.
+    padding-inline-end: var(--arvo-form-input-pad-r, 0);
+    border: 0;
+    background: transparent;
+    outline: 0;
+    font: inherit;
+    box-sizing: border-box;
+    appearance: textfield;
+    -moz-appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &[readonly] {
+      cursor: not-allowed;
+    }
+  }
+
+  // -- Affix slots (shared `form-input-affix` pattern) -----------------------
+  // Prefix, prefix separator, and suffix all render as inline flex children
+  // of __field (state recolors travel through the shared CSS-variable
+  // cascade -- no per-state selectors needed). The legacy absolute __prefix
+  // overlay + --arvo-form-input-pad-l + ResizeObserver dance is removed; the
+  // native input flexes (`flex: 1 1 auto`) between the prefix and the
+  // suffix / stepper cluster.
+  &__prefix { @include form-input-affix-prefix; }
+  &__prefix-sep { @include form-input-affix-sep; }
+  &__stepper-sep { @include form-input-affix-sep; }
+  &__suffix { @include form-input-affix-suffix; }
+
+  // -- __steppers (increment + decrement button wrapper) --------------------
+  &__steppers {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+
+    .is-readonly & {
+      display: none;
+    }
+  }
+
+  // -- __actions (trailing-edge absolute container for inline error icon) ---
+  // Positioned to the inline-leading side of the steppers; inset-inline-end
+  // offset is set dynamically by JS based on the measured stepper width
+  // (0 when readonly / no steppers). Logical inset-inline-end keeps this
+  // cluster on the trailing visual edge in both LTR and RTL.
+  &__actions {
+    position: absolute;
+    inset-inline-end: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    pointer-events: auto;
+  }
+
+  // -- __border (animated bottom border, sibling of __field) ---------------
+  &__border {
+    @include form-input-animated-border-base;
+  }
+
+  // -- __err-ico (slot for in-field <ArvoMessageAlert isInline /> child) ----
+  // Icon glyph + color come from the child .arvo-msg-alert; this slot only
+  // controls visibility based on the parent's .has-error.error-tooltip state.
+  &__err-ico {
+    display: none;
+    flex: 0 0 auto;
+  }
+
+  // -- Size: sm ------------------------------------------------------------
+  &--sm {
+    --arvo-form-input-height: 24px;
+    --arvo-form-input-font-size: #{$arvo-font-size-12};
+    --arvo-form-input-affix-sep-height: 16px;
+  }
+
+  // -- Size: lg (default) --------------------------------------------------
+  &--lg {
+    --arvo-form-input-height: 32px;
+    --arvo-form-input-font-size: #{$arvo-font-size-14};
+  }
+
+  // -- State: disabled (cursor only -- border handled by mixin) -----------
+  &.is-disabled {
+    cursor: not-allowed;
+
+    .arvo-number-input__field {
+      cursor: not-allowed;
+    }
+  }
+
+  // -- Modifier: --has-prefix / --has-suffix (presence markers) ------------
+  // Pure selector hooks so parents / consumers can target the prefix /
+  // suffix-enabled layout without prop-sniffing. Layout itself is driven
+  // by the inline-flex __prefix / __suffix slots above.
+  &--has-prefix {}
+  &--has-suffix {}
+
+  // -- State: readonly (shared readonly treatment) ----------------------
+  // Dashed border via form-input-readonly-border; field/input use
+  // form-input-readonly-field (cursor: not-allowed while allowing text
+  // highlight). Steppers are hidden by the __steppers .is-readonly rule
+  // above, so the field reads as inert without a stepper cluster.
+  &.is-readonly {
+    .arvo-number-input__field {
+      @include form-input-readonly-field;
+    }
+
+    .arvo-number-input__border {
+      @include form-input-readonly-border;
+    }
+  }
+
+  // Inline icon variant: error icon (rendered as <ArvoMessageAlert isInline />)
+  // inside the field, below-field message hidden by consumer.
+  &.has-error.error-tooltip {
+    .arvo-number-input__err-ico {
+      display: inline-flex;
+    }
+  }
+
+  // -- State: at-min (JS-toggled, decrement disabled) -----------------------
+  &.at-min {
+    .arvo-number-input__decrement-btn {
+      color: var(--arvo-color-i-disabled);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  // -- State: at-max (JS-toggled, increment disabled) -----------------------
+  &.at-max {
+    .arvo-number-input__increment-btn {
+      color: var(--arvo-color-i-disabled);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  // -- Loading state (per-element shimmer on field + label) -----------------
+  &.loading,
+  [data-arvo-loading="true"] &:not([data-arvo-loading-ignore="true"]) {
+    pointer-events: none;
+
+    .arvo-number-input__field {
+      @include loading-element-shimmer;
+    }
+
+    .arvo-number-input__lbl {
+      @include loading-element-shimmer;
+    }
+  }
+}

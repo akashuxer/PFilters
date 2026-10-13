@@ -1,0 +1,505 @@
+@use '../../../tokens/src/scss/all' as *;
+@use 'hover' as *;
+
+// Shared form input mixins -- consumed by all form input field elements.
+// Applied to the field/trigger element (e.g. .arvo-txt__field, .arvo-sel__field).
+// Background color belongs on the outer container; the field element stays transparent.
+// Used by: textbox, textarea, number-input, search, select, combobox,
+//          date-picker, time-picker, datetime-picker, daterange-picker
+//
+// CSS variable strategy: only height, font-size, and padding-inline are exposed
+// as CSS variables because they change per component size modifier. All color
+// tokens are applied statically -- they are identical across every consumer and
+// never need runtime override.
+
+// form-input-base
+// Base layout, cursor, and font styles for the field element.
+// Height, font-size, and padding-inline are CSS variables so size modifiers can
+// override them.
+@mixin form-input-base {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+  height: var(--arvo-form-input-height, 32px);
+  padding-inline: var(--arvo-form-input-padding-inline, #{$arvo-space-8});
+  font-family: var(--arvo-font-family);
+  font-size: var(--arvo-form-input-font-size, #{$arvo-font-size-14});
+  cursor: text;
+  border-radius: 0;
+  background: transparent;
+}
+
+// form-input-hover-bg
+// Applies a subtle background change on hover for non-disabled, non-readonly
+// inputs. Applied to the __field element (the visible surface). The hover
+// background is intentionally still applied in error state so the field stays
+// visually interactive; the red `.has-error` border styling continues to come
+// from `form-input-animated-border` and stays visible on top.
+// Used by: textbox, textarea, number-input, search, select, combobox
+@mixin form-input-hover-bg {
+  background-color: var(--arvo-form-input-bg-color, var(--arvo-color-s-layer-04));
+
+  @include hover {
+    *:not(.is-disabled):not(.is-readonly):hover > & {
+      background-color: var(--arvo-color-s-theme-hover-4);
+    }
+  }
+}
+
+// form-input-text-colors
+// Text, placeholder, and selection colors for the native input/textarea element.
+// All colors are static token references -- no CSS variables needed.
+// Used by: textbox, textarea, number-input, search
+@mixin form-input-text-colors {
+  color: var(--arvo-color-t-form-value);
+
+  &::placeholder {
+    color: var(--arvo-color-t-placeholder);
+  }
+
+  &::selection {
+    background-color: var(--arvo-color-s-theme);
+    color: var(--arvo-color-t-inverse);
+  }
+
+  .is-disabled & {
+    color: var(--arvo-color-t-disabled);
+
+    &::selection {
+      background-color: transparent;
+    }
+  }
+
+  .is-readonly & {
+    color: var(--arvo-color-t-readonly);
+  }
+}
+
+// form-input-disabled-bg
+// Applies disabled background color and cursor to the field element.
+// Applied to the __field element; targets a .is-disabled class on the parent block.
+// Used by: textbox, textarea, number-input, search, select, combobox
+@mixin form-input-disabled-bg {
+  .is-disabled > & {
+    background-color: var(--arvo-color-s-disabled);
+    color: var(--arvo-color-t-disabled);
+    cursor: not-allowed;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// form-input-animated-border
+// Animated bottom border applied to the __border BEM child element inside a
+// form input. Two variants are exposed:
+//
+//   - form-input-animated-border-base       -- default. Visible 1px base line
+//     at rest in --arvo-color-b-form, animated 1px hover reveal in
+//     --arvo-color-b-theme-hover-2, thickens to 1.5px focus reveal in
+//     --arvo-color-b-theme-focus. Used by: textbox, textarea, number-input,
+//     select, multi-select, combobox, date-picker, date-range-picker,
+//     time-picker, datetime-picker.
+//
+//   - form-input-animated-border-focus-only -- transparent at rest, no
+//     hover reveal, animated 1.5px focus reveal only. Used by: search.
+//
+// Both variants share the same structural frame (position + ::after overlay
+// + transition) and the same error / disabled / readonly overrides via
+// private helpers. State overrides intentionally sit AFTER hover/focus in
+// source order so the same-specificity error/disabled/readonly rules win
+// via the cascade -- this is why the hover/focus selectors omit the
+// `:not(.is-disabled)` / `:not(.is-readonly)` / `:not(.has-error)` guards
+// used elsewhere; the guards were unreliable because __border is a direct
+// child of __field, not of the block root that carries those state classes.
+// ---------------------------------------------------------------------------
+
+// Private structural frame -- absolute 1px strip + transitioned ::after
+// overlay. No color decisions here; consumers set background + ::after
+// background-color per variant.
+@mixin _form-input-animated-border-frame {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  pointer-events: none;
+  z-index: 1;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition:
+      transform $arvo-duration-fast $arvo-ease-simple,
+      height $arvo-duration-fast $arvo-ease-simple;
+    will-change: transform, height;
+  }
+}
+
+// Private shared state overrides -- error, disabled, readonly. Uses
+// descendant selectors so the state class can live on the block root while
+// __border is a grandchild via __field. Included AFTER hover/focus so the
+// cascade resolves state -> hover / focus at equal specificity.
+@mixin _form-input-animated-border-states {
+  // Error -- immediate full-width red border, no transition.
+  .has-error & {
+    background: var(--arvo-color-b-negative);
+
+    &::after {
+      background-color: var(--arvo-color-b-negative);
+      height: $arvo-border-3;
+      transform: scaleX(1);
+      transition: none;
+    }
+  }
+
+  // Disabled -- flat 1px disabled border, no animation.
+  .is-disabled & {
+    background: var(--arvo-color-b-disabled);
+
+    &::after {
+      background-color: var(--arvo-color-b-disabled);
+      height: 1px;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  // Readonly -- transparent base + dashed ::after (shared readonly mixin
+  // keeps the treatment identical across every form-input consumer).
+  .is-readonly & {
+    @include form-input-readonly-border;
+  }
+}
+
+// form-input-animated-border-base
+// Default form input border treatment: visible 1px base line, animated
+// hover reveal, and thicker animated focus reveal. Apply this to the
+// `__border` element inside the component.
+@mixin form-input-animated-border-base {
+  @include _form-input-animated-border-frame;
+  background: var(--arvo-color-b-form);
+
+  &::after {
+    background-color: var(--arvo-color-b-theme-hover-2);
+  }
+
+  // Hover -- animate scaleX(0 -> 1) in --arvo-color-b-theme-hover-2 at 1px.
+  // `*:hover > &` matches when the direct parent (__field) is hovered; :hover
+  // propagates from the actual pointer target up through every ancestor, so
+  // this fires whenever the user hovers anywhere inside the field.
+  @include hover {
+    *:hover > & {
+      &::after {
+        transform: scaleX(1);
+      }
+    }
+  }
+
+  // Focus -- swap to --arvo-color-b-theme-focus at 1.5px, scaleX(1). Uses
+  // :focus-within on the direct parent so the reveal fires whenever the
+  // input inside the field receives focus.
+  *:focus-within > & {
+    &::after {
+      background-color: var(--arvo-color-b-theme-focus);
+      height: $arvo-border-3;
+      transform: scaleX(1);
+    }
+  }
+
+  @include _form-input-animated-border-states;
+}
+
+// form-input-animated-border-focus-only
+// Reference variant used by Search: transparent at rest, no hover reveal,
+// only the focus-within sweep. Error / disabled / readonly follow the
+// shared treatment.
+//
+// Apply this to the `__border` element inside the component.
+@mixin form-input-animated-border-focus-only {
+  @include _form-input-animated-border-frame;
+  background: transparent;
+
+  &::after {
+    background-color: transparent;
+  }
+
+  // Focus -- the only reveal. No hover state.
+  *:focus-within > & {
+    &::after {
+      background-color: var(--arvo-color-b-theme-focus);
+      height: $arvo-border-3;
+      transform: scaleX(1);
+    }
+  }
+
+  @include _form-input-animated-border-states;
+}
+
+// ---------------------------------------------------------------------------
+// form-input-readonly-border
+// Dashed readonly line rendered on the animated border (__border) element.
+// Consumers apply this INSIDE a `.is-readonly &__border` (or `.is-readonly >
+// &__border`) selector so it replaces the base border treatment when the
+// field is readonly. Every form-input readonly state uses the same 2px
+// dashed stroke in --arvo-color-b-readonly per the Figma "form-border"
+// readonly variant (node 26482:62739).
+//
+// Used by: textbox, textarea, number-input, select, combobox, multi-select,
+//          date-picker, time-picker, datetime-picker, date-range-picker.
+// ---------------------------------------------------------------------------
+@mixin form-input-readonly-border {
+  background: transparent;
+
+  &::after {
+    background-color: transparent;
+    height: 0;
+    transform: none;
+    transition: none;
+    border-bottom: $arvo-border-2 dashed var(--arvo-color-b-readonly);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// form-input-readonly-field
+// Field-level readonly treatment shared across every form-input consumer.
+// The Figma readonly variants set the field to `cursor: not-allowed`; text
+// inside the native input can still be highlighted because the input keeps
+// pointer-events enabled and the browser draws its own I-beam only while
+// selecting existing text. Consumers apply this INSIDE a
+// `.is-readonly &__field` (or `.is-readonly > &__field`) selector.
+//
+// Used by: textbox, textarea, number-input, select, combobox, multi-select,
+//          date-picker, time-picker, datetime-picker, date-range-picker.
+// ---------------------------------------------------------------------------
+@mixin form-input-readonly-field {
+  cursor: not-allowed;
+}
+
+// ---------------------------------------------------------------------------
+// form-input-readonly-action
+// Trailing action treatment shared across every form-input readonly state.
+// Recolors the icon to --arvo-color-i-disabled and blocks pointer events so
+// the chevron / trigger button reads as inert. Consumers apply this INSIDE
+// a `.is-readonly &__chevron` (or `&__trigger-btn`) selector.
+//
+// The action slot is EITHER a plain icon span (select chevron -- uses the
+// slot's `color` directly) OR an ArvoIconButton wrapper (combobox chevron,
+// multi-select chevron, date/time-picker trigger-btn -- reads its icon
+// color from --arvo-btn-icon-color). Both surfaces are covered so a single
+// mixin call disables the interactive affordance regardless of the inner
+// element.
+//
+// Used by: select (chevron), combobox (chevron), multi-select (chevron),
+//          date-picker (trigger-btn), time-picker, datetime-picker,
+//          date-range-picker.
+// ---------------------------------------------------------------------------
+@mixin form-input-readonly-action {
+  color: var(--arvo-color-i-disabled);
+  pointer-events: none;
+  --arvo-btn-icon-color: var(--arvo-color-i-disabled);
+  --arvo-btn-text-color: var(--arvo-color-t-disabled);
+  --arvo-btn-bg-color: transparent;
+}
+
+// form-input-default-width
+// Sets a consistent default width (300px) on form input components.
+// Consumers can override via --arvo-form-input-width CSS variable or a width prop.
+// Apply this to the root (block-level) element of the component.
+// Used by: textbox, textarea, number-input, search, select, combobox,
+//          date-picker, time-picker, datetime-picker, daterange-picker
+@mixin form-input-default-width {
+  width: var(--arvo-form-input-width, 300px);
+  max-width: 100%;
+}
+
+// ---------------------------------------------------------------------------
+// form-input-surface-filled / form-input-surface-base
+// Two surface variants for form input fields. Filled (default) keeps the
+// current --arvo-form-input-bg-color (--arvo-color-s-layer-04) inherited
+// from form-input-hover-bg. Base swaps that token for
+// --arvo-color-s-layer-01 so the field reads as a flat extension of the
+// host surface, not a separate editable region.
+//
+// All other state colors (hover, focus, disabled, readonly, error, text,
+// border, icon) are unchanged across the two surfaces -- the entire
+// visual delta is the at-rest field background, driven by this single
+// CSS variable.
+//
+// Apply these mixins inside `&--surface-filled` / `&--surface-base`
+// modifier selectors on the BLOCK ROOT (.arvo-{abbr}), NEVER on __field
+// directly, because --arvo-form-input-bg-color is read by
+// form-input-hover-bg on __field via the cascade.
+//
+// Used by: textbox, textarea, number-input, select, combobox,
+//          multi-select, date-picker, time-picker, datetime-picker,
+//          date-range-picker
+// ---------------------------------------------------------------------------
+@mixin form-input-surface-filled {
+  // Intentional no-op. The default in form-input-hover-bg already
+  // resolves to --arvo-color-s-layer-04. The empty body documents the
+  // surface contract and keeps selector specificity symmetric with
+  // form-input-surface-base.
+}
+
+@mixin form-input-surface-base {
+  --arvo-form-input-bg-color: var(--arvo-color-s-layer-01);
+}
+
+// ---------------------------------------------------------------------------
+// form-input-affix-ico / form-input-affix-prefix / form-input-affix-suffix
+//                     / form-input-affix-sep
+// Shared inline-flex affix slots for form input fields. Defines the visual
+// treatment of the leading icon (`__ico`), the leading text label
+// (`__prefix`), the vertical separator that sits between the prefix and the
+// editable region (`__prefix-sep`), and the trailing text label (`__suffix`).
+//
+// All four slots are inline flex children of the parent component's
+// `__field` element. There is NO absolute positioning anywhere in the affix
+// layout -- the native input / value display flexes (`flex: 1 1 auto`)
+// around the affix children, which keeps the field width stable and removes
+// the ResizeObserver dance that the legacy NumberInput prefix overlay
+// required. Trailing action clusters (NumberInput steppers, Combobox /
+// Select chevron, clear button) follow the suffix in the flex flow and are
+// owned by the consuming component, NOT by this pattern.
+//
+// CSS variable strategy (per CSS-variable discipline):
+//   --arvo-form-input-affix-icon-color   recolored per state (.is-disabled,
+//                                        .is-readonly)
+//   --arvo-form-input-affix-text-color   recolored per state for prefix +
+//                                        suffix labels
+//   --arvo-form-input-affix-sep-color    separator stroke color (currently
+//                                        static across states; future-proof
+//                                        knob)
+//   --arvo-form-input-affix-sep-display  set to `none` from a component to
+//                                        opt the separator out without
+//                                        re-templating
+//
+// Tokens used (all already declared in @arvo/tokens; nothing new):
+//   --arvo-color-i-secondary / --arvo-color-i-disabled / --arvo-color-i-readonly
+//   --arvo-color-t-tertiary  / --arvo-color-t-disabled / --arvo-color-t-readonly
+//   --arvo-color-b-separator
+//
+// Color reconciliation note: the textbox Figma fixture uses
+// `--arvo-color-t-placeholder` for the prefix/suffix text; the NumberInput
+// and Combobox fixtures use `--arvo-color-t-tertiary`. The two tokens
+// resolve to the SAME value in dark theme and only diverge by 0.1 of a
+// lightness step in light theme. The shared pattern picks
+// `--arvo-color-t-tertiary` because (1) it matches the existing shipping
+// NumberInput, (2) it reserves placeholder-color semantics for actual
+// placeholder text, and (3) it gives marginally better legibility for
+// short unit-style labels.
+//
+// Used by: textbox (icon + prefix + suffix), textarea (icon),
+//          number-input (prefix + suffix), select (icon),
+//          combobox (icon + prefix).
+// ---------------------------------------------------------------------------
+
+@mixin form-input-affix-ico {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $arvo-icon-16;
+  color: var(--arvo-form-input-affix-icon-color, var(--arvo-color-i-secondary));
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: inherit;
+
+  // State recolors travel through the CSS variable rather than the slot
+  // selector so consuming components can override per-state colors without
+  // touching the slot's own rules.
+  .is-disabled & {
+    --arvo-form-input-affix-icon-color: var(--arvo-color-i-disabled);
+  }
+
+  .is-readonly & {
+    --arvo-form-input-affix-icon-color: var(--arvo-color-i-readonly);
+  }
+}
+
+@mixin form-input-affix-text {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  color: var(--arvo-form-input-affix-text-color, var(--arvo-color-t-tertiary));
+  font: inherit;
+  font-size: var(--arvo-form-input-font-size, #{$arvo-font-size-14});
+  line-height: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+  cursor: inherit;
+
+  .is-disabled & {
+    --arvo-form-input-affix-text-color: var(--arvo-color-t-disabled);
+  }
+
+  .is-readonly & {
+    --arvo-form-input-affix-text-color: var(--arvo-color-t-readonly);
+  }
+}
+
+@mixin form-input-affix-prefix {
+  @include form-input-affix-text;
+}
+
+@mixin form-input-affix-suffix {
+  @include form-input-affix-text;
+}
+
+@mixin form-input-affix-sep {
+  flex: 0 0 auto;
+  display: var(--arvo-form-input-affix-sep-display, inline-block);
+  width: $arvo-border-1;
+  height: var(--arvo-form-input-affix-sep-height, 20px);
+  align-self: center;
+  background-color: var(--arvo-form-input-affix-sep-color, var(--arvo-color-b-separator));
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+// ---------------------------------------------------------------------------
+// form-input-actions-overlay
+// Absolutely positions the right-side dynamic action cluster inside a form
+// field so it never shifts the component width. A ResizeObserver in the JS
+// layer measures the rendered container width and writes two CSS custom
+// properties back to the FIELD ROOT element:
+//
+//   --arvo-form-input-pad-r   right cluster (clear, err-ico, trigger btn)
+//   --arvo-form-input-pad-l   left prefix slot (NumberInput prefix, ADR-6)
+//
+// These variables are read by __input as padding-right / padding-left so
+// text truncates naturally behind the actions rather than underlapping them.
+// When all actions are hidden, the JS layer resets the variables to 0px,
+// restoring full input width without any layout shift on the outer component.
+//
+// CONTRACT (consuming component responsibilities):
+//   - The field container must have `position: relative` (from form-input-base).
+//   - Declare `--arvo-form-input-pad-r: 0px` and `--arvo-form-input-pad-l: 0px`
+//     as defaults on the field root or block element.
+//   - Apply `padding-right: var(--arvo-form-input-pad-r)` on __input.
+//   - Apply `padding-left: var(--arvo-form-input-pad-l)` on __input when a
+//     left prefix slot is active (NumberInput prefix enhancement, ADR-6).
+//   - Wire a ResizeObserver to the overlay container that writes the measured
+//     offsetWidth back to --arvo-form-input-pad-r (or -l) on the field root.
+//
+// Used by: textbox (clear + err-ico), number-input (prefix enhancement),
+//          date-picker, time-picker, datetime-picker, date-range-picker
+// ---------------------------------------------------------------------------
+@mixin form-input-actions-overlay {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  pointer-events: auto;
+  z-index: 1;
+}

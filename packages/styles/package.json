@@ -1,0 +1,34 @@
+{
+  "name": "@arvo/styles",
+  "version": "2.2.5",
+  "description": "Arvo Design System shared SCSS mixins, component styles, and shared patterns",
+  "license": "UNLICENSED",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://o9git.pkgs.visualstudio.com/_packaging/o9UI/npm/registry/"
+  },
+  "sideEffects": true,
+  "exports": {
+    ".": "./src/_index.scss",
+    "./scss/*": "./src/*",
+    "./mixins/*": "./src/mixins/*",
+    "./base": "./src/base/_global.scss",
+    "./css": "./dist/arvo.css",
+    "./css/min": "./dist/arvo.min.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "dist/",
+    "scripts/",
+    "_index.scss"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "sass --no-source-map --style=expanded --watch src/_index.scss:dist/arvo.css",
+    "clean": "node -e \"import('fs').then(fs => fs.rmSync('dist', { recursive: true, force: true }))\""
+  },
+  "dependencies": {
+    "@arvo/tokens": "workspace:*"
+  }
+}

@@ -1,0 +1,39 @@
+// Global styles shared across the design system
+
+@use './reset';
+@use '../mixins/inline-content' as *;
+
+@include inline-content;
+
+// Skeleton loading keyframe animation
+@keyframes arvo-skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+// Screen-reader only utility
+.arvo-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Reduced motion preference
+@media (prefers-reduced-motion: reduce) {
+  .loading::before,
+  .loading::after,
+  [data-arvo-loading="true"] *::before,
+  [data-arvo-loading="true"] *::after {
+    animation: none !important;
+  }
+}

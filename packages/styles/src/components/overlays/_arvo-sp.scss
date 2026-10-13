@@ -1,0 +1,189 @@
+@use '../../mixins/panel-shell' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-sp -----------------------------------------------------------------
+// SidePanel host. The interior anatomy (header, sticky region, body, list,
+// empty/skeleton states, footer) is rendered by the panel-shell shared
+// pattern with parentBlock='arvo-sp' -- see _panel-shell.scss. This file
+// owns only the SidePanel-specific concerns: pane wrapper, splitter slot,
+// the layout/overlay variant flip, and side-aware docking + slide
+// animation hooks.
+//
+// HOST-HEIGHT REQUIREMENT
+// -----------------------
+// The panel-shell flex-column chain only works when the SidePanel host has
+// a deterministic height. The layout variant inherits height: 100% from the
+// content-area parent; the overlay variant pins to top: 0; bottom: 0; in its
+// nearest positioned ancestor. Stories MUST wrap the panel in a sized
+// canvas (e.g. 480 x 720) -- see __story-helpers__/sample-content.tsx.
+
+.arvo-sp {
+  // Inner anatomy from panel-shell.
+  @include panel-shell-pane('arvo-sp');
+  @include panel-shell-hdr('arvo-sp');
+  @include panel-shell-header-action('arvo-sp');
+  @include panel-shell-sticky('arvo-sp');
+  @include panel-shell-body('arvo-sp');
+  @include panel-shell-list('arvo-sp');
+  @include panel-shell-empty('arvo-sp');
+  @include panel-shell-skeleton('arvo-sp');
+  @include panel-shell-footer('arvo-sp');
+
+  // -- CSS variables (dynamic / parent-overridable only) ---------------------
+  // Width floor matches $arvo-sidepanel-wmin from @arvo/tokens so the
+  // component default never drifts below the token band; the ceiling stays
+  // `none` because SidePanel can grow to fill available width when inline.
+  --arvo-sp-width: 290px;
+  --arvo-sp-min-width: #{$arvo-sidepanel-wmin};
+  --arvo-sp-max-width: none;
+  --arvo-sp-overlay-max-width: 80vw;
+  --arvo-sp-slide-duration: 200ms;
+
+  // -- __pane sizing extensions ----------------------------------------------
+  // The shared panel-shell-pane mixin already sets display: flex; flex-direction:
+  // column; height: 100%; min-height: 0;. SidePanel-specific overrides below add
+  // width sizing and the layer-01 background.
+  &__pane {
+    width: var(--arvo-sp-width);
+    min-width: var(--arvo-sp-min-width);
+    max-width: var(--arvo-sp-max-width);
+    background: var(--arvo-color-s-layer-01);
+  }
+
+  // -- __pin -----------------------------------------------------------------
+  // Visual styling owned by ArvoIconButton (size sm, variant tertiary).
+  // Position inside __hdr-actions is handled by panel-shell-hdr's flex layout.
+
+  // -- __splitter ------------------------------------------------------------
+  // Inert 4px placeholder rail; resize behavior is owned by ArvoSplitter
+  // (soft dependency) when it ships. As an inline sibling of __pane the
+  // visual order is determined by HTML order, so no `order:` flip is needed.
+  &__splitter {
+    flex-shrink: 0;
+    width: 4px;
+    align-self: stretch;
+    background: var(--arvo-color-s-base);
+    cursor: col-resize;
+  }
+
+  // -- Variant: --layout (default) -------------------------------------------
+  // Pane participates in the parent layout. No transform, no z-index.
+  &--layout {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+  }
+
+  // -- Variant: --overlay ----------------------------------------------------
+  // Pane overlays sibling content from its current DOM position (NOT
+  // portaled, NOT viewport-anchored). Slide-in animation via @arvo/core
+  // enter/exit class hooks.
+  &--overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    // The overlay hub sets the authoritative z-index inline on this host
+    // when the overlay-variant panel opens (single source of truth for
+    // stacking). This fallback only covers the pre-registration frame.
+    z-index: var(--arvo-z-popover, 1000);
+
+    // Cap pane width so the overlay can't cover the whole viewport. When
+    // --arvo-sp-max-width is `none`, min() falls back to the overlay cap.
+    .arvo-sp__pane {
+      max-width: min(var(--arvo-sp-max-width), var(--arvo-sp-overlay-max-width));
+    }
+
+    // Hidden when not open. Animations control appearance around `.open`.
+    // Unlike Drawer, SidePanel has no persistent off-screen resting transform
+    // on the pane, so this gate is required to hide closed overlay panels.
+    // The engine toggles `.open` before the enter sequence, so enter/exit
+    // transitions still fire correctly.
+    &:not(.open) {
+      display: none;
+    }
+  }
+
+  // -- Side: --side-right (default) ------------------------------------------
+  &--side-right {
+    &.arvo-sp--overlay {
+      right: 0;
+      left: auto;
+
+      // Shadow falls on the side opposite the dock edge.
+      box-shadow: $arvo-shadow-left;
+
+      .arvo-sp__pane {
+        margin-left: auto;
+      }
+    }
+  }
+
+  // -- Side: --side-left -----------------------------------------------------
+  &--side-left {
+    &.arvo-sp--overlay {
+      left: 0;
+      right: auto;
+      box-shadow: $arvo-shadow-right;
+
+      .arvo-sp__pane {
+        margin-right: auto;
+      }
+    }
+  }
+
+  // -- Slide animation (overlay variant only) --------------------------------
+  // Uses the shared `arvo-enter-*` / `arvo-exit-*` class hooks from
+  // @arvo/core/animation. Direction is side-aware.
+  &--overlay.arvo-sp--side-right {
+    &.arvo-enter-from,
+    &.arvo-exit-to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  &--overlay.arvo-sp--side-left {
+    &.arvo-enter-from,
+    &.arvo-exit-to {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+
+  &--overlay {
+    &.arvo-enter-active,
+    &.arvo-exit-active {
+      transition:
+        transform var(--arvo-sp-slide-duration) $arvo-ease-standard,
+        opacity var(--arvo-sp-slide-duration) $arvo-ease-standard;
+    }
+
+    &.arvo-enter-to,
+    &.arvo-exit-from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  // -- State: is-disabled ----------------------------------------------------
+  // The host carries the BEM-block state class (per descriptor stateClasses);
+  // panel-shell also writes is-disabled on __pane (parent) per the shared
+  // pattern's contract. The descendant selector below works in either case
+  // and keeps the splitter sibling unaffected.
+  &.is-disabled .arvo-sp__pane,
+  .arvo-sp__pane.is-disabled {
+    opacity: $arvo-opacity-40;
+    pointer-events: none;
+  }
+}
+
+// -- Reduced motion ----------------------------------------------------------
+@media (prefers-reduced-motion: reduce) {
+  .arvo-sp--overlay {
+    &.arvo-enter-active,
+    &.arvo-exit-active {
+      transition: none;
+    }
+  }
+}

@@ -1,0 +1,161 @@
+@use '../../mixins/list-item' as *;
+@use '../../mixins/list-group' as *;
+@use '../../mixins/loading' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-listbox -----------------------------------------------------------
+
+.arvo-listbox {
+  // -- CSS custom properties --------------------------------------------------
+  --arvo-listbox-option-height: 32px;
+  --arvo-list-item-height-single: var(--arvo-listbox-option-height);
+
+  // -- Root layout ------------------------------------------------------------
+  display: flex;
+  flex-direction: column;
+  gap: $arvo-space-4;
+  font-family: var(--o9-font-family);
+  box-sizing: border-box;
+
+  // -- __lbl ------------------------------------------------------------------
+  // Typography, sizing, required/disabled/invalid state all come from the
+  // shared .arvo-form-lbl primitive (ArvoFormLabel React + JS).
+
+  // -- __search ---------------------------------------------------------------
+  &__search {
+    padding: $arvo-space-12 $arvo-space-16;
+    flex-shrink: 0;
+    display: flex;
+  }
+
+  .arvo-search {
+    flex-grow: 1;
+  }
+
+  // -- __list -----------------------------------------------------------------
+  &__list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-block: $arvo-space-4;
+    outline: none;
+    border: 1px solid var(--arvo-color-b-form);
+    border-radius: $arvo-space-4;
+    box-sizing: border-box;
+  }
+
+  // -- __opt ------------------------------------------------------------------
+  &__opt {
+    @include list-item-base;
+    @include list-item-single-line;
+    @include list-item-states;
+    @include list-item-leading;
+    @include list-item-text;
+
+    // Override icon size/color from list-item-leading defaults
+    &__ico {
+      font-size: 20px;
+      color: var(--arvo-color-i-secondary);
+    }
+
+    // Keyboard navigation highlight
+    &.highlighted {
+      outline: 1px solid var(--arvo-color-b-theme-focus);
+      outline-offset: -1px;
+    }
+  }
+
+  // -- __grp ------------------------------------------------------------------
+  &__grp {
+    // role="group" container; no extra styles needed
+  }
+
+  // -- __grp-hdr --------------------------------------------------------------
+  &__grp-hdr {
+    @include list-group-header;
+
+    padding: $arvo-space-8 $arvo-space-12;
+    letter-spacing: 0.5px;
+  }
+
+  // -- __divider --------------------------------------------------------------
+  &__divider {
+    @include list-group-divider;
+  }
+
+  // -- __empty ----------------------------------------------------------------
+  &__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $arvo-space-16;
+    color: var(--arvo-color-t-tertiary);
+    font-size: $arvo-font-size-14;
+    font-family: var(--o9-font-family);
+    text-align: center;
+  }
+
+  // -- __skeleton -------------------------------------------------------------
+  &__skeleton {
+    display: none;
+  }
+
+  &__skeleton-row {
+    display: flex;
+    align-items: center;
+    height: var(--arvo-listbox-option-height, 32px);
+    padding-inline: $arvo-space-12;
+    gap: $arvo-space-8;
+  }
+
+  &__skeleton-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    border-radius: $arvo-space-4;
+    background: var(--arvo-color-s-layer-05, #e0e0e0);
+    animation: arvo-shimmer 1.5s ease-in-out infinite;
+  }
+
+  &__skeleton-text {
+    height: 12px;
+    flex: 1 1 auto;
+    border-radius: $arvo-space-4;
+    background: var(--arvo-color-s-layer-05, #e0e0e0);
+    animation: arvo-shimmer 1.5s ease-in-out infinite;
+  }
+
+  // -- State: disabled --------------------------------------------------------
+  &.is-disabled {
+    opacity: $arvo-opacity-40;
+    pointer-events: none;
+  }
+
+  // -- Loading state (Pattern B: skeleton rows) -------------------------------
+  @mixin _listbox-loading {
+    .arvo-listbox__list {
+      pointer-events: none;
+    }
+
+    .arvo-listbox__opt {
+      display: none;
+    }
+
+    .arvo-listbox__skeleton {
+      display: block;
+    }
+  }
+
+  &.loading {
+    @include _listbox-loading;
+  }
+
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @include _listbox-loading;
+  }
+}
+
+// --- Shimmer keyframe ---------------------------------------------------------
+@keyframes arvo-shimmer {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}

@@ -1,0 +1,187 @@
+@use '../../mixins/list-item' as *;
+@use '../../mixins/list-group' as *;
+@use '../../mixins/popup-animation' as *;
+@use '../../../../tokens/src/scss/all' as *;
+
+// --- .arvo-opt-list -----------------------------------------------------------
+// The floating option-list overlay (Layer 4). Renders the shared option-row
+// content (list-item / list-group mixins) inside the OverlaySurface engine.
+// Positioning is applied by the engine via transform + --arvo-overlay-* vars.
+
+.arvo-opt-list {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: column;
+  min-width: $arvo-filter-menu-wmin;
+  max-width: $arvo-filter-menu-wmax;
+  width: var(--arvo-overlay-width, auto);
+  max-height: var(--arvo-overlay-max-height, #{$arvo-opt-list-hmax});
+  background-color: var(--arvo-color-s-layer-03);
+  box-shadow: $arvo-shadow-down;
+  z-index: var(--arvo-z-popover, 1000);
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: var(--o9-font-family);
+
+  // Transition classes applied by @arvo/core enter()/exit().
+  // Direction-aware popup enter / exit animation. See `popup-animation`
+  // mixin -- positioning uses the standalone `translate` CSS property so
+  // `transform` is free for this animation.
+  @include popup-animation;
+
+  &.open {
+    display: flex;
+  }
+
+  &.loading {
+    pointer-events: none;
+  }
+
+  // -- __search ---------------------------------------------------------------
+  &__search {
+    padding: $arvo-space-12 $arvo-space-16;
+    flex-shrink: 0;
+    display: flex;
+
+    .arvo-search {
+      flex-grow: 1;
+    }
+  }
+
+  // -- __select-all -----------------------------------------------------------
+  // V2 batch-control row. It lives above the scrollable listbox so option-row
+  // keyboard navigation and aria-activedescendant indexing remain unchanged.
+  &__select-all {
+    @include list-item-base;
+    @include list-item-single-line;
+    @include list-item-states;
+    flex-shrink: 0;
+    border-block-end: 1px solid var(--arvo-color-b-divider);
+
+    &.highlighted {
+      outline: 1px solid var(--arvo-color-b-theme-focus);
+      outline-offset: -1px;
+    }
+
+    &.is-disabled {
+      cursor: default;
+    }
+  }
+
+  // -- __scroll ---------------------------------------------------------------
+  &__scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    padding-block: $arvo-space-4;
+  }
+
+  // -- __opt ------------------------------------------------------------------
+  &__opt {
+    @include list-item-base;
+    @include list-item-single-line;
+    @include list-item-states;
+    @include list-item-leading;
+    @include list-item-text;
+
+    // Keyboard navigation indicator. The shared list-item-states mixin styles
+    // `&.focused`, but the option-list renderer (option-list-render.ts /
+    // option-list-render.tsx) tags the active option with `.highlighted` (the
+    // standard activedescendant-pattern class -- see ArvoListbox + the chip
+    // navigation cursor). Mirror that styling here so keyboard arrow nav in
+    // ArvoSelect / ArvoMultiSelect / ArvoCombobox is visibly tracked.
+    &.highlighted {
+      outline: 1px solid var(--arvo-color-b-theme-focus);
+      outline-offset: -1px;
+    }
+  }
+
+  // -- __opt__check ------------------------------------------------------------
+  // Leading checkbox slot rendered in multi-select mode. The slot is purely
+  // presentational -- the row owns aria-selected, click-to-toggle, and the
+  // Tab stop. `pointer-events: none` ensures clicks pass through to the row
+  // even when the user clicks the visual checkbox; `aria-hidden` suppresses
+  // the redundant SR announcement (the row's aria-selected already conveys
+  // selection state).
+  &__opt__check {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  // -- __grp / __grp-hdr / __divider ------------------------------------------
+  &__grp-hdr {
+    @include list-group-header;
+  }
+
+  &__divider {
+    @include list-group-divider;
+  }
+
+  // -- __empty ----------------------------------------------------------------
+  // Wrapper hosting the embedded ArvoEmptyState figure for the noData /
+  // noResults / creatable empty states. Stretches to fill the scroll area
+  // so the figure centers inside whatever space remains.
+  &__empty {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: stretch;
+    justify-content: center;
+    min-height: 0;
+    padding-block: $arvo-space-16;
+  }
+
+  // -- Loading skeleton (Pattern B) -------------------------------------------
+  &__skeleton {
+    padding-block: $arvo-space-4;
+  }
+
+  &__skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: $arvo-space-8;
+    height: 32px;
+    padding-inline: $arvo-space-16;
+  }
+
+  &__skeleton-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: $arvo-space-4;
+    background: var(--arvo-color-s-layer-05, #e0e0e0);
+    flex: 0 0 auto;
+  }
+
+  &__skeleton-text {
+    height: 12px;
+    flex: 1 1 auto;
+    border-radius: $arvo-space-4;
+    background: var(--arvo-color-s-layer-05, #e0e0e0);
+  }
+
+  // -- --rich modifier --------------------------------------------------------
+  // Rich layout: 40px row height (multi-line list-item height) so the optional
+  // 24px avatar + 14px primary + 10px secondary stack fits.
+  &--rich {
+    --arvo-list-item-height-single: 40px;
+  }
+
+  // -- --multiple modifier ----------------------------------------------------
+  // Multi-select: the leading checkbox is the sole selection indicator. The
+  // row must NOT also paint the single-select active background + inline-start
+  // border (driven by `.active` from list-item-states), because the renderer
+  // intentionally omits `.active` on multi-select rows. This rule is a
+  // belt-and-suspenders safeguard for any selected row that still happens to
+  // carry `.active` (e.g. consumers that style the row directly).
+  &--multiple &__opt {
+    &.active,
+    &[aria-selected='true'] {
+      background-color: transparent;
+      border-inline-start-color: transparent;
+      color: var(--arvo-list-item-text-color, var(--arvo-color-t-secondary));
+    }
+  }
+}

@@ -1,0 +1,806 @@
+@use '../../../../tokens/src/scss/all' as *;
+@use '../../mixins/hover' as *;
+@use '../../mixins/loading' as *;
+
+// =============================================================================
+// Arvo Tabstrip  (_arvo-tabs.scss)
+// Block: .arvo-tabs
+// Variants: --primary (default), --secondary
+// Sizes: --sm (24px / 12px), --lg (default, 32px / 14px)
+// Orientations: --horizontal (default), --vertical
+// Layout modifiers: --full-width
+//
+// Both variants ship an animated `.arvo-tabs__indicator` that slides
+// between active tabs on selection (horizontal: bottom underline;
+// vertical: left rail). The host component (React/JS) sets the inline
+// CSS variables `--arvo-tabs-indicator-x|w|y|h` to position and size
+// the indicator. `@media (prefers-reduced-motion: reduce)` disables
+// the transition so the indicator snaps to the active tab.
+//
+// Layering contract on the tab list (z-index, all under the same
+// stacking context established by `__list { position: relative }`):
+//   0 -- __divider (1px baseline)
+//   1 -- __tab body (icon / label / actions)
+//   2 -- __indicator (animated rail; paints OVER the trailing per-tab
+//        action buttons even on the `sm` size where they reach the
+//        bottom edge)
+//   3 -- focused tab (so :focus-visible outline is never clipped)
+// =============================================================================
+
+.arvo-tabs {
+  // -- CSS custom properties (lg defaults) ------------------------------------
+  // Only values that change per size (or layout-computed indicator
+  // position) are exposed as custom properties. Static values such as
+  // the 12px inline padding, the 8px inner gap, and the transparent base
+  // background are inlined directly because variant/state rules set
+  // `background` outright so a tab-level override never reached them.
+  --arvo-tabs-height: #{$arvo-space-32};
+  --arvo-tab-font-size: #{$arvo-font-size-14};
+  --arvo-tab-padding-block: #{$arvo-space-4};
+  --arvo-tabs-indicator-x: 0;
+  --arvo-tabs-indicator-w: 0;
+  --arvo-tabs-indicator-y: 0;
+  --arvo-tabs-indicator-h: 0;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  position: relative;
+  box-sizing: border-box;
+
+  // -- Modifier: overflow ----------------------------------------------------
+  // Content-sized layout (mirrors ArvoButtonGroup's `--overflow` modifier).
+  // The strip sizes to its visible tabs + the right-edge cluster (trigger
+  // + add-button), capped at the parent's width. Overflow detection runs
+  // against the PARENT's right edge.
+  //
+  // NOTE: when combined with `--full-width` the strip stays full-width
+  // (see the `--full-width` rule below). Overflow detection still works
+  // because the manager measures item rects against the boundary
+  // (boundaryRef = container's parent), independent of the strip's own
+  // size mode.
+  &--overflow {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+    overflow: hidden;
+
+    .arvo-tabs__list {
+      flex: 0 1 auto;
+    }
+  }
+
+  // -- Size: Small -------------------------------------------------------------
+  // Label font-size stays at 14px in BOTH sizes per the Figma source --
+  // the only sm/lg dimensional differences are tab height and padding-block.
+  &--sm {
+    --arvo-tabs-height: #{$arvo-space-24};
+    --arvo-tab-font-size: #{$arvo-font-size-14};
+    --arvo-tab-padding-block: 0px;
+  }
+
+  // -- Size: Large (explicit; mirrors the defaults above) ----------------------
+  &--lg {
+    --arvo-tabs-height: #{$arvo-space-32};
+    --arvo-tab-font-size: #{$arvo-font-size-14};
+    --arvo-tab-padding-block: #{$arvo-space-4};
+  }
+
+  // -- Orientation: Vertical ---------------------------------------------------
+  &--vertical {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  // -- Full-width distribution -------------------------------------------------
+  // When `--full-width` is set the strip ALWAYS fills its parent's available
+  // inline space and the visible tabs distribute leftover space evenly via
+  // `flex: 1 1 0`. This holds even when `--overflow` is also applied --
+  // full-width wins on the strip's display/width, while overflow detection
+  // continues to drop excess tabs into the overflow menu (the manager
+  // measures item rects against the boundary, independent of the strip's
+  // own size mode). Without this guard, `--overflow` would force the strip
+  // to `inline-flex; width: auto;` and the `flex: 1 1 0` on tabs would
+  // have no leftover space to share, leaving tabs at their natural width.
+  &--full-width {
+    display: flex;
+    width: 100%;
+
+    .arvo-tabs__list {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .arvo-tabs__tab {
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: none;
+    }
+  }
+
+  // -- Disabled strip ----------------------------------------------------------
+  &.is-disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  // ============================================================================
+  // List container
+  // ============================================================================
+
+  &__list {
+    display: flex;
+    align-items: center;
+    // `position: relative` so `__divider` and `__indicator` (absolutely-
+    // positioned children) anchor to the list's box.
+    position: relative;
+    overflow: hidden;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &--vertical &__list {
+    flex-direction: column;
+    align-items: stretch;
+    overflow: visible; // vertical strips rely on container scrolling
+  }
+
+  // ============================================================================
+  // Tab button -- base (colour-agnostic; states add colour below)
+  // ============================================================================
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $arvo-space-4; // outer gap: lft cluster <-> actions
+    height: var(--arvo-tabs-height);
+    padding-inline: $arvo-space-12;
+    padding-block: var(--arvo-tab-padding-block);
+    background: transparent;
+    color: var(--arvo-color-t-tertiary);
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    position: relative;
+    // Layering contract for the strip:
+    //   z-index: 1  -- tab body (icon / label / actions)
+    //   z-index: 2  -- animated indicator (sibling of tabs in __list)
+    //   z-index: 3  -- focused tab (so the focus ring is never clipped by
+    //                  the indicator that paints over the tab's bottom edge)
+    // Together these guarantee the indicator paints OVER the trailing
+    // action buttons (pin / close / menu) even when the strip is `sm`
+    // and the actions reach down to the bottom edge of the tab.
+    z-index: 1;
+    box-sizing: border-box;
+    font-family: var(--arvo-font-family);
+    font-size: var(--arvo-tab-font-size);
+    font-weight: $arvo-regular;
+    white-space: nowrap;
+    outline: none;
+    flex-shrink: 0;
+    min-width: $arvo-tab-wmin;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: clip;
+    transition:
+      color $arvo-duration-fast $arvo-ease-simple,
+      background $arvo-duration-fast $arvo-ease-simple,
+      box-shadow $arvo-duration-fast $arvo-ease-simple;
+
+    // Default icon colour (overridden per state below)
+    .arvo-tabs__tab-ico {
+      color: var(--arvo-color-i-tertiary);
+    }
+
+    // Focus ring -- raise above the animated indicator so the outline is
+    // never clipped by the underline that paints over the tab's bottom.
+    &:focus-visible {
+      color: var(--arvo-color-t-theme-hover);
+      outline: $arvo-border-1 solid var(--arvo-color-b-theme-focus);
+      outline-offset: -1px;
+      z-index: 3;
+
+      .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-hover); }
+    }
+
+    // Disabled individual tab
+    &.is-disabled {
+      color: var(--arvo-color-t-disabled);
+      cursor: not-allowed;
+      pointer-events: auto; // keep not-allowed cursor on hover
+
+      .arvo-tabs__tab-ico { color: var(--arvo-color-i-disabled); }
+    }
+  }
+
+  // Vertical tab: full-width, left-aligned content
+  &--vertical &__tab {
+    display: flex;
+    justify-content: flex-start;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  // ============================================================================
+  // PRIMARY HORIZONTAL -- active state colour only; the underline is drawn
+  // by the animated `.arvo-tabs__indicator` rail.
+  // ============================================================================
+
+  &--primary.arvo-tabs--horizontal &__tab.active {
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-t-theme-active);
+
+    .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-active); }
+  }
+
+  // Primary sm horizontal: selected label = t-primary (#010101)
+  &--primary.arvo-tabs--horizontal.arvo-tabs--sm &__tab.active {
+    color: var(--arvo-color-t-primary);
+  }
+
+  // Disabled <-> selected horizontal (primary): no animated indicator
+  // (component hides the indicator when the active tab is disabled) and
+  // the static disabled bar is drawn via box-shadow on the tab itself.
+  &--primary.arvo-tabs--horizontal &__tab.is-disabled.active {
+    font-weight: $arvo-medium;
+    box-shadow: inset 0 -#{$arvo-border-3} 0 var(--arvo-color-b-disabled);
+  }
+
+  // Hover -- primary horizontal (1.5px bottom border in neutral hover colour;
+  // matches the static drag-feel of the indicator without animating)
+  &--primary.arvo-tabs--horizontal {
+    @include hover {
+      .arvo-tabs__tab:not(.is-disabled):not(.active):hover {
+        color: var(--arvo-color-t-theme-hover);
+        box-shadow: inset 0 -#{$arvo-border-3} 0 var(--arvo-color-b-hover);
+
+        .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-hover); }
+      }
+    }
+  }
+
+  // ============================================================================
+  // SECONDARY HORIZONTAL -- the active background fill is now drawn by
+  // the SHARED animated `__indicator` (positioned to cover the full tab
+  // rect via the `--secondary` indicator branch below) instead of being
+  // painted on the active tab itself. The tab body keeps its label
+  // color flip (`theme-active`) but no longer carries its own
+  // background, so the indicator can slide between tabs on selection
+  // change just like the primary underline does.
+  // ============================================================================
+
+  &--secondary.arvo-tabs--horizontal &__tab.active {
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-t-theme-active);
+
+    .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-active); }
+  }
+
+  // Disabled <-> selected horizontal (secondary): the component hides
+  // the animated indicator while the active tab is disabled (mirrors
+  // primary), and a static disabled bar is drawn via box-shadow.
+  // Re-introduce the static fill in this branch so the disabled-active
+  // visual is unchanged from the pre-animation behavior.
+  &--secondary.arvo-tabs--horizontal &__tab.is-disabled.active {
+    font-weight: $arvo-medium;
+    background: var(--arvo-color-s-theme-active-3);
+    box-shadow: inset 0 -#{$arvo-border-3} 0 var(--arvo-color-b-disabled);
+  }
+
+  // Hover -- secondary horizontal. Suppress the hover background on the
+  // active tab so the sliding indicator owns the active visual on its
+  // own (without a competing hover fill on top of it).
+  &--secondary.arvo-tabs--horizontal {
+    @include hover {
+      .arvo-tabs__tab:not(.is-disabled):not(.active):hover {
+        color: var(--arvo-color-t-theme-hover);
+        background: var(--arvo-color-s-theme-hover-3);
+
+        .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-hover); }
+      }
+    }
+  }
+
+  // ============================================================================
+  // PRIMARY VERTICAL -- active state colour only; the left rail is drawn by
+  // the animated `.arvo-tabs__indicator`.
+  // ============================================================================
+
+  &--primary.arvo-tabs--vertical &__tab.active {
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-s-theme-active-1);
+
+    .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-active); }
+  }
+
+  // Disabled (vertical, unselected and selected): no indicator line.
+  // Spec 4.4 explicitly drops the rail for `selected.disabled` vertical so
+  // disabled selection is communicated via label color + medium weight only.
+  &--vertical &__tab.is-disabled {
+    box-shadow: none;
+  }
+
+  &--vertical &__tab.is-disabled.active {
+    font-weight: $arvo-medium;
+    box-shadow: none;
+  }
+
+  // Secondary vertical disabled-active: the component hides the animated
+  // indicator (since the active tab is disabled), so re-paint the
+  // static active background directly on the tab body. Mirrors the
+  // matching `&--secondary.arvo-tabs--horizontal &__tab.is-disabled.active`
+  // fallback above.
+  &--secondary.arvo-tabs--vertical &__tab.is-disabled.active {
+    background: var(--arvo-color-s-theme-active-3);
+  }
+
+  // Hover -- primary vertical (1.5px left rail in neutral hover colour)
+  &--primary.arvo-tabs--vertical {
+    @include hover {
+      .arvo-tabs__tab:not(.is-disabled):not(.active):hover {
+        color: var(--arvo-color-t-theme-hover);
+        box-shadow: inset #{$arvo-border-3} 0 0 var(--arvo-color-b-hover);
+
+        .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-hover); }
+      }
+    }
+  }
+
+  // ============================================================================
+  // SECONDARY VERTICAL -- the active background fill is now drawn by
+  // the SHARED animated `__indicator` (positioned to cover the full tab
+  // rect via the `--secondary` indicator branch below) instead of being
+  // painted on the active tab itself. The tab body keeps its label /
+  // icon color flip but no longer carries its own background, so the
+  // indicator can slide vertically between tabs on selection change.
+  // ============================================================================
+
+  &--secondary.arvo-tabs--vertical &__tab.active {
+    font-weight: $arvo-medium;
+    color: var(--arvo-color-t-theme-active);
+
+    .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-active); }
+  }
+
+  // Hover -- secondary vertical. Same as horizontal: hover stays a
+  // tinted background on UNSELECTED tabs only; the active tab's fill
+  // is owned by the sliding indicator.
+  &--secondary.arvo-tabs--vertical {
+    @include hover {
+      .arvo-tabs__tab:not(.is-disabled):not(.active):hover {
+        color: var(--arvo-color-t-theme-hover);
+        background: var(--arvo-color-s-theme-hover-3);
+
+        .arvo-tabs__tab-ico { color: var(--arvo-color-i-theme-hover); }
+      }
+    }
+  }
+
+  // ============================================================================
+  // Tab inner slot elements
+  // ============================================================================
+
+  // Left cluster: icon <-> label <-> alert <-> badge <-> status
+  &__tab-lft {
+    display: inline-flex;
+    align-items: center;
+    gap: $arvo-space-8; // 8px inner gap
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  // Leading icon
+  &__tab-ico {
+    font-size: $arvo-icon-16; // sm default
+    flex-shrink: 0;
+  }
+
+  // lg icon: 20px
+  &--lg &__tab-ico {
+    font-size: $arvo-icon-20;
+  }
+
+  // Label
+  //
+  // Active tabs shift from `regular` to `medium` weight; medium glyphs
+  // are slightly wider, which would otherwise shift the surrounding
+  // tabs each time selection changes. We pre-allocate the medium-weight
+  // width via a hidden `::after` that copies the label text from
+  // `data-label` and renders it at medium weight. Both the visible
+  // `__tab-lbl-text` child and the ghost share the same single grid
+  // cell, so the cell width is the MAX of the two -- the visible
+  // regular-weight text fills the cell from the start, and the
+  // intrinsic width never shifts when `.active` flips.
+  &__tab-lbl {
+    display: inline-grid;
+    grid-template-columns: minmax(0, max-content);
+    max-width: $arvo-tab-wmax;
+    min-width: 0;
+
+    &::after {
+      content: attr(data-label);
+      grid-column: 1;
+      grid-row: 1;
+      font-weight: $arvo-medium;
+      visibility: hidden;
+      height: 0;
+      overflow: hidden;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+  }
+
+  &__tab-lbl-text {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Alert / badge / status indicators -- never truncated
+  &__tab-alert,
+  &__tab-badge,
+  &__tab-status {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  // Trailing actions cluster: menu <-> pin <-> close.
+  // Actions are always visible when configured (no hover-only mode).
+  &__tab-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0; // action buttons sit flush
+  }
+
+  // Thin wrappers around individual action buttons
+  &__tab-menu,
+  &__tab-pin,
+  &__tab-close {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  // -- Right-aligned trailing actions on horizontal tabs ---------------------
+  // When a horizontal tab carries an actions cluster (menu / pin / close),
+  // the left content takes the available inline space and the actions sit
+  // at the TRAILING edge -- not adjacent to the label. We scope this with
+  // `:has()` so tabs without trailing actions keep their centered label
+  // layout. The leading slot already has `min-width: 0` + `overflow: hidden`
+  // so long labels still truncate before colliding with the actions.
+  //
+  // We bump the tab's `min-width` by a small fixed amount so a content-sized
+  // tab has enough room for the right-edge cluster to sit beside the
+  // label without doubling the entire tab footprint. The +$arvo-space-32
+  // nudge (32px) lines up with the lg action button's outer dimensions
+  // while staying compact for short labels.
+  &--horizontal &__tab:has(&__tab-actions) {
+    min-width: calc(#{$arvo-tab-wmin} + #{$arvo-space-32});
+    justify-content: flex-start;
+
+    .arvo-tabs__tab-lft {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .arvo-tabs__tab-actions {
+      margin-inline-start: auto;
+      flex-shrink: 0;
+    }
+  }
+
+  // -- Right-aligned trailing inline indicators on vertical tabs -------------
+  // Vertical tabs lay out as a full-width column. The inline indicators
+  // (alert / badge / status) live inside `__tab-lft` next to the label,
+  // but the user-facing UX has them floating against the trailing edge
+  // of the tab rather than hugging the label. Push the first indicator
+  // after the label with `margin-inline-start: auto` so the trailing
+  // cluster anchors to the right edge; the label fills the remaining
+  // space and still truncates via the existing grid-cell rules.
+  &--vertical &__tab-lft {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  &--vertical &__tab-lbl + &__tab-alert,
+  &--vertical &__tab-lbl + &__tab-badge,
+  &--vertical &__tab-lbl + &__tab-status {
+    margin-inline-start: auto;
+  }
+
+  // ============================================================================
+  // Strip-level elements
+  // ============================================================================
+
+  // 1px bottom divider (horizontal only; presence controlled by the component).
+  // Rendered as the FIRST child of `.arvo-tabs__list` so it bounds with the
+  // visible tab area. The animated indicator paints OVER this baseline.
+  &__divider {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: $arvo-border-1;
+    background: var(--arvo-color-b-divider);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  // ============================================================================
+  // Animated active-tab indicator (BOTH variants)
+  // ============================================================================
+  //
+  // The host component sets the inline CSS variables each time selection
+  // changes or the list layout changes:
+  //   --arvo-tabs-indicator-x / -w   (horizontal)
+  //   --arvo-tabs-indicator-y / -h   (vertical)
+  //
+  // The indicator transitions via `$arvo-motion-tab` (transform + size).
+  // When the host hides the indicator (no active tab, disabled, or
+  // `prefers-reduced-motion`-snap path), the component sets
+  // `data-indicator-state="hidden"` so we drop opacity and skip the
+  // transition.
+
+  &__indicator {
+    position: absolute;
+    pointer-events: none;
+    // Default layer: ABOVE the tab body (z-index: 1) so the primary
+    // variant's $arvo-border-3 rail paints over the trailing action
+    // buttons (pin / close / menu) even when the tab is `sm` and the
+    // actions reach the bottom edge. The secondary variant flips this
+    // to `z-index: 0` so its full-tab background fill sits BELOW the
+    // tab body (icon / label / actions stay visible on top).
+    z-index: 2;
+    opacity: 0;
+    transition:
+      transform $arvo-duration-medium $arvo-ease-standard,
+      width $arvo-duration-medium $arvo-ease-standard,
+      height $arvo-duration-medium $arvo-ease-standard,
+      opacity $arvo-duration-fast $arvo-ease-simple;
+  }
+
+  // PRIMARY horizontal: bottom-aligned $arvo-border-3 underline. Same
+  // visual as before -- the indicator is a thin rail at the bottom of
+  // the active tab.
+  &--primary.arvo-tabs--horizontal &__indicator {
+    left: 0;
+    bottom: 0;
+    height: $arvo-border-3;
+    width: var(--arvo-tabs-indicator-w, 0px);
+    background-color: var(--arvo-color-b-theme-active);
+    transform: translateX(var(--arvo-tabs-indicator-x, 0));
+  }
+
+  // PRIMARY vertical: left-aligned $arvo-border-3 rail.
+  &--primary.arvo-tabs--vertical &__indicator {
+    top: 0;
+    left: 0;
+    width: $arvo-border-3;
+    height: var(--arvo-tabs-indicator-h, 0px);
+    background-color: var(--arvo-color-b-theme-active);
+    transform: translateY(var(--arvo-tabs-indicator-y, 0));
+  }
+
+  // SECONDARY: full-tab background fill that slides between active
+  // tabs. The indicator sits BELOW the tab body (z-index: 0) so the
+  // label, icon, and trailing actions paint over it. Height (horizontal)
+  // and width (vertical) are 100% of the list so the fill exactly covers
+  // the active tab regardless of size variant.
+  &--secondary &__indicator {
+    z-index: 0;
+    background-color: var(--arvo-color-s-theme-active-3);
+  }
+
+  &--secondary.arvo-tabs--horizontal &__indicator {
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: var(--arvo-tabs-indicator-w, 0px);
+    transform: translateX(var(--arvo-tabs-indicator-x, 0));
+  }
+
+  &--secondary.arvo-tabs--vertical &__indicator {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--arvo-tabs-indicator-h, 0px);
+    transform: translateY(var(--arvo-tabs-indicator-y, 0));
+  }
+
+  // Reveal the indicator once the component flags an active tab.
+  &__indicator[data-indicator-state="visible"] {
+    opacity: 1;
+  }
+
+  // Reduced motion: the indicator still moves to the active tab but
+  // snaps instantly rather than animating.
+  @media (prefers-reduced-motion: reduce) {
+    .arvo-tabs__indicator {
+      transition: opacity $arvo-duration-fast $arvo-ease-simple;
+    }
+  }
+
+  // Right-edge cluster: wraps the overflow trigger and the optional
+  // add-button so the shared @arvo/core overflow manager can reserve
+  // their combined width as a single right-edge fixture. The cluster is
+  // only rendered when at least one of the two fixtures is present.
+  &__right {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  // Overflow trigger (ArvoIconButton + ArvoActionMenu)
+  &__overflow-btn {
+    flex-shrink: 0;
+    display: none;
+    align-items: center;
+  }
+
+  &.has-overflow &__overflow-btn {
+    display: flex;
+  }
+
+  // Add-New button wrapper. Sits flush against the overflow trigger when
+  // both are present; the `margin-inline-start` adds a small breathing
+  // gap when the cluster has both children.
+  &__add-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    margin-inline-start: $arvo-space-4;
+  }
+
+  // When the add-button is the only child of the right cluster, drop the
+  // start margin so it sits flush with the list's trailing edge.
+  &__right &__add-btn:first-child {
+    margin-inline-start: 0;
+  }
+
+  // ============================================================================
+  // Skeleton element (default hidden; shown during loading)
+  // ============================================================================
+
+  &__skel {
+    display: none;
+  }
+
+  // ============================================================================
+  // Loading state -- Pattern C
+  // Container disables interaction; each tab shows a skeleton rectangle.
+  // ============================================================================
+
+  &.loading {
+    pointer-events: none;
+
+    .arvo-tabs__tab {
+      pointer-events: none;
+
+      // Hide all inner content (layout preserved so tab keeps its size)
+      .arvo-tabs__tab-lft,
+      .arvo-tabs__tab-actions {
+        visibility: hidden;
+      }
+    }
+
+    // Hide the animated indicator while the strip is in loading state.
+    .arvo-tabs__indicator {
+      opacity: 0;
+    }
+
+    // Skeleton rectangle: fills tab content area (inside padding)
+    .arvo-tabs__skel {
+      display: block;
+      position: absolute;
+      // Inset by the tab's block/inline padding so the skeleton sits inside
+      inset: var(--arvo-tab-padding-block, #{$arvo-space-4}) $arvo-space-12;
+      overflow: hidden;
+
+      // Base fill (pulse-dark)
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background-color: var(--arvo-color-s-pulse-dark);
+        border-radius: inherit;
+      }
+
+      // Shimmer sweep (pulse-light)
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--arvo-color-s-pulse-light) 50%,
+          transparent 100%
+        );
+        animation: arvo-shimmer 1.5s infinite linear;
+        will-change: transform;
+        transform: translateZ(0);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        &::after { animation: none; }
+      }
+    }
+  }
+
+  // -- Parent loading propagation -------------------------------------------
+  // Mirrors the cross-component contract: when a parent surface flips into
+  // its loading state (`data-arvo-loading="true"`), every descendant Arvo
+  // component cascades into its own loading visuals unless explicitly
+  // opted out via `data-arvo-loading-ignore="true"`.
+  [data-arvo-loading='true'] &:not([data-arvo-loading-ignore='true']) {
+    @extend .arvo-tabs, .loading;
+  }
+}
+
+// =============================================================================
+// Drag-and-drop (driven by @arvo/core's createSortableList, axis: 'x')
+// Two classes flow in from core:
+//   .arvo-sortable--ghost     -- the in-list source tab at its current slot
+//   .arvo-sortable--dragging  -- the floating clone that tracks the pointer
+// =============================================================================
+
+// FLIP transition hook -- the sortable applies an inline `transform` to every
+// sibling that shifted due to a DOM move, then clears it on the next frame so
+// this transition animates the tab into its new position.
+.arvo-tabs--horizontal .arvo-tabs__tab {
+  transition:
+    color $arvo-duration-fast $arvo-ease-simple,
+    background $arvo-duration-fast $arvo-ease-simple,
+    box-shadow $arvo-duration-fast $arvo-ease-simple,
+    transform 180ms $arvo-ease-simple;
+}
+
+// The relocated source slot. The tab is visually hidden so peers see open
+// space where the dragged tab will land, and the ::before draws a 1px
+// theme-active rail on the leading edge as the live drop indicator.
+.arvo-tabs__tab.arvo-sortable--ghost {
+  visibility: hidden;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: $arvo-border-1;
+    background-color: var(--arvo-color-b-theme-active);
+    visibility: visible;
+    pointer-events: none;
+    z-index: 2;
+  }
+}
+
+// The floating clone that follows the pointer. Inline `position: fixed` and
+// `pointer-events: none` come from createSortableList; styling is owned here
+// so the lift visual matches Figma 4.6 (s-layer-05 fill, arvo-shadow-fab
+// elevation, theme-active leading-edge accent).
+.arvo-tabs__tab.arvo-sortable--dragging {
+  background-color: var(--arvo-color-s-layer-05);
+  box-shadow: $arvo-shadow-fab;
+  cursor: grabbing;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: $arvo-border-2;
+    background-color: var(--arvo-color-b-theme-active);
+    pointer-events: none;
+    z-index: 2;
+  }
+}
